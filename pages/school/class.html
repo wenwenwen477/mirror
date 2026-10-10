@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>高二（3）班教室 - 客丽市第一中学</title>
+<link rel="stylesheet" href="site.css">
+<style>
+/* ==================================================================
+   CUT3 · 高二（3）班教室
+   食堂那一段的**下一段**：她们出了食堂，走回教室，在教室里聊书、翻书。
+
+   跟 canteen.html 同一套机制（全靠往下滚），三处不一样：
+     1. 两个人**并排**走在一起，出现在视口**中间偏下**（不是贴在左右两端）；
+        台词仍在各自头顶的气泡里，谁没说话谁就淡下去。
+     2. 玻琳秋的**拐杖**画出来了，而且跟着脚步一点一点地顿地
+        （她只有一根，幂偌替她拿着另一根 —— 原文如此）。
+     3. **背景跟着她们走**：林荫道 → 教学楼走廊 → 教室内，
+        随剧本进入下一段而交叉淡入，不是一路白底。
+
+   到教室、两人开始聊天之后：右侧滑进**两枚**第三方小广告——
+     ① 暖橙的「十万本小说 全本免费读」→ 点进小说站（pages/novel）
+     ② 深绿荧光的「结局揭示！预言大神！快来试试！」→ 点开是**密码门**：
+        两问（他当时是怎么摔的 / 只能哭喊的人是谁），
+        答案分别绑着 CUT4 的黑屏卡和 CUT5 的黑屏卡，
+        两问都答对才跳 CUT6（pages/novel/cut6.html）。
+        ② 晚 1.5s 再滑进来 —— 两枚一起"啪"地出现太闹，要一枚一枚来。
+   右上角那枚小眼球亮起来吐槽三句。
+
+   ★ 页面上不出现人物姓名：靠左右位置和配色分辨谁在说话。
+   ================================================================== */
+
+html{ scroll-behavior:smooth; }
+body{ background:transparent; }
+
+/* ==================================================================
+   背景舞台：三层，随剧本淡入淡出
+   ================================================================== */
+#bgstage{ position:fixed; inset:0; z-index:0; overflow:hidden; background:var(--bgf); }
+.bg{ position:absolute; inset:0; opacity:0; transition:opacity 1.5s ease; }
+.bg.on{ opacity:1; }
+/* 把场景压淡一层，正文才读得清 —— 但别压太狠，层次全没了就白做了 */
+.bg::after{ content:""; position:absolute; inset:0; background:rgba(238,241,245,.30); }
+
+/* 林荫道：天 + 远处树线 + 柏油路 + 一路斑驳的光 */
+.bg-road{
+    background:
+        /* 树冠：几团深浅不一的绿，压在画面上缘 */
+        radial-gradient(closest-side at 12% 8%,  rgba(88,124,84,.85), rgba(88,124,84,0)),
+        radial-gradient(closest-side at 33% 4%,  rgba(104,142,96,.75), rgba(104,142,96,0)),
+        radial-gradient(closest-side at 58% 9%,  rgba(78,112,76,.85),  rgba(78,112,76,0)),
+        radial-gradient(closest-side at 82% 3%,  rgba(96,132,90,.7),   rgba(96,132,90,0)),
+        radial-gradient(closest-side at 95% 10%, rgba(84,118,82,.8),   rgba(84,118,82,0)),
+        /* 树干 */
+        linear-gradient(90deg, transparent 0 8%,  rgba(96,84,66,.5) 8% 9.4%, transparent 9.4% 100%),
+        linear-gradient(90deg, transparent 0 41%, rgba(96,84,66,.42) 41% 42.2%, transparent 42.2% 100%),
+        linear-gradient(90deg, transparent 0 73%, rgba(96,84,66,.5) 73% 74.4%, transparent 74.4% 100%),
+        /* 天空 → 树影 → 路面 */
+        linear-gradient(180deg,#a8c8e4 0%,#c6dbe9 16%,#d9e4dc 30%,#c9d2c4 38%,#bfc4b8 55%,#d8d8d0 100%);
+}
+/* 柏油路上斜射下来的光斑 */
+.bg-road::before{
+    content:""; position:absolute; inset:38% 0 0 0; opacity:.5;
+    background:repeating-linear-gradient(74deg,
+        rgba(255,255,255,.55) 0 26px, rgba(255,255,255,0) 26px 92px);
+}
+/* 教学楼走廊：一侧窗列（亮）＋ 一侧墙（暗）＋ 顶灯 ＋ 地面反光 */
+.bg-cor{
+    background:
+        /* 靠右一列窗：亮 */
+        repeating-linear-gradient(180deg,
+            rgba(255,255,255,.92) 0 96px, rgba(178,200,220,.75) 96px 104px),
+        linear-gradient(90deg,
+            rgba(206,214,222,.95) 0 20%, rgba(240,243,246,0) 44%,
+            rgba(238,241,244,0) 52%, rgba(214,222,230,.9) 78% 100%),
+        /* 顶灯 + 地面 */
+        linear-gradient(180deg,#e6ecf1 0%,#eef1f4 30%,#e6e8e6 58%,#dcdedb 100%);
+}
+.bg-cor::before{
+    content:""; position:absolute; inset:0 0 0 22%; opacity:.5;
+    background:
+        repeating-linear-gradient(90deg, rgba(255,255,255,.9) 0 8px, rgba(255,255,255,0) 8px 150px),
+        linear-gradient(180deg, rgba(160,178,196,.5) 0 2px, rgba(160,178,196,0) 2px 100%);
+}
+/* 教室：黑板（见 ::before）＋ 窗光斜柱 ＋ 一排排课桌的横带 */
+.bg-room{
+    background:
+        /* 从右上角斜射进来的窗光 */
+        linear-gradient(118deg, rgba(255,251,231,.9) 0 14%, rgba(255,251,231,0) 42%),
+        linear-gradient(118deg, rgba(255,251,231,.55) 0 4%, rgba(255,251,231,0) 22%),
+        /* 墙 → 地面 */
+        linear-gradient(180deg,#cfe1ec 0%,#dde7ec 24%,#e7eae6 44%,#dedbd2 100%),
+        /* 一排排课桌：深浅相间的横带 */
+        repeating-linear-gradient(180deg,
+            rgba(150,132,100,.42) 0 16px, rgba(232,226,210,.5) 16px 30px, rgba(0,0,0,0) 30px 62px);
+}
+/* 黑板在左上角 */
+.bg-room::before{
+    content:""; position:absolute; left:6%; top:12%; width:34%; height:24%;
+    background:linear-gradient(180deg,#3f6152,#33513f); border:6px solid #a5834f; border-radius:2px;
+    opacity:.5; box-shadow:0 4px 14px rgba(0,0,0,.14);
+}
+
+/* 让头部、导航、页脚压在场景之上 */
+.top,.head,.nav,.crumb,.foot{ position:relative; z-index:5; }
+/* 正文列：z-index 2 —— **必须低于 .duo**，否则并排的两个人会被
+   正文表格和卡片压在身上（她们是这一页的主角，不是配图）。
+   .duo 是 40，.cont 里的东西一律不许越过它。 */
+.wrap{ position:relative; z-index:2; }
+
+/* 正文卡片留一点透明，背景的过渡才看得出来 —— 但正文区要够实，读得清 */
+.cont{ background:rgba(255,255,255,.95); }
+.snav,.box{ background:rgba(255,255,255,.97); }
+
+/* ==================================================================
+   标题 / 正文
+   ================================================================== */
+.chd{ padding:22px 24px 0; display:flex; align-items:baseline; gap:12px; }
+.chd h2{ margin:0; font-size:22px; font-weight:700; color:var(--blue-d); letter-spacing:2px; }
+.chd .cut{ font-size:12px; font-weight:700; letter-spacing:1px; color:#fff; background:var(--red);
+    padding:3px 9px; border-radius:3px; }
+.cmeta{ padding:6px 24px 0; font-size:12.5px; color:var(--tx3); }
+.cmeta b{ color:var(--tx2); font-weight:normal; }
+.cont .pp{ margin:14px 0; font-size:14.5px; line-height:2.15; color:var(--tx); text-indent:2em; }
+.cont .pp.ni{ text-indent:0; }
+
+.tbox{ margin:18px 0; border:1px solid var(--bd); }
+.tbox h4{ margin:0; padding:9px 14px; font-size:14.5px; font-weight:700; color:var(--blue-d);
+    background:var(--blue-w); border-bottom:1px solid var(--bd); letter-spacing:1px; }
+.tbox table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+.tbox th, .tbox td{ padding:8px 14px; text-align:left; border-bottom:1px solid var(--line); }
+.tbox th{ font-weight:normal; color:var(--tx2); background:#fafbfc; }
+.tbox tr:last-child td{ border-bottom:0; }
+.tbox td.mid{ text-align:center; color:var(--tx2); }
+.tips{ margin:14px 0; padding:12px 16px 12px 30px; font-size:13.5px; line-height:2.1;
+    color:var(--tx2); background:#fafbfc; border:1px solid var(--line); }
+.tips li{ margin:3px 0; }
+
+/* ==================================================================
+   节拍点 + 两侧的小卡（把这一页撑成真像回事的教室网页）
+   ================================================================== */
+.scene{ margin:18px 0 22px; padding:14px 0 4px; border-top:1px dashed var(--line); }
+.scene .pin{ display:inline-block; font-size:11.5px; letter-spacing:3px; color:var(--tx3);
+    border:1px solid var(--line); border-radius:2px; padding:3px 10px; margin-bottom:2px;
+    background:#fafbfc; }
+.beat{ display:grid; grid-template-columns:1fr 46px 1fr; align-items:center;
+    height:22vh; min-height:152px; padding:5px 24px; }
+.beat .dot{ display:flex; align-items:center; justify-content:center; }
+.beat .dot::after{ content:""; display:block; width:5px; height:5px; border-radius:50%;
+    background:#dde3ea; transition:background .4s ease, box-shadow .4s ease, width .4s ease, height .4s ease; }
+.beat.done .dot::after{ background:#c6d0dc; }
+.beat.cur .dot::after{ width:11px; height:11px; background:var(--blue-l);
+    box-shadow:0 0 0 4px rgba(47,111,189,.13); }
+
+.ccard{ display:flex; gap:10px; padding:9px 11px; border:1px solid var(--line); border-radius:8px;
+    background:#fdfdfe; overflow:hidden; transition:border-color .4s ease, background .4s ease; }
+.ccard .pic{ flex:0 0 auto; width:74px; height:62px; display:flex; align-items:center;
+    justify-content:center; background:#f4f7fa; border:1px solid var(--line); border-radius:5px; }
+.ccard .pic svg{ display:block; width:100%; height:100%; }
+.ccard .info{ min-width:0; }
+.ccard .nm{ font-size:13.5px; font-weight:700; color:var(--tx); line-height:1.5; }
+.ccard .sub{ font-size:11.5px; color:var(--tx3); margin:1px 0 3px; }
+.ccard .sub b{ color:var(--red); font-weight:700; }
+.ccard .ds{ font-size:12px; line-height:1.75; color:var(--tx2); }
+.ccard.rt{ flex-direction:row-reverse; }
+.ccard.rt .info{ text-align:right; }
+.beat.cur .ccard{ border-color:#c9dcf0; background:#fbfdff; }
+@media (max-width:1230px){
+    .beat{ padding:5px 10px; grid-template-columns:1fr 34px 1fr; }
+    .ccard .ds{ display:none; }
+    .ccard .pic{ width:56px; height:48px; }
+}
+
+/* ==================================================================
+   并排走的两个人 + 头顶的气泡
+   ================================================================== */
+/* bottom 别贴死 0：视口最矮的时候立绘会整根站在屏幕外，看不见。
+   抬 26px，脚正好压在正文下沿那一行上；再高就压到表格了。 */
+.duo{ position:fixed; left:50%; bottom:26px; z-index:40; display:flex; align-items:flex-end;
+    gap:76px; transform:translateX(-50%); pointer-events:none; }
+/* 没轮到说话的人只是**退到后面**，不是消失 —— 0.24 在白底上几乎看不见了，
+   看着像被正文压住。给到 0.42：还看得出是个人，也明显是"没在说话"。
+   说话的那位 .on 仍是 1，不受影响。 */
+.who{ width:134px; display:flex; flex-direction:column; align-items:center;
+    opacity:.42; filter:grayscale(.6);
+    transition:opacity .55s ease, filter .55s ease; }
+.who.on{ opacity:1; filter:none; }
+/* 立绘底下垫一层极淡的白色，像站在正文前面而不是溶进正文里 */
+.who .fg{ position:relative; width:100%; height:228px; }
+.who .fg::before{
+    content:""; position:absolute; left:-14%; right:-14%; bottom:-6px; top:18px;
+    background:radial-gradient(closest-side, rgba(255,255,255,.62), rgba(255,255,255,0) 78%);
+    pointer-events:none;
+}
+/* 坐姿那张矮一些（viewBox 260 高 vs 340），底部留白会露出来 → 收到画布内 */
+.p-sit{ bottom:6px; }
+.who .fg .pose{ position:absolute; left:0; right:0; bottom:0; transition:opacity .6s ease; }
+.who .fg .pose svg{ display:block; width:100%; height:auto; }
+.p-sit{ opacity:0; }
+body.stage-room .p-walk{ opacity:0; }
+body.stage-room .p-sit{ opacity:1; }
+
+/* 走路：整个人轻轻一顿一顿（两人错开半步，不像一个人） */
+body:not(.stage-room) .who .fg{ animation:bob 1.12s ease-in-out infinite; }
+body:not(.stage-room) #wL .fg{ animation-delay:-.16s; }
+@keyframes bob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-4.5px); } }
+/* 坐姿：只剩呼吸 */
+body.stage-room .who .fg{ animation:breathe 3.8s ease-in-out infinite; }
+@keyframes breathe{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-1.6px); } }
+
+/* 拐杖：顿地。绕「手扶着的地方」转，不是绕自己的中心 */
+.crutch{ transform-box:view-box; transform-origin:120px 200px; animation:tap 1.12s ease-in-out infinite; }
+@keyframes tap{ 0%,100%{ transform:rotate(-3.6deg); } 50%{ transform:rotate(3.6deg); } }
+body.stage-room .crutch{ animation:none; }
+
+/* 气泡：立头顶，错开高度，两边不会撞在一起 */
+.bub{ position:relative; width:206px; max-height:25vh; overflow:hidden;
+    margin:0 0 10px; padding:10px 14px; border-radius:13px; background:#fff;
+    border:1px solid var(--bd); box-shadow:0 3px 12px rgba(20,50,90,.10);
+    font-size:14px; line-height:1.9; color:var(--tx);
+    opacity:0; transform:translateY(8px) scale(.96);
+    transition:opacity .36s ease, transform .36s ease; }
+.bub.on{ opacity:1; transform:translateY(0) scale(1); }
+#wM .bub{ border-left:3px solid #c76a92; margin-bottom:62px; }   /* 高一点 */
+#wL .bub{ border-right:3px solid #c08552; margin-bottom:14px; }  /* 低一点 */
+.bub::after{ content:""; position:absolute; bottom:-7px; left:50%; margin-left:-6px;
+    width:11px; height:11px; background:#fff; border:1px solid var(--bd);
+    transform:rotate(45deg); }
+#wM .bub::after{ border-top:0; border-left:0; }
+#wL .bub::after{ border-top:0; border-right:0; }
+
+/* ==================================================================
+   提词器：旁白 / 别人的插话。
+   位置：画面**正中**。往上会压到校名和正文开头，往下会撞上并排走的
+   两个人 —— 47% 是两头都躲得开的地方。半透明、不吃指针事件，
+   不遮正文，也不挡点广告。
+   ================================================================== */
+#tele{ position:fixed; left:50%; top:47%; z-index:60; width:min(560px, 74vw);
+    padding:13px 26px; text-align:center; pointer-events:none;
+    background:rgba(255,255,255,.90); border:1px solid var(--bd); border-radius:12px;
+    box-shadow:0 8px 26px rgba(20,50,90,.16);
+    font-family:var(--song); font-size:16px; font-weight:700;
+    line-height:1.95; letter-spacing:.6px; color:var(--tx);
+    opacity:0; transform:translate(-50%,-10px) scale(.96);
+    transition:opacity .4s ease, transform .4s ease; }
+#tele.on{ opacity:1; transform:translate(-50%,0) scale(1); }
+
+/* 重点提醒：台词里用 **…** 包起来的那一截。
+   加粗 + 深红 + 像荧光笔那样在字底划一道，再加一点极轻的晕开。
+   不做跳动/放大 —— 那样太闹，读的时候反而被抢走注意力。
+   box-decoration-break:clone 让**折行后每一行都画完整**，
+   否则「经常住院」被拆到两行时，黄色底色会在断口处断开。 */
+.hl{ font-weight:700; color:#a8341f; padding:0 1px;
+    -webkit-box-decoration-break:clone; box-decoration-break:clone;
+    background:linear-gradient(transparent 60%, rgba(238,190,60,.30) 60%);
+    text-shadow:0 0 7px rgba(200,60,30,.18); }
+
+/* ==================================================================
+   右侧那枚小广告：不属于学校官网，第三方塞进来的
+   ================================================================== */
+#adbox{ position:fixed; right:-300px; bottom:96px; z-index:70; width:246px;
+    border:1px solid #e0b070; border-radius:4px; background:#fffdf6;
+    box-shadow:0 8px 30px rgba(90,60,10,.22);
+    opacity:0; transition:right .7s cubic-bezier(.22,.9,.3,1), opacity .5s ease; }
+#adbox.on{ right:18px; opacity:1; }
+#adbox .hd{ display:flex; align-items:center; gap:6px; padding:6px 10px;
+    background:linear-gradient(90deg,#e8802a,#f0a03c); color:#fff;
+    font-size:12px; letter-spacing:1px; }
+#adbox .hd b{ font-weight:700; }
+#adbox .hd .tg{ margin-left:auto; font-size:10.5px; opacity:.85; letter-spacing:0; }
+#adbox .bd{ padding:11px 12px 12px; cursor:pointer; }
+#adbox .pic{ height:88px; border:1px solid #ecdcbe; border-radius:3px; background:#fff;
+    display:flex; align-items:center; justify-content:center; overflow:hidden; }
+#adbox .pic svg{ display:block; width:100%; height:100%; }
+#adbox .tt{ margin:9px 0 4px; font-size:14px; font-weight:700; color:#b8501a; line-height:1.5; }
+#adbox .ds{ font-size:12px; line-height:1.8; color:#7a5a32; }
+#adbox .ds em{ font-style:normal; color:#c0271c; font-weight:700; }
+#adbox .btn{ margin-top:10px; display:block; padding:8px 0; text-align:center;
+    font-size:13px; font-weight:700; color:#fff; letter-spacing:1px;
+    background:linear-gradient(90deg,#e0452c,#f07b2a); border-radius:3px; }
+#adbox .note{ padding:0 12px 9px; font-size:10.5px; color:#b0a488; text-align:right; }
+@media (max-width:1230px){
+    #adbox{ width:196px; bottom:14px; }
+    #adbox .pic{ height:64px; }
+    #adbox .ds{ display:none; }
+}
+
+/* ==================================================================
+   第二枚小广告：剧透 / 预言 / 试用
+   ------------------------------------------------------------------
+   跟第一枚完全不同的壳：第一枚是暖橙的正规banner，这一枚是
+   **深色 + 荧光绿 + 倒计时**的"命运网站"样子 —— 它不该看起来
+   像广告，更像像一件专门做给已经看过结局的人用的东西。
+   两枚上下叠放（#adbox 在上、#adbox2 在下），互不遮挡。
+   ================================================================== */
+#adbox2{ position:fixed; right:-300px; bottom:352px; z-index:70; width:246px;
+    border:1px solid #2f6b4a; border-radius:4px; background:#0d1512;
+    box-shadow:0 8px 30px rgba(0,0,0,.5), 0 0 0 1px rgba(90,220,150,.10);
+    opacity:0; transition:right .7s cubic-bezier(.22,.9,.3,1) .22s, opacity .5s ease .22s; }
+#adbox2.on{ right:18px; opacity:1; }
+#adbox2 .hd{ display:flex; align-items:center; gap:6px; padding:6px 10px;
+    background:linear-gradient(90deg,#12472e,#1d6b45); color:#b9f5d4;
+    font-size:12px; letter-spacing:1px; }
+#adbox2 .hd b{ font-weight:700; color:#d8ffe9; }
+#adbox2 .hd .tg{ margin-left:auto; font-size:10.5px; opacity:.7; letter-spacing:0; }
+#adbox2 .bd{ padding:11px 12px 12px; cursor:pointer; }
+#adbox2 .kicker{ font:700 10.5px/1 var(--sans); letter-spacing:3px; color:#ff5a7a; }
+#adbox2 .tt{ margin:7px 0 5px; font-size:15px; font-weight:700; color:#eafff2; line-height:1.55;
+    text-shadow:0 0 12px rgba(120,255,190,.35); }
+#adbox2 .ds{ font-size:12px; line-height:1.8; color:#7fa894; }
+#adbox2 .ds em{ font-style:normal; color:#ffd36e; font-weight:700; }
+#adbox2 .qs{ margin-top:9px; padding:7px 9px; border:1px dashed rgba(120,220,170,.28);
+    border-radius:3px; background:rgba(20,50,38,.5);
+    font-size:11.5px; line-height:1.85; color:#9ad4b6; }
+#adbox2 .qs b{ color:#eafff2; font-weight:700; }
+#adbox2 .btn{ margin-top:10px; display:block; padding:8px 0; text-align:center;
+    font-size:13px; font-weight:700; color:#06120c; letter-spacing:1px;
+    background:linear-gradient(90deg,#3ddc84,#9df0b4); border-radius:3px; }
+#adbox2 .note{ padding:0 12px 9px; font-size:10.5px; color:#4e6b5c; text-align:right; }
+@media (max-width:1230px){
+    #adbox2{ width:196px; bottom:200px; }
+    #adbox2 .ds, #adbox2 .qs{ display:none; }
+}
+
+/* ==================================================================
+   密码门：两问
+   ------------------------------------------------------------------
+   ★ 它不是"输入正确 → 放行"，是**两问都要答对**才跳 CUT6。
+     答错不给进度、不给提示对错，只说"不对"—— 逼玩家自己去回想。
+   ★ 走的是游戏内自带的模态框（不是浏览器 prompt）——
+     和主菜单那套剧情对白框同一语言。
+   ================================================================== */
+#gate{ position:fixed; inset:0; z-index:200; display:none;
+    align-items:center; justify-content:center; padding:24px; }
+#gate.on{ display:flex; }
+#gate .veil{ position:absolute; inset:0; background:rgba(3,8,6,.86);
+    box-shadow:inset 0 0 120px rgba(0,0,0,.9); }
+#gate .win{ position:relative; z-index:1; width:min(520px, 92vw);
+    border:1px solid #2f6b4a; border-radius:5px; background:#0b1310;
+    box-shadow:0 24px 70px rgba(0,0,0,.7), 0 0 0 1px rgba(90,220,150,.08);
+    overflow:hidden; }
+#gate .win > h3{ margin:0; padding:14px 18px; font-size:15px; font-weight:700;
+    letter-spacing:2px; color:#d8ffe9;
+    background:linear-gradient(90deg,#12472e,#1d6b45); }
+#gate .win > h3 i{ font-style:normal; float:right; font-size:11.5px;
+    letter-spacing:0; color:#7fa894; font-weight:400; }
+#gate .body{ padding:20px 18px 18px; }
+#gate .steps{ display:flex; gap:6px; margin-bottom:16px; }
+#gate .steps u{ flex:1; height:3px; border-radius:2px; background:#1d3a2d; text-decoration:none; }
+#gate .steps u.on{ background:linear-gradient(90deg,#3ddc84,#9df0b4); }
+#gate .q{ font-size:14.5px; font-weight:700; line-height:1.9; color:#eafff2;
+    letter-spacing:.5px; margin:0 0 4px; }
+#gate .hintline{ font-size:11.5px; color:#6d8a7c; line-height:1.8; margin:0 0 12px; }
+#gate .inp{ width:100%; padding:11px 13px; font:15px/1.5 var(--sans);
+    color:#eafff2; background:#08110d; border:1px solid #2c5c45; border-radius:3px;
+    outline:none; transition:border-color .2s ease, box-shadow .2s ease; }
+#gate .inp:focus{ border-color:#3ddc84; box-shadow:0 0 0 3px rgba(61,220,132,.13); }
+#gate .inp::placeholder{ color:#4e6b5c; }
+#gate .msg{ min-height:20px; margin:10px 0 0; font-size:12.5px; line-height:1.7; }
+#gate .msg.bad{ color:#ff7a8c; }
+#gate .msg.good{ color:#7ef0ac; }
+#gate .acts{ display:flex; gap:10px; margin-top:14px; }
+#gate .acts button{ flex:1; padding:11px 0; font:14px/1 var(--sans); font-weight:700;
+    letter-spacing:2px; border:1px solid #2f6b4a; border-radius:3px; cursor:pointer;
+    background:transparent; color:#9ad4b6; transition:background .2s ease, color .2s ease; }
+#gate .acts button.go{ background:linear-gradient(90deg,#3ddc84,#9df0b4);
+    border-color:transparent; color:#06120c; }
+#gate .acts button:hover{ background:rgba(61,220,132,.14); color:#eafff2; }
+#gate .acts button.go:hover{ filter:brightness(1.08); }
+#gate .acts button[disabled]{ opacity:.4; cursor:default; }
+#gate .acts button[disabled]:hover{ background:transparent; color:#9ad4b6; }
+
+/* ==================================================================
+   右上角那枚小眼球
+   ================================================================== */
+#seye{ position:fixed; right:22px; top:118px; z-index:80;
+    padding:8px 12px 6px; border-radius:3px;
+    background:rgba(8,12,10,.9); box-shadow:0 0 0 1px rgba(120,180,150,.22), 0 6px 26px rgba(0,0,0,.45);
+    opacity:0; transform:translateY(-8px); pointer-events:none; cursor:pointer;
+    transition:opacity .9s ease, transform .9s ease, box-shadow .6s ease; }
+#seye.on{ opacity:1; transform:translateY(0); pointer-events:auto; }
+#seye.hot{ box-shadow:0 0 0 1px rgba(150,220,180,.55), 0 6px 30px rgba(0,60,30,.55); }
+#seye:hover{ box-shadow:0 0 0 1px rgba(150,220,180,.4), 0 6px 30px rgba(0,60,30,.5); }
+#seye .eyeb{ margin:0; font:15px/1.02 "Sarasa Mono SC","Sarasa Term SC","Noto Sans Mono CJK SC",Consolas,"Courier New",monospace;
+    color:#cfe6d6; text-shadow:0 0 7px rgba(160,220,180,.55), 0 0 16px rgba(120,200,150,.28);
+    white-space:pre; user-select:none; }
+#eye-tip{ position:absolute; right:0; top:100%; margin-top:8px; white-space:nowrap; pointer-events:none; }
+#eye-tip .tl{ position:absolute; right:0; top:0; white-space:nowrap; transition:transform .6s ease; }
+#eye-tip .tl.in{ transition:transform .2s ease; }
+#eye-tip .tl.gone{ display:none; }
+#eye-tip .tl span{ display:block; padding:6px 12px; font-size:12px; line-height:1.75;
+    color:#dff0e4; background:rgba(8,12,10,.94); border-left:2px solid #6fbf8f;
+    box-shadow:0 4px 16px rgba(0,0,0,.4);
+    opacity:0; transform:translateX(10px);
+    transition:opacity .75s ease, transform .75s ease; }
+#eye-tip .tl.on span{ opacity:1; transform:translateX(0); }
+#eye-tip .tl.in span{ transition:opacity .2s ease, transform .2s ease; }
+@media (max-width:1230px){
+    #seye{ right:6px; top:76px; padding:6px 9px 4px; }
+    #seye .eyeb{ font-size:12px; }
+    #eye-tip .tl{ white-space:normal; width:176px; }
+    #eye-tip .tl span{ font-size:11px; }
+    .duo{ gap:40px; bottom:14px; }
+    .who{ width:96px; }
+    .who .fg{ height:164px; }
+    .bub{ width:160px; font-size:12.5px; }
+    #wM .bub{ margin-bottom:44px; }
+}
+
+/* 让最后一句也能滚到阅读区 —— duo 占着下方，尾白要小一点 */
+.tailpad{ height:46vh; }
+#stops li a .no{ font-size:11px; color:#b9bec6; margin-right:6px; }
+#stops li a.on{ color:var(--blue-l); font-weight:700; border-left-color:var(--blue-l); }
+</style>
+</head>
+<body data-page="class" data-nav="教育教学">
+
+<!-- 背景舞台：路 → 走廊 → 教室 -->
+<div id="bgstage">
+    <div class="bg bg-road on"></div>
+    <div class="bg bg-cor"></div>
+    <div class="bg bg-room"></div>
+</div>
+
+<div class="top"><div class="wrap">
+    <div class="l" id="today">—</div>
+    <div class="r">
+        <a href="#">设为首页</a><span class="sep">|</span><a href="#">加入收藏</a><span class="sep">|</span>
+        <a href="contact.html">联系我们</a><span class="sep">|</span><a href="old.html">旧版入口</a>
+    </div>
+</div></div>
+
+<div class="head"><div class="wrap">
+    <a href="index.html" class="logo" style="text-decoration:none"><b>一中</b><i>SINCE 1953</i></a>
+    <div class="name">
+        <h1><a href="index.html">客丽市第一中学</a></h1>
+        <div class="en">KELI NO.1 MIDDLE SCHOOL</div>
+        <div class="mot">守常　知止　见微　笃行</div>
+    </div>
+    <div class="right">
+        <div class="tel">新闻热线　<b>0𓂀73-8824 6130</b><br>
+            校长信箱　<a href="sys.html?s=%E6%A0%A1%E9%95%BF%E4%BF%A1%E7%AE%B1">xzb@klyz.example</a></div>
+        <div class="search"><input id="q" type="text" placeholder="站内搜索…"><button id="qs">搜索</button></div>
+    </div>
+</div></div>
+
+<div class="nav"><div class="wrap">
+    <a href="index.html">首页</a><a href="about.html">学校概况</a><a href="news.html">新闻中心</a>
+    <a href="notice.html">通知公告</a><a href="org.html">管理机构</a>
+    <a href="sys.html?s=%E6%95%99%E8%82%B2%E6%95%99%E5%AD%A6">教育教学</a>
+    <a href="sys.html?s=%E6%8B%9B%E7%94%9F%E5%85%A5%E5%AD%A6">招生入学</a>
+    <a href="culture.html">校园文化</a><a href="sys.html?s=%E6%A0%A1%E5%8F%8B%E4%B9%8B%E5%AE%B6">校友之家</a>
+    <a href="contact.html">联系我们</a>
+</div></div>
+
+<div class="crumb"><div class="wrap">当前位置：<a href="index.html">首页</a> &gt; <a href="sys.html?s=%E6%95%99%E8%82%B2%E6%95%99%E5%AD%A6">教育教学</a> &gt; <b>高二（3）班教室</b></div></div>
+
+<!-- 并排走的两个人（台词在头顶，不占正文的位置） -->
+<div class="duo" id="duo">
+    <div class="who" id="wM"><div class="bub"></div><div class="fg"></div></div>
+    <div class="who" id="wL"><div class="bub"></div><div class="fg"></div></div>
+</div>
+
+<!-- 提词器：旁白跟着往下滚 -->
+<div id="tele"></div>
+
+<!-- 右侧那枚小广告：到教室之后才滑进来 -->
+<div id="adbox">
+    <div class="hd"><b>广告</b><span class="tg">第三方提供</span></div>
+    <div class="bd" id="ad-go">
+        <div class="pic" id="ad-pic"></div>
+        <div class="tt">十万本小说 全本免费读</div>
+        <div class="ds">无弹窗、不限速，<em>注册即送 200 书币</em>；热门小说每天更新，搜索即可阅读。</div>
+        <div class="btn">立即免费阅读</div>
+    </div>
+    <div class="note">广告</div>
+</div>
+
+<!-- 第二枚小广告：跟第一枚不是一家，风格也故意不一样 -->
+<div id="adbox2">
+    <div class="hd"><b>广告</b><span class="tg">第三方提供</span></div>
+    <div class="bd" id="ad2-go">
+        <div class="kicker">结局揭示</div>
+        <div class="tt">预言大神！快来试试！</div>
+        <div class="ds">你已经看到这里了，说明前两段你都读完了。<em>两问</em>，答对才给你看后面。</div>
+        <div class="qs">
+            Q1　他当时是怎么摔的？<br>
+            Q2　只能哭喊的人是谁？
+        </div>
+        <div class="btn">输入密码解锁</div>
+    </div>
+    <div class="note">广告</div>
+</div>
+
+<!-- 密码门：两问都答对才跳 CUT6 -->
+<div id="gate" role="dialog" aria-modal="true">
+    <div class="veil"></div>
+    <div class="win">
+        <h3>结局揭示 · 预言<i>两问</i></h3>
+        <div class="body">
+            <div class="steps"><u id="gs1"></u><u id="gs2"></u></div>
+            <p class="q" id="gq">他当时是怎么摔的？</p>
+            <p class="hintline" id="gh">照你读到的那句原话填。</p>
+            <input class="inp" id="gi" type="text" autocomplete="off" spellcheck="false" placeholder="在这里输入…">
+            <p class="msg" id="gm"></p>
+            <div class="acts">
+                <button type="button" id="gcancel">不看了</button>
+                <button type="button" id="gok" class="go" disabled>确定</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 右上角那枚小眼球：不属于这个官网 -->
+<div id="seye" aria-hidden="true" title="……">
+    <pre class="eyeb"></pre>
+    <div id="eye-tip"></div>
+</div>
+
+<div class="wrap"><div class="layout">
+
+    <div class="side">
+        <div class="snav">
+            <h3>本页位置</h3>
+            <ul id="stops"></ul>
+        </div>
+        <div class="snav">
+            <h3>快速通道</h3>
+            <ul>
+                <li><a href="canteen.html">学生食堂</a></li>
+                <li><a href="lab.html">实验楼 · 楼层与功能用房</a></li>
+                <li><a href="lib.html">图书馆书目检索</a></li>
+                <li><a href="notice.html">通知公告</a></li>
+                <li><a href="org.html">管理机构</a></li>
+                <li><a href="sys.html?s=%E6%95%99%E5%8A%A1%E7%AE%A1%E7%90%86%E7%B3%BB%E7%BB%9F">教务管理系统</a></li>
+            </ul>
+        </div>
+        <div class="box"><h3>联系我们</h3><div class="c" style="font-size:12.5px;color:#666;line-height:1.9">
+            班主任办公室：教学楼二层东侧<br>
+            教务处：0<span class="eye">𓂀</span>73-8824 6132<br>
+            图书角借阅：课间或午休时段开放</div></div>
+    </div>
+
+    <div class="cont">
+        <div class="chd">
+            <h2>高二（3）班教室</h2>
+            <span class="cut">CUT3</span>
+        </div>
+        <div class="cmeta">教务处　|　更新时间：—　|　<b>往下滚动浏览本页</b></div>
+
+        <p class="pp">高二年级共设平行班六个，本班为高二（3）班，教室位于教学楼二层东侧第二间。教室按标准班额配备课桌椅 46 套（另备机动椅 4 张），后排靠窗两套为固定座位，视野良好。</p>
+        <p class="pp">教室后墙设图书角，图书由班级图书角与学校图书馆联合提供，每学期末统一清点并更换一批；午休时段可在本班自习，亦可到图书馆三层文学区阅览。</p>
+
+        <!-- 一、回教学楼的路上 -->
+        <div class="scene" id="scene-0" data-stop="0"></div>
+
+        <div class="tbox">
+            <h4>秋季作息（节次）</h4>
+            <table>
+                <tr><th>节次</th><th>时间</th><th>上午</th><th>下午</th></tr>
+                <tr><td class="mid">第 1 节</td><td>08:00 – 08:45</td><td>语文 / 数学</td><td>数学 / 语文</td></tr>
+                <tr><td class="mid">第 2 节</td><td>08:55 – 09:40</td><td>数学 / 英语</td><td>英语 / 物理</td></tr>
+                <tr><td class="mid">第 3 节</td><td>10:00 – 10:45</td><td>英语 / 物理</td><td>物理 / 语文</td></tr>
+                <tr><td class="mid">第 4 节</td><td>10:55 – 11:40</td><td>物理 / 化学</td><td>化学 / 生物</td></tr>
+                <tr><td class="mid">午 休</td><td>11:40 – 14:00</td><td colspan="2">午餐、午休；12:20 – 12:50 校广播站播音</td></tr>
+                <tr><td class="mid">第 5 节</td><td>14:10 – 14:55</td><td>语文 / 地理</td><td>生物 / 历史</td></tr>
+                <tr><td class="mid">第 6 节</td><td>15:05 – 15:50</td><td>地理 / 生物</td><td>历史 / 体育</td></tr>
+            </table>
+        </div>
+
+        <p class="pp">午休期间教学楼一层至三层保持安静管理，广播站播音期间走廊内不得聚集喧哗。自习时段的教室使用由班主任与值班教师共同管理。</p>
+
+        <!-- 二、教学楼 -->
+        <div class="scene" id="scene-1" data-stop="1"></div>
+
+        <div class="tbox">
+            <h4>教室座位与设施</h4>
+            <table>
+                <tr><th>位置</th><th>数量</th><th>说明</th></tr>
+                <tr><td>前排</td><td class="mid">6 套</td><td>距讲台 1.2 m – 2.4 m；靠讲台两套为课代表座位</td></tr>
+                <tr><td>中间</td><td class="mid">28 套</td><td>分四组，每组七套，组间留过道 0.7 m</td></tr>
+                <tr><td>后排</td><td class="mid">12 套</td><td>其中靠窗两套为固定座位，视野良好</td></tr>
+                <tr><td>机动椅</td><td class="mid">4 张</td><td>存放于教室后门旁，听课时临时加座</td></tr>
+            </table>
+        </div>
+
+        <p class="pp">教室内设多媒体讲台一套（含投影、实物展台），后墙设软木告示栏两块，黑板两侧保留读书角标语位。教室后门通往走廊，午休时保持畅通，请勿在门口堆放物品。</p>
+
+        <!-- 三、教室 -->
+        <div class="scene" id="scene-2" data-stop="2"></div>
+
+        <p class="pp">图书角现有图书 120 余册，图书由学生自愿捐赠与班主任统一登记，按班级编号存放于后墙左侧书架。借阅请登记书名与借阅人姓名，归还时间不限，期末前归还即可。</p>
+        <p class="pp ni">本班图书角不提供电子阅读设备；如需查阅馆藏电子资源，请前往学校图书馆三层。</p>
+
+        <div class="tbox">
+            <h4>图书角借阅须知</h4>
+            <ol class="tips">
+                <li>借阅请在《图书角借阅登记本》上登记，注明书名与姓名，不代借、不涂划。</li>
+                <li>破损、缺页请及时报班主任，由班主任与图书馆联系处理；涂划、污损严重的按学校规定处理。</li>
+                <li>每人同时借阅不超过 2 册，期末考试前一周集中归还。</li>
+                <li>捐赠图书须经班主任登记，扉页可写捐赠人姓名，不写宣传内容。</li>
+                <li>遗失图书按原价赔偿；封面、书脊请尽量保持完好。</li>
+            </ol>
+        </div>
+
+        <p class="pp">教室后窗正对校内林荫道，午后阳光自西侧射入，通风由前后两扇窗对流完成。夏季由总务处统一检查窗框与纱窗，冬季遇大风天气由值班教师负责关闭，防止玻璃破损。</p>
+
+        <p class="pp ni" style="color:var(--tx3);font-size:13px">注：本页所列作息、座位与设施如有调整，以教务处与班主任通知为准。</p>
+    </div>
+
+</div></div>
+
+<div class="tailpad"></div>
+
+<div class="foot"><div class="wrap">
+    <b>客丽市第一中学</b>　版权所有　|　地址：客丽市西城区槐荫路 7 号　|　邮编：5𓂀1000　|　电话：0𓂀73-8824 6130<br>
+    <span class="b">客ICP备 00000000 号-1　|　本站今日访问量：000123　|　建议使用 1024×768 及以上分辨率浏览</span><br>
+    <span class="b"><a href="contact.html">联系我们</a>　|　<a href="old.html">旧版入口</a>　|　<a href="sys.html?s=%E6%A0%A1%E9%95%BF%E4%BF%A1%E7%AE%B1">校长信箱</a>　|　<a href="search.html">站内搜索</a></span>
+</div></div>
+
+<script>
+/* ==================================================================
+   CUT3 · 剧本
+   取材：F:\网页游戏\幂偌0.2\原文.txt 第 57~75 段
+   sp 四种：'幂偌'（左，气泡） / '玻琳秋'（右，气泡） /
+            '旁白'（走上方提词器）。
+   stage 决定这一段时背景停在哪一层：road / cor / room。
+   改台词动 STOPS；加正文直接写 HTML 即可。
+   ================================================================== */
+var STOPS = [
+    { name:'回教学楼的路上', stage:'road', lines:[
+        { sp:'旁白',   t:'漫步在凉风里，漫步在树荫下。' },
+        { sp:'旁白',   t:'没什么人，因为大家已经午休了。' },
+        { sp:'玻琳秋', t:'「欸？——你也不用住校啊？——」她拄着一根拐杖，手里还啃着那卷肉饼。' },
+        { sp:'旁白',   t:'另一根拐杖在幂偌手里，替她拿着。' },
+        { sp:'幂偌',   t:'捧着饼，看看她：「我稍微有点儿病，哈哈……得定期检查。」' },
+        { sp:'玻琳秋', t:'「啊？……要住院吗？」她很意外，嘴里的饼忘了嚼。' },
+        { sp:'幂偌',   t:'「有时候会，不过还行。」她也啃了一口肉饼。' },
+        { sp:'玻琳秋', t:'「住院真**烦死个人了……」她咀嚼着肉饼，像个花栗鼠。' },
+        { sp:'幂偌',   t:'「哈哈，住习惯了还好。」她用拇指顺顺挂在嘴边的发丝。' },
+        { sp:'玻琳秋', t:'「那得住多少遍啊……还能住习惯的？……」她这话让琳秋都有点肃然起敬。' },
+        { sp:'旁白',   t:'「**我小的时候生了点病，身子不是很结实……就……经常住院。**」说得含含糊糊。' },
+        { sp:'玻琳秋', t:'「那也太难受了……」她光是听着都觉得难受。' },
+        { sp:'旁白',   t:'拐杖在柏油路上一下、一下地点着，和她的步子对得上。' }
+    ]},
+    { name:'教学楼', stage:'cor', lines:[
+        { sp:'旁白',   t:'抬头，看了看。' },
+        { sp:'旁白',   t:'到教学楼了。午休的高二（3）班没有人。' },
+        { sp:'玻琳秋', t:'「你的教室在几楼？」' },
+        { sp:'幂偌',   t:'「……三层。我先把你送上来。」' }
+    ]},
+    { name:'高二（3）班', stage:'room', lines:[
+        { sp:'旁白',   t:'教室之中，除了她们两个，再无别人。' },
+        { sp:'旁白',   t:'玻琳秋的座位靠窗，正在看书；幂偌坐在她前桌的座位上，看看她，看看她的书。' },
+        { sp:'幂偌',   t:'「这是什么书？」' },
+        { sp:'玻琳秋', t:'「嗯？」她抬起头。' },
+        { sp:'旁白',   t:'仔细看看的话，她安静的时候还是蛮可爱的：棕黑色的短发、小圆猫脸。' },
+        { sp:'玻琳秋', t:'「呃……轻小说？大概。」她抬起书给她看，书名是《华灯初上》。' },
+        { sp:'玻琳秋', t:'「讲了一个男生遇到了一个女生……然后他俩谈恋爱……差不多？……我才刚看到这儿。」' },
+        { sp:'幂偌',   t:'「哦！——这本啊……我之前看过。」她恍然大悟，好像马上就要开始滔滔不绝。' },
+        { sp:'玻琳秋', t:'「别跟我剧透。」她指着幂偌。' },
+        { sp:'幂偌',   t:'「哈哈哈……」她笑了笑。' },
+        { sp:'旁白',   t:'她们又有一句没一句地瞎聊，又笑又闹，看起来快活。' },
+        { sp:'幂偌',   t:'「我回我们班啦。」' },
+        { sp:'旁白',   t:'嬉笑打闹没有持续太久。她在门口向琳秋挥手作别。' },
+        { sp:'旁白',   t:'琳秋坐在座位上，也向她挥手作别，而后继续看书。' },
+        { sp:'旁白',   t:'硕大的教室，只有她一个人。' },
+        { sp:'旁白',   t:'只有她，和她的书。' },
+        { sp:'旁白',   t:'翻页吧。' }
+    ]}
+];
+
+/* ==================================================================
+   立绘：走姿 / 坐姿两套。
+   幂偌：黑色四六分及肩长发；玻琳秋：框脸短发、棕黑色，配拐杖。
+   不留嘴：整张脸只剩两个圆点眼睛，跟食堂页那套一个路子。
+   ================================================================== */
+function headSVG(isMira){
+    var st = '#48525e', sw = 1.5;
+    var skin = isMira ? '#f0dcc4' : '#e9d9c7';
+    var hair = isMira ? '#2c2622' : '#3a2f2a';
+    var hairPath = isMira
+        ? 'M46 110 C44 42 156 42 154 110 L158 176 C158 198 140 206 140 206 L132 206 L132 150 C132 116 68 116 68 150 L68 206 L60 206 C60 206 42 198 42 176 Z'
+        : 'M48 100 C48 38 152 38 152 100 L154 158 C154 188 100 196 100 196 C100 196 46 188 46 158 Z';
+    return ''
+    +   '<path d="'+hairPath+'" fill="'+hair+'" stroke="'+st+'" stroke-width="'+sw+'"/>'
+    +   '<circle cx="100" cy="108" r="42" fill="'+skin+'" stroke="'+st+'" stroke-width="'+sw+'"/>'
+    +   '<circle cx="86" cy="108" r="4.5" fill="#23201c"/>'
+    +   '<circle cx="114" cy="108" r="4.5" fill="#23201c"/>';
+}
+
+/* 走姿：全身，幂偌多一件半截夹克；玻琳秋带拐杖 */
+function walkSVG(isMira){
+    var st = '#48525e', sw = 1.5;
+    var skin = isMira ? '#f0dcc4' : '#e9d9c7';
+    var cloth = isMira ? '#e6dfd1' : '#6f7d6a';
+    var bodyPath = isMira
+        ? 'M62 188 C70 176 130 176 138 188 L150 314 C122 332 78 332 50 314 Z'
+        : 'M60 188 C70 172 130 172 140 188 L156 326 C122 344 78 344 44 326 Z';
+    var extra = isMira
+        ? '<path d="M58 184 C70 170 130 170 142 184 L150 256 C122 270 78 270 50 256 Z" fill="#b89a72" stroke="'+st+'" stroke-width="'+sw+'"/>'
+        : '';
+    /* 拐杖 —— 画在**身体轮廓外侧**（x≈168）。
+       之前那版放在 x=120，正好落在裙子里面、又被同色 dress 压住，
+       等于画了等于没画。拐杖是这条线的重要道具，必须一眼看得见。
+       腋下拐：上端有弯头搭在腋侧，杆身斜向外，底端橡胶头点地。
+       动画转轴 = 手扶着的那处 (168,196)，所以它会绕手点地，而不是原地平移。 */
+    var CR = '#9a7f52', TIP = '#3f4a55';
+    var crutch = isMira ? '' : ''
+        + '<g class="crutch">'
+        /* 弯头：搭在右肩到腋侧那一段 */
+        +   '<path d="M156 186 C158 178 166 176 171 182" fill="none" stroke="'+CR+'" stroke-width="3.6" stroke-linecap="round"/>'
+        /* 杆身：手扶着的地方 → 往外斜 → 点地 */
+        +   '<path d="M168 196 L176 330" fill="none" stroke="'+CR+'" stroke-width="5.2" stroke-linecap="round"/>'
+        +   '<path d="M162 198 L168 196" stroke="'+st+'" stroke-width="3" stroke-linecap="round"/>'
+        /* 橡胶头 */
+        +   '<path d="M176 328 L176 337" stroke="'+TIP+'" stroke-width="7.4" stroke-linecap="round"/>'
+        + '</g>';
+    /* 幂偌替玻琳秋拿着的那一根，夹在腋下（另一根，别丢了 —— 原文如此） */
+    var carry = isMira
+        ? '<g transform="rotate(13 60 224)">'
+          + '<path d="M60 212 L60 330" fill="none" stroke="'+CR+'" stroke-width="5.2" stroke-linecap="round"/>'
+          + '<path d="M60 328 L60 337" stroke="'+TIP+'" stroke-width="7.4" stroke-linecap="round"/>'
+          + '<path d="M54 210 C56 202 64 200 68 206" fill="none" stroke="'+CR+'" stroke-width="3.4" stroke-linecap="round"/>'
+          + '</g>'
+        : '';
+    return '<svg viewBox="0 0 200 340" xmlns="http://www.w3.org/2000/svg">'
+        + headSVG(isMira)
+        + '<path d="'+bodyPath+'" fill="'+cloth+'" stroke="'+st+'" stroke-width="'+sw+'"/>'
+        + extra + crutch + carry
+        + '</svg>';
+}
+
+/* 坐姿：半身在桌面之上，桌上摊着那本书 */
+function sitSVG(isMira){
+    var st = '#48525e', sw = 1.5;
+    var skin = isMira ? '#f0dcc4' : '#e9d9c7';
+    var cloth = isMira ? '#e6dfd1' : '#6f7d6a';
+    var hair = isMira ? '#2c2622' : '#3a2f2a';
+    var hairPath = isMira
+        ? 'M50 96 C48 40 152 40 150 96 L154 152 C154 170 138 178 138 178 L131 178 L131 132 C131 102 69 102 69 132 L69 178 L62 178 C62 178 46 170 46 152 Z'
+        : 'M52 90 C52 38 148 38 148 90 L150 140 C150 164 100 172 100 172 C100 172 50 164 50 140 Z';
+    /* 拐杖靠在桌边（斜伸到画面上方）。同样要落在身体轮廓外，
+       桌子右缘在 196，所以斜杆从 150 一路伸到 178 才不会插在身上。 */
+    var crutch = isMira ? '' : ''
+        + '<path d="M150 172 L176 58" fill="none" stroke="#9a7f52" stroke-width="5.2" stroke-linecap="round"/>'
+        + '<path d="M170 78 C171 70 178 68 182 73" fill="none" stroke="'+st+'" stroke-width="3.4" stroke-linecap="round"/>'
+        + '<path d="M176 62 L181 49" stroke="#3f4a55" stroke-width="7.4" stroke-linecap="round"/>';
+    return '<svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg">'
+        +   '<path d="'+hairPath+'" fill="'+hair+'" stroke="'+st+'" stroke-width="'+sw+'"/>'
+        +   '<circle cx="100" cy="94" r="36" fill="'+skin+'" stroke="'+st+'" stroke-width="'+sw+'"/>'
+        +   '<circle cx="88" cy="94" r="4" fill="#23201c"/>'
+        +   '<circle cx="112" cy="94" r="4" fill="#23201c"/>'
+        /* 上身 */
+        +   '<path d="M58 176 C66 132 134 132 142 176 L146 186 L54 186 Z" fill="'+cloth+'" stroke="'+st+'" stroke-width="'+sw+'"/>'
+        + crutch
+        /* 桌面 + 前挡板 */
+        +   '<rect x="4" y="180" width="192" height="9" fill="#d9c39c" stroke="'+st+'" stroke-width="'+sw+'"/>'
+        +   '<path d="M4 189 L4 250 L196 250 L196 189" fill="#e8dcc2" stroke="'+st+'" stroke-width="'+sw+'"/>'
+        /* 摊开的那本书 */
+        +   '<path d="M66 178 L100 170 L134 178 L100 187 Z" fill="#fbfbf7" stroke="'+st+'" stroke-width="1.4"/>'
+        +   '<path d="M100 170 L100 187" stroke="'+st+'" stroke-width="1.2"/>'
+        + '</svg>';
+}
+
+var wM = document.getElementById('wM'), wL = document.getElementById('wL');
+var bubM = wM.querySelector('.bub'), bubL = wL.querySelector('.bub');
+var teleEl = document.getElementById('tele');
+[['mira', wM], ['her', wL]].forEach(function(p){
+    p[1].querySelector('.fg').innerHTML =
+        '<div class="pose p-walk">' + walkSVG(p[0] === 'mira') + '</div>' +
+        '<div class="pose p-sit">'  + sitSVG(p[0] === 'mira')  + '</div>';
+});
+
+/* ==================================================================
+   节拍点：正文里一列极淡的小圆点，一颗点 = 一句等着说的话
+   ================================================================== */
+var SIDE = { '幂偌':'L', '玻琳秋':'R' };
+var BEATS = [];
+
+/* 两侧的小卡：把这一页撑成真像回事的教室网页。
+   k = 课桌 / 书 / 窗 / 黑板 / 时钟 / 笔记本，六款线稿轮着用。 */
+var CARDS = [
+    { n:'靠窗固定座位', w:'后排', p:'视野良好', k:'win',   d:'两套，靠东侧窗；夏日午后阳光自西侧射入。' },
+    { n:'图书角书架',   w:'后墙左侧', p:'120 余册', k:'book', d:'班级捐赠与图书馆调拨合并登记，每学期末更换一批。' },
+    { n:'多媒体讲台',   w:'讲台', p:'含展台', k:'board', d:'投影、实物展台一套，故障报教务处，统一维修。' },
+    { n:'机动椅',       w:'后门旁', p:'4 张', k:'desk',  d:'听课时临时加座，用毕归回后门旁，不占用过道。' },
+    { n:'午休自习',     w:'12:20 – 14:00', p:'安静管理', k:'clock', d:'午间播音期间走廊不得聚集喧哗。' },
+    { n:'借阅登记本',   w:'图书角', p:'需登记', k:'note',  d:'登记书名与姓名，每人同时不超过 2 册。' },
+    { n:'课程表',       w:'教务处', p:'秋季版', k:'board', d:'第七节为社团活动，本班本周安排教室自习。' },
+    { n:'前排课代表',   w:'第一组', p:'2 套', k:'desk',  d:'收作业、收发通知。' },
+    { n:'软木告示栏',   w:'后墙两块', p:'张贴', k:'note', d:'通知、比赛海报、读书角标语位。' }
+];
+function iconSVG(k){
+    var s = '#8a97a6', f = '#eef2f6', f2 = '#f6f8fa', h = '#b7c2ce';
+    var w = ' stroke-width="1.6"';
+    var body =
+      (k === 'book')  ? '<path d="M12 24 L40 30 L40 62 L12 56 Z" fill="'+f+'" stroke="'+s+'"'+w+'"/>'
+                      + '<path d="M76 24 L48 30 L48 62 L76 56 Z" fill="'+f2+'" stroke="'+s+'"'+w+'"/>'
+                      + '<path d="M40 30 L48 30 M48 30 L48 62" stroke="'+h+'" stroke-width="1.2"/>'
+                      + '<path d="M18 36 L34 40 M18 44 L34 48" stroke="'+h+'" stroke-width="1.2"/>'
+                      + '<path d="M58 40 L70 37 M58 48 L70 45" stroke="'+h+'" stroke-width="1.2"/>'
+      : (k === 'desk')  ? '<path d="M14 32 L74 32 L70 44 L18 44 Z" fill="'+f+'" stroke="'+s+'"'+w+'/>'
+                      + '<path d="M20 44 L20 62 M64 44 L64 62" stroke="'+s+'"'+w+'/>'
+                      + '<path d="M30 24 L58 24 L54 32 L34 32 Z" fill="'+f2+'" stroke="'+s+'"'+w+'"/>'
+      : (k === 'win')   ? '<rect x="20" y="16" width="48" height="42" fill="'+f2+'" stroke="'+s+'"'+w+'/>'
+                      + '<path d="M44 16 L44 58 M20 37 L68 37" stroke="'+s+'"'+w+'/>'
+                      + '<path d="M24 22 L38 22 L24 34 Z" fill="#fff" stroke="'+h+'" stroke-width="1.1"/>'
+      : (k === 'board') ? '<rect x="10" y="18" width="68" height="34" rx="2" fill="#e8efe9" stroke="'+s+'"'+w+'/>'
+                      + '<path d="M20 30 L56 30 M20 38 L66 38 M20 46 L44 46" stroke="'+h+'" stroke-width="1.4"/>'
+                      + '<path d="M26 60 L62 60" stroke="'+s+'"'+w+'/>'
+      : (k === 'clock') ? '<circle cx="44" cy="40" r="22" fill="'+f2+'" stroke="'+s+'"'+w+'/>'
+                      + '<path d="M44 26 L44 40 L54 47" stroke="'+s+'" stroke-width="2" fill="none" stroke-linecap="round"/>'
+                      + '<path d="M44 14 L44 18 M44 62 L44 66 M18 40 L22 40 M66 40 L70 40" stroke="'+h+'" stroke-width="1.4"/>'
+      : /* note */       '<path d="M22 14 L62 14 L62 66 L22 66 Z" fill="'+f+'" stroke="'+s+'"'+w+'/>'
+                      + '<path d="M30 26 L54 26 M30 36 L54 36 M30 46 L46 46" stroke="'+h+'" stroke-width="1.3"/>'
+                      + '<path d="M62 14 L68 20 L56 34 L52 30 Z" fill="'+f2+'" stroke="'+s+'" stroke-width="1.3"/>';
+    return '<svg viewBox="0 0 88 72" xmlns="http://www.w3.org/2000/svg">' + body + '</svg>';
+}
+function cardBox(c, rt){
+    return '<div class="ccard' + (rt ? ' rt' : '') + '">'
+        +   '<div class="pic">' + iconSVG(c.k) + '</div>'
+        +   '<div class="info">'
+        +     '<div class="nm">' + c.n + '</div>'
+        +     '<div class="sub">' + c.w + '　<b>' + c.p + '</b></div>'
+        +     '<div class="ds">' + c.d + '</div>'
+        +   '</div>'
+        + '</div>';
+}
+var beatNo = 0;
+Array.prototype.forEach.call(document.querySelectorAll('.scene'), function(sec){
+    var si = parseInt(sec.getAttribute('data-stop'), 10);
+    var node = STOPS[si];
+    if (!node) return;
+    var pin = document.createElement('div');
+    pin.className = 'pin';
+    pin.textContent = node.name;
+    sec.appendChild(pin);
+    node.lines.forEach(function(l){
+        var b = document.createElement('div');
+        b.className = 'beat';
+        b.innerHTML = cardBox(CARDS[beatNo % CARDS.length], false)
+                    + '<div class="dot"></div>'
+                    + cardBox(CARDS[(beatNo * 5 + 3) % CARDS.length], true);
+        beatNo++;
+        sec.appendChild(b);
+        BEATS.push({ el:b, si:si, stage:node.stage, side:SIDE[l.sp] || '', t:l.t });
+    });
+});
+
+/* ================= 说某一句 ================= */
+var curIdx = -1, maxSeen = -1, navItems = [];
+
+/* ==================================================================
+   台词里标重点：写 **这样**，渲染时变成 <b class="hl">。
+   台词是纯文本（不带标签），所以重点靠这层标记，而不是往数据里塞 HTML。
+   ================================================================== */
+function hl(s){
+    return String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/\*\*([^*]+)\*\*/g, '<b class="hl">$1</b>');
+}
+
+/* 换句时的「两段式」：先把当前这句送下去，再让下一句从零淡进来。
+   同一个元素反复用时，过渡被打断会从「此刻的透明度」接着走 → 整段等于没发生。
+   所以先关掉 transition 把透明度拖回 0，再开起来淡入。 */
+var POP_OUT = 220;
+function swapIn(el, text){
+    el.style.transition = 'none';
+    el.innerHTML = hl(text);
+    el.classList.remove('on');
+    void el.offsetWidth;
+    el.style.transition = '';
+    el.classList.add('on');
+}
+function pop(el, text){
+    if (el._popT){ clearTimeout(el._popT); el._popT = 0; }
+    el.style.transitionDuration = '';
+    if (!el.classList.contains('on')){ swapIn(el, text); return; }
+    el.style.transitionDuration = POP_OUT + 'ms';
+    el.classList.remove('on');
+    el._popT = setTimeout(function(){
+        el._popT = 0;
+        el.style.transitionDuration = '';
+        swapIn(el, text);
+    }, POP_OUT);
+}
+function hide(el){
+    if (el._popT){ clearTimeout(el._popT); el._popT = 0; }
+    el.style.transitionDuration = '';
+    el.classList.remove('on');
+}
+
+/* 背景：随剧本进入下一段而交叉淡入。road → cor → room */
+var BGS = { road:null, cor:null, room:null };
+(function(){
+    var els = document.querySelectorAll('#bgstage .bg');
+    if (els[0]) BGS.road = els[0];
+    if (els[1]) BGS.cor  = els[1];
+    if (els[2]) BGS.room = els[2];
+})();
+function setStage(stage){
+    if (document.body.classList.contains('stage-' + stage)) return;
+    document.body.className = document.body.className.replace(/\bstage-\w+\b/g, '').trim()
+                          + ' stage-' + stage;
+    Object.keys(BGS).forEach(function(k){
+        if (BGS[k]) BGS[k].classList.toggle('on', k === stage);
+    });
+}
+
+function showBeat(i){
+    if (i === curIdx) return;
+    curIdx = i;
+
+    if (i < 0){
+        hide(bubM); hide(bubL); hide(teleEl);
+        wM.classList.remove('on'); wL.classList.remove('on');
+        BEATS.forEach(function(b){ b.el.classList.remove('cur'); });
+        navItems.forEach(function(a){ a.className = ''; });
+        return;
+    }
+    var b = BEATS[i];
+    setStage(b.stage);
+
+    if (b.side === 'L'){ hide(teleEl); hide(bubL); pop(bubM, b.t); }
+    else if (b.side === 'R'){ hide(teleEl); hide(bubM); pop(bubL, b.t); }
+    else { hide(bubM); hide(bubL); pop(teleEl, b.t); }
+    wM.classList.toggle('on', b.side === 'L');
+    wL.classList.toggle('on', b.side === 'R');
+
+    if (i > maxSeen) maxSeen = i;
+    BEATS.forEach(function(it, k){
+        it.el.classList.toggle('cur', k === i);
+        it.el.classList.toggle('done', k < maxSeen && k !== i);
+    });
+    navItems.forEach(function(a, k){ a.className = (k === b.si) ? 'on' : ''; });
+
+    /* 到教室了（背景切到 room）→ 右侧小广告滑进来，随后右上角那只小眼睛亮起来吐槽。
+       每进页面只来一次，不然来回滚会一遍遍重播。 */
+    if (b.stage === 'room' && window.MP_EYE && !window.MP_EYE.fired) window.MP_EYE.enter();
+}
+
+/* ================= 谁在说话：离阅读线最近的那个节拍点 ================= */
+function updateActive(){
+    var vh  = window.innerHeight;
+    var mid = vh * 0.44;          /* duo 占了下方，阅读线要抬高一截 */
+    var best = -1, bestD = Infinity;
+    for (var i = 0; i < BEATS.length; i++){
+        var r = BEATS[i].el.getBoundingClientRect();
+        if (r.bottom < 0 || r.top > vh) continue;
+        var d = Math.abs(r.top + r.height / 2 - mid);
+        if (d < bestD){ bestD = d; best = i; }
+    }
+    showBeat(best);
+}
+var ticking = false;
+function onScroll(){
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function(){ ticking = false; updateActive(); });
+}
+window.addEventListener('scroll', onScroll, { passive:true });
+window.addEventListener('resize', onScroll);
+
+/* ================= 侧栏目录 ================= */
+(function(){
+    var ul = document.getElementById('stops');
+    STOPS.forEach(function(s, i){
+        var li = document.createElement('li');
+        var a  = document.createElement('a');
+        a.href = '#scene-' + i;
+        a.innerHTML = '<span class="no">' + (i + 1) + '</span>' + s.name;
+        li.appendChild(a);
+        ul.appendChild(li);
+        navItems.push(a);
+    });
+})();
+
+setStage('road');
+updateActive();
+</script>
+
+<script>
+/* ==================================================================
+   右侧那枚小广告
+   ------------------------------------------------------------------
+   它不属于学校官网 —— 是第三方面塞进来的。
+   整块（含缩略图）都能点，点进去是**站外**的小说站。
+   ================================================================== */
+(function(){
+'use strict';
+var ad = document.getElementById('adbox');
+if (!ad) return;
+document.getElementById('ad-pic').innerHTML =
+    '<svg viewBox="0 0 220 88" xmlns="http://www.w3.org/2000/svg">'
+  +   '<rect width="220" height="88" fill="#fff8ea"/>'
+  +   '<path d="M18 62 L18 30 Q18 24 24 26 L60 34 L60 70 L24 62 Z" fill="#e8b978" stroke="#a4703a" stroke-width="1.6"/>'
+  +   '<path d="M98 62 L98 30 Q98 24 92 26 L56 34 L56 70 L92 62 Z" fill="#f6d9a8" stroke="#a4703a" stroke-width="1.6"/>'
+  +   '<path d="M60 34 L98 30" stroke="#a4703a" stroke-width="1.2"/>'
+  /* 一排小书脊，撑出「很多书」的样子 */
+  +   '<g stroke="#a4703a" stroke-width="1.2">'
+  +     '<rect x="126" y="34" width="13" height="32" fill="#e8b978"/>'
+  +     '<rect x="142" y="28" width="13" height="38" fill="#d99a6c"/>'
+  +     '<rect x="158" y="38" width="13" height="28" fill="#f0c48a"/>'
+  +     '<rect x="174" y="30" width="13" height="36" fill="#e8b978"/>'
+  +     '<rect x="190" y="36" width="13" height="30" fill="#d99a6c"/>'
+  +   '</g>'
+  + '</svg>';
+
+function show(){ ad.classList.add('on'); }
+function go(){ location.href = '../novel/index.html'; }
+document.getElementById('ad-go').addEventListener('click', go);
+ad.addEventListener('click', function(e){ if (e.target.closest('.hd')) go(); });
+window.MP_AD = { show:show, go:go };
+})();
+</script>
+
+<script>
+/* ==================================================================
+   第二枚小广告 + 密码门
+   ------------------------------------------------------------------
+   这枚跟第一枚不是一家：第一枚把人引去小说站，这一枚只对**已经读完
+   的人**有用 —— 它一进来就先把两问摆给你看（不藏着），点进去才要输。
+   ★ 为什么是「两问」而不是一道密码：
+     第一问「他当时是怎么摔的」答的是 CUT4 的黑屏卡「头朝地摔的。」，
+     第二问「只能哭喊的人是谁」答的是 CUT5 的终卡「也只能哭喊。」的主语。
+     两问各绑一段，答对才算把这五段串起来了 —— 也正好把玩家推到 CUT6。
+   ★ 答案判定：**去空白 + 去标点 + 忽略大小写**地宽松匹配，
+     但**必须包含**关键词（不要求逐字相同）——
+     「他是头朝地摔的」也算对，骂骂咧咧打一长串也对。
+     判错只说「不对」，不说是哪一问错、也不给正确答案。
+   ★ 门是**游戏内模态框**（#gate），不是浏览器 prompt ——
+     跟主菜单那套剧情对白框同一语言，也就不会被 F12 之外的原生弹窗打断。
+   ================================================================== */
+(function(){
+'use strict';
+var ad2  = document.getElementById('adbox2');
+var gate = document.getElementById('gate');
+if (!ad2 || !gate) return;
+
+var gq   = document.getElementById('gq');
+var gh   = document.getElementById('gh');
+var gi   = document.getElementById('gi');
+var gm   = document.getElementById('gm');
+var gok  = document.getElementById('gok');
+var gbar = [document.getElementById('gs1'), document.getElementById('gs2')];
+
+/* 两问。must = 必须出现的关键词（任意一个命中即算对） */
+var QS = [
+    { q:'他当时是怎么摔的？',
+      hint:'请您亲眼见证',
+      must:['头朝地','朝地','头朝地摔'] },
+    { q:'只能哭喊的人是谁？',
+      hint:'仔细聆听。',
+      must:['玻琳秋','琳秋'] }
+];
+var step = 0, lastBad = '';
+
+function loose(s){
+    /* 只留字母数字汉字，其余全丢 —— 空格、标点、书名号、引号全不算 */
+    return String(s).toLowerCase().replace(/[^0-9a-z一-鿿]/g, '');
+}
+function ok(ans, must){
+    var a = loose(ans);
+    if (!a) return false;
+    for (var i = 0; i < must.length; i++) if (a.indexOf(loose(must[i])) >= 0) return true;
+    return false;
+}
+
+function paint(){
+    gq.textContent  = QS[step].q;
+    gh.textContent  = QS[step].hint;
+    gi.value        = '';
+    gi.placeholder  = step === 0 ? '在这里输入…' : '再答一题…';
+    gok.disabled    = true;
+    gm.textContent  = lastBad;
+    gm.className    = lastBad ? 'msg bad' : 'msg';
+    gbar[0].classList.toggle('on', step >= 1);
+    gbar[1].classList.toggle('on', step >= 2);
+    setTimeout(function(){ try { gi.focus(); } catch (e){} }, 60);
+}
+
+function open(){
+    step = 0; lastBad = '';
+    gate.classList.add('on');
+    document.body.style.overflow = 'hidden';
+    paint();
+}
+function close(){
+    gate.classList.remove('on');
+    document.body.style.overflow = '';
+    gi.blur();
+}
+
+function submit(){
+    var v = gi.value;
+    if (!loose(v)){ gm.textContent = '还没输入。'; gm.className = 'msg bad'; return; }
+    if (!ok(v, QS[step].must)){
+        /* 答错：只说不对。不告诉你是哪一问、也不给正确答案。 */
+        lastBad = '不对。';
+        gm.textContent = lastBad; gm.className = 'msg bad';
+        gi.select();
+        return;
+    }
+    /* 这一问过了 —— 停一下再进下一问（分步，别一锅端跳过去） */
+    gbar[step].classList.add('on');
+    step++;
+    if (step < QS.length){
+        setTimeout(function(){ lastBad = ''; paint(); }, 460);
+        return;
+    }
+    /* 两问都答过 —— 通关 */
+    gm.textContent = '……对了。';
+    gm.className = 'msg good';
+    gok.disabled = true;
+    gi.disabled = true;
+    document.getElementById('gcancel').disabled = true;
+    setTimeout(function(){
+        location.href = '../novel/cut6.html';
+    }, 780);
+}
+
+gi.addEventListener('input', function(){
+    if (!loose(gi.value)){ gok.disabled = true; return; }
+    gok.disabled = false;
+    if (lastBad){ lastBad = ''; gm.textContent = ''; gm.className = 'msg'; }
+});
+gi.addEventListener('keydown', function(e){
+    if (e.key === 'Enter'){ e.preventDefault(); if (!gok.disabled) submit(); }
+});
+gok.addEventListener('click', function(){ if (!gok.disabled) submit(); });
+document.getElementById('gcancel').addEventListener('click', close);
+gate.querySelector('.veil').addEventListener('click', close);
+document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && gate.classList.contains('on')) close();
+});
+
+/* 点广告 → 开密码门（**不是**直接跳页） */
+document.getElementById('ad2-go').addEventListener('click', open);
+ad2.addEventListener('click', function(e){ if (e.target.closest('.hd')) open(); });
+
+function show(){ ad2.classList.add('on'); }
+window.MP_AD2 = { show:show, open:open };
+})();
+</script>
+
+<script>
+/* ==================================================================
+   右上角那枚小眼球
+   ------------------------------------------------------------------
+   跟食堂页同一套：字符画的眼，瞳孔跟着鼠标挪，偶尔眨一下。
+   进教室（广告滑进来）之后它才亮起来，吐槽三句 —— 改词儿动 EYE_LINES。
+   点它 = 重听一遍。
+   ================================================================== */
+(function(){
+'use strict';
+var wrap = document.getElementById('seye');
+var pre  = wrap && wrap.querySelector('.eyeb');
+var tip  = document.getElementById('eye-tip');
+if (!wrap || !pre) return;
+
+function eyeFrame(col, row, closed){
+    var a = [' .-"""""-. ',
+             '/         \\',
+             '|         |',
+             '|         |',
+             '\\         /',
+             ' `-.....-` '];
+    if (closed){ a[3] = '|  ─────  |'; }
+    else {
+        var line = '         '.split('');
+        line[col] = '●';
+        a[2 + row] = '|' + line.join('') + '|';
+    }
+    return a.join('\n');
+}
+var col = 4, row = 0, closed = false;
+function draw(){ pre.textContent = eyeFrame(col, row, closed); }
+draw();
+
+window.addEventListener('mousemove', function(e){
+    var w = window.innerWidth || 1, h = window.innerHeight || 1;
+    var dx = (e.clientX / w - 0.72) * 2, dy = (e.clientY / h - 0.14) * 2;
+    var nc = Math.max(1, Math.min(7, 4 + Math.round(dx * 3)));
+    var nr = (dy > 0.25) ? 1 : 0;
+    if (nc !== col || nr !== row){ col = nc; row = nr; if (!closed) draw(); }
+}, { passive:true });
+(function blink(){
+    setTimeout(function(){
+        closed = true; draw();
+        setTimeout(function(){ closed = false; draw(); blink(); }, 150);
+    }, 3500 + Math.random() * 4500);
+})();
+
+/* ---- 吐槽的三句 ---- */
+var EYE_LINES = [
+    '学校官网……',
+    '居然也会有这样的小广告吗？',
+    '真是需要人来多维护维护了……'
+];
+var STEP = 900, HOLD = 3400, REC = 170, GAP = 4, OUT_MS = 780;
+var lineEls = [], timers = [], playing = false;
+
+function buildLines(){
+    tip.innerHTML = '';
+    lineEls = EYE_LINES.map(function(s){
+        var d = document.createElement('div');
+        d.className = 'tl gone';
+        var b = document.createElement('span');
+        b.textContent = s;
+        d.appendChild(b);
+        tip.appendChild(d);
+        return d;
+    });
+}
+function clearTimers(){ timers.forEach(function(t){ clearTimeout(t); }); timers = []; }
+function layout(){
+    var y = 0;
+    lineEls.forEach(function(el){
+        if (el.classList.contains('gone')) return;
+        el.style.transform = 'translateY(' + y + 'px)';
+        var box = el.firstChild;
+        y += (box ? box.offsetHeight : 0) + GAP;
+    });
+}
+function say(){
+    if (!lineEls.length || playing) return;
+    playing = true;
+    clearTimers();
+    lineEls.forEach(function(el){ el.classList.remove('on', 'in', 'gone'); });
+    layout();
+    var n = lineEls.length;
+    lineEls.forEach(function(el, i){
+        timers.push(setTimeout(function(){
+            el.classList.add('in', 'on');
+            timers.push(setTimeout(function(){ el.classList.remove('in'); }, 220));
+            layout();
+        }, i * STEP));
+        var off = (n - 1) * STEP + HOLD + i * REC;
+        timers.push(setTimeout(function(){
+            el.classList.remove('on');
+            timers.push(setTimeout(function(){ el.classList.add('gone'); layout(); }, OUT_MS));
+        }, off));
+    });
+    var end = (n - 1) * STEP + HOLD + (n - 1) * REC + OUT_MS;
+    timers.push(setTimeout(function(){ playing = false; }, end + 300));
+}
+buildLines();
+
+var fired = false;      /* 每进页面只来一次 */
+function enter(){
+    if (fired) return;
+    fired = true;
+    window.MP_AD.show();
+    /* 第二枚晚一点滑进来（CSS 里 transition-delay .22s，这里再多等一会儿）——
+       两枚一起"啪"地出现太闹，要一枚一枚来。 */
+    setTimeout(function(){ window.MP_AD2 && window.MP_AD2.show(); }, 1500);
+    setTimeout(function(){
+        wrap.classList.add('on', 'hot');
+        say();
+    }, 2600);
+}
+wrap.addEventListener('click', function(){
+    closed = true; draw();
+    setTimeout(function(){ closed = false; draw(); }, 200);
+    wrap.classList.add('on', 'hot');
+    clearTimers(); playing = false; say();
+});
+
+/* showBeat 里用得到（进教室时叫 enter） */
+window.MP_EYE = { enter:enter, say:say, get fired(){ return fired; } };
+})();
+</script>
+
+<script>
+/* ==================================================================
+   "捡到"这一页 = 解锁 CUT3
+   ------------------------------------------------------------------
+   跟食堂页同一套：这一页是**碎片**，不是 CUT2 看完白送的 ——
+   玩家得自己翻学校官网、点进「高二（3）班教室」，进来这一下才把
+   mp_unlock_v1.cut3 写上，主页面轮询到 → 飘出 CUT3 那枚网页按钮。
+   ================================================================== */
+(function(){
+'use strict';
+var UNLOCK_KEY = 'mp_unlock_v1', MY_KEY = 'cut3';
+try {
+    var u = JSON.parse(localStorage.getItem(UNLOCK_KEY) || '{}') || {};
+    if (!u[MY_KEY]){ u[MY_KEY] = 1; localStorage.setItem(UNLOCK_KEY, JSON.stringify(u)); }
+} catch (e){}
+})();
+</script>
+
+<script src="data.js" charset="utf-8"></script>
+<script src="site.js" charset="utf-8"></script>
+</body>
+</html>

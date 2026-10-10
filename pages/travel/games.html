@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>谜径 Puzzlepath　|　网页解谜游戏推荐与研究</title>
+<style>
+:root{
+    --ink:#2a2350; --tx:#23203a; --tx2:#4a4668; --tx3:#8a86a8;
+    --ac:#6c5ce7; --ac2:#a29bfe; --acw:#f1eefe;
+    --or:#e07a3f; --line:#e4e0f2; --bd:#d2cdec;
+    --bg:#fff; --bgf:#f6f5fb;
+    --font:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",SimSun,sans-serif;
+}
+*{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
+@media (prefers-reduced-motion: reduce){ html{ scroll-behavior:auto; } }
+body{ margin:0; background:var(--bgf); color:var(--tx); font:15px/1.9 var(--font); }
+a{ color:var(--ac); text-decoration:none; }
+a:hover{ color:var(--or); text-decoration:underline; }
+.wrap{ width:1040px; max-width:96%; margin:0 auto; }
+
+.ihd{ background:var(--ink); color:#c9c3e8; font-size:12px; }
+.ihd .wrap{ display:flex; justify-content:space-between; align-items:center; min-height:32px; }
+.ihd a{ color:#c9c3e8; margin-left:14px; }
+.ihd a:hover{ color:#fff; }
+
+.brand{ background:#fff; border-bottom:3px solid var(--ac); }
+.brand .wrap{ display:flex; align-items:center; gap:16px; padding:18px 0 16px; }
+.brand .mark{ flex:0 0 auto; width:50px; height:50px; }
+.brand b{ font-size:23px; letter-spacing:2px; color:var(--ink); display:block; }
+.brand i{ display:block; font-style:normal; font-size:11.5px; color:var(--tx3); letter-spacing:1.5px; }
+.brand .tag{ margin-left:auto; font-size:12px; color:#fff; background:var(--ac); padding:5px 13px; letter-spacing:1px; }
+
+.nav{ background:var(--ac); position:sticky; top:0; z-index:90; box-shadow:0 2px 0 rgba(0,0,0,.06); }
+.nav .wrap{ display:flex; flex-wrap:wrap; }
+.nav a{ color:#ece9fb; font-size:14.5px; padding:11px 20px; letter-spacing:1px; }
+.nav a:hover{ background:var(--ac2); text-decoration:none; }
+.nav a.on{ background:#fff; color:var(--ac); font-weight:700; box-shadow:inset 0 -3px 0 var(--or); }
+
+.main{ padding:22px 0 10px; }
+.box{ background:#fff; border:1px solid var(--line); padding:22px 28px 26px; margin-bottom:20px; }
+.box[id]{ scroll-margin-top:64px; }
+h2{ margin:0 0 16px; font-size:22px; color:var(--ink); letter-spacing:1px;
+    padding-bottom:11px; border-bottom:1px solid var(--line); }
+h2 .sub{ float:right; font-size:12.5px; color:var(--tx3); font-weight:400; letter-spacing:0; }
+.doc p{ margin:10px 0; font-size:14.5px; line-height:2.05; color:var(--tx2); }
+.doc .lead{ font-size:16px; color:var(--tx); line-height:2.1; }
+.doc h3{ margin:22px 0 8px; font-size:17px; color:var(--ac); letter-spacing:1px; }
+.doc ul{ margin:10px 0; padding-left:22px; font-size:14.5px; color:var(--tx2); line-height:2.05; }
+.doc ul li{ margin:5px 0; }
+.qt{ margin:14px 0; padding:13px 17px; background:var(--acw); border-left:3px solid var(--ac); font-size:14px; line-height:2; color:var(--tx); }
+.sig{ margin-top:26px; padding-top:14px; border-top:1px dashed var(--line); font-size:12.5px; color:var(--tx3); line-height:2; }
+
+/* ── 游戏卡片网格 ── */
+.grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:6px; }
+.game{ border:1px solid var(--line); background:#fff; overflow:hidden; display:flex; flex-direction:column; }
+.game .poster{ height:96px; display:flex; align-items:flex-end; padding:11px 13px; color:#fff; }
+.game .poster span{ font-size:16px; font-weight:700; letter-spacing:1px; text-shadow:0 1px 4px rgba(0,0,0,.4); }
+.game .body{ padding:13px 15px 16px; }
+.game .body .meta{ font-size:12px; color:var(--tx3); }
+.game .body h4{ margin:4px 0 7px; font-size:16px; color:var(--ink); letter-spacing:.5px; }
+.game .body p{ margin:0; font-size:13px; color:var(--tx2); line-height:1.9; }
+
+/* ── 好处清单 ── */
+.ben{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px 22px; margin-top:6px; }
+.ben .it{ border-left:3px solid var(--ac2); padding:4px 0 4px 14px; }
+.ben .it b{ display:block; font-size:15px; color:var(--ink); letter-spacing:.5px; }
+.ben .it span{ font-size:13.5px; color:var(--tx2); line-height:1.95; }
+
+.foot{ background:var(--ink); color:#b7b2d8; font-size:12px; padding:22px 0; text-align:center; line-height:2.1; }
+.foot a{ color:#cfcaf0; margin:0 6px; }
+.foot .ad{ color:#8f8abf; }
+
+/* ── 延伸阅读 / 推广卡（区别于推荐游戏，编辑部研究笔记） ── */
+.box.promo{ border-color:var(--bd); background:linear-gradient(180deg,#fbf9ff,#f4f1fc); }
+.box.promo .ph{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.box.promo .ph .tg{ font-size:11.5px; letter-spacing:1px; color:#fff; background:var(--or); padding:3px 10px; border-radius:3px; }
+.box.promo .ph .ti{ font-size:12px; color:var(--tx3); }
+.box.promo .pt{ font-size:18px; color:var(--ink); letter-spacing:.5px; margin:0 0 8px; font-weight:700; }
+.box.promo p{ margin:6px 0; font-size:13.5px; line-height:1.95; color:var(--tx2); }
+.box.promo a.more{ display:inline-block; margin-top:6px; font-weight:700; color:var(--ac); }
+.box.promo a.more:hover{ color:var(--or); }
+
+@media (max-width:760px){ .grid,.ben{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="ihd"><div class="wrap"><div>谜径 Puzzlepath　|　只推荐能在浏览器里打开的解谜游戏</div><div><a href="#rec">推荐</a><a href="#why">为什么是网页</a><a href="#idea">创作理念</a></div></div></div>
+
+<div class="brand"><div class="wrap">
+    <svg class="mark" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="6" y="6" width="38" height="38" rx="8" fill="none" stroke="#6c5ce7" stroke-width="3"/>
+        <path d="M16 25 H34 M25 16 V34" stroke="#6c5ce7" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="25" cy="25" r="4" fill="#e07a3f"/>
+    </svg>
+    <div><b>谜径 Puzzlepath</b><i>PUZZLEPATH　网页解谜游戏推荐与研究</i></div>
+    <div class="tag">一个民间小站</div>
+</div></div>
+
+<div class="nav"><div class="wrap">
+    <a href="#top" class="on">首页</a>
+    <a href="#rec">精选推荐</a>
+    <a href="#why">为什么是网页</a>
+    <a href="#idea">创作理念</a>
+</div></div>
+
+<div class="wrap"><div class="main" id="top">
+
+<div class="box" id="home">
+    <h2>关于这个站<span class="sub">谜径 Puzzlepath　|　非官方　|　个人维护</span></h2>
+    <div class="doc">
+        <p class="lead">我们只聊一件事：那些<b>不用下载、打开网页就能玩</b>的解谜游戏。</p>
+        <p>它们大多是一个人、一台电脑、一个周末就能做出来的东西；有的简陋，有的惊艳，
+           但共同点是：它们就长在你的浏览器里，藏在链接的尽头。近年国内出现了一批以"网页互动"为核心的创作者，
+           把日常网页、搜索引擎、论坛和聊天软件做成谜题，让玩家像侦探一样抽丝剥茧——这类作品常被称作网页解谜或 WIG（Web Interactive Game）。</p>
+        <p>这页分三块——<a href="#rec">精选推荐</a>（一些我们比较喜欢、值得您稍稍尝试的网页解谜作品）、
+           <a href="#why">为什么是网页</a>（这种形式到底好在哪）、
+           <a href="#idea">创作理念</a>（为什么有的创作者，偏偏选了"网页解谜"这种样子来和玩家相遇）。</p>
+        <div class="qt">这里只是一个爱好者小站，分享那些"打开网页就能玩"的解谜作品。不导流、不盈利，也不作任何夸大。</div>
+    </div>
+</div>
+
+<div class="box" id="rec">
+    <h2>精选推荐<span class="sub">一些有趣的网页解谜游戏　|　真实存在、可检索</span></h2>
+    <div class="doc">
+        <p>下面这些作品在中文互联网上都有真实热度，多数由个人创作者发布、免费游玩。它们不一定都是"纯解谜"，
+           但都曾在"用很轻的网页形态，把人带进一个谜"这件事上做得很好。我们按知名度与代表性挑选，排名不分先后。</p>
+        <div class="grid">
+            <a class="game" href="https://missing.shiroki-y.top/introduction.html" target="_blank" rel="noopener">
+                <div class="poster" style="background:linear-gradient(135deg,#b83b2e,#e07a3f)"><span>大学生登山失踪事件</span></div>
+                <div class="body"><div class="meta">2025　|　银河电灯</div><h4>大学生登山失踪事件</h4>
+                <p>国产网页解谜 / ARG 的破圈之作。模拟一家河南家常菜馆官网，用站内搜索框输入关键词，一步步挖出弟弟登山失踪的真相。36 个碎片隐藏页，中式民俗恐怖。豆瓣 7.2，独立访问超 43 万。</p></div>
+            </a>
+            <a class="game" href="https://miyeji.cn/games/mo-fa-tu-zi" target="_blank" rel="noopener">
+                <div class="poster" style="background:linear-gradient(135deg,#7a3b8f,#c56fb0)"><span>魔法兔兔</span></div>
+                <div class="body"><div class="meta">bcmh_ovo　|　微恐 · 无跳脸</div><h4>魔法兔兔</h4>
+                <p>扮演江若宁，在一台"仿真电脑"的桌面里找线索：文件、照片、聊天记录、收藏夹、回收站……任何角落都可能藏着真相。剧情推进细腻、多结局，是近年来很出圈的一款网页 Meta 恐怖解谜。推荐用电脑玩。</p></div>
+            </a>
+            <a class="game" href="https://www.bingzhuyetan.com/" target="_blank" rel="noopener">
+                <div class="poster" style="background:linear-gradient(135deg,#1f5a4a,#5aa088)"><span>寻找陈雨彤</span></div>
+                <div class="body"><div class="meta">E工作室　|　文字推理</div><h4>寻找陈雨彤</h4>
+                <p>以一座老式论坛"秉烛夜谈"为舞台，顺着网友留下的帖子抽丝剥茧，拼出失踪作家陈雨彤背后的往事。全程网页交互推进，无需下载，手机电脑都能玩，氛围感很足。</p></div>
+            </a>
+            <a class="game" href="https://xsn1204.github.io/qmgame" target="_blank" rel="noopener">
+                <div class="poster" style="background:linear-gradient(135deg,#5b6675,#9aa6b5)"><span>404 工位消失事件</span></div>
+                <div class="body"><div class="meta">xsn1204</div><h4>404 工位消失事件</h4>
+                <p>玩家接手失踪同事留下的工作电脑，网页里完整模拟了一套 macOS 系统，翻钉钉、微信、邮件挖线索。代入感极强，作者后来推出了 2.0 优化版。</p></div>
+            </a>
+            <a class="game" href="https://miyeji.cn/games/ling-yi-lun-tan-diao-cha-ji-lu" target="_blank" rel="noopener">
+                <div class="poster" style="background:linear-gradient(135deg,#243b55,#5d8aa8)"><span>灵异论坛调查记录</span></div>
+                <div class="body"><div class="meta">明烛天青　|　论坛探索 · 多结局</div><h4>灵异论坛调查记录</h4>
+                <p>论坛探索式网页解谜：姐姐失踪后，你在她的电脑里发现一个神秘的灵异论坛，靠搜索关键词、翻帖子、找隐藏信息，一路追她留下的线索。模拟电脑与论坛交互，有多条分支和五种结局，无明显惊吓，30 到 60 分钟能走完。</p></div>
+            </a>
+            <a class="game" href="https://mp.weixin.qq.com/s/kKsnzFsLFwwm2nwv8DseAA" target="_blank" rel="noopener">
+                <div class="poster" style="background:linear-gradient(135deg,#2a7d7a,#7fc9c4)"><span>永安温泉度假酒店</span></div>
+                <div class="body"><div class="meta">规则怪谈风　|　网页解谜</div><h4>永安温泉度假酒店</h4>
+                <p>以一家温泉度假酒店官网为舞台，玩家要找到更高权限的员工账号与密码，揭开背后的秘密。解密要素不多，更像一个带着少量解谜的规则怪谈式互动小说。</p></div>
+            </a>
+            <a class="game" href="https://typehelp-game.pages.dev/" target="_blank" rel="noopener">
+                <div class="poster" style="background:linear-gradient(135deg,#1d3b1d,#3f7a3f)"><span>Type Help（嘉利别墅谜案）</span></div>
+                <div class="body"><div class="meta">William Rous　|　有中文汉化</div><h4>Type Help（嘉利别墅谜案）</h4>
+                <p>纯文字解谜神作，没有任何图像。玩家面对一台"旧电脑"，靠在搜索框里输入指令、阅读文档与日志，自己拼出真相。已有国内爱好者完成汉化，近年随网页解谜风潮被大量安利。</p></div>
+            </a>
+            <a class="game" href="https://miyeji.cn/games/wo-de-mi-mi-hua-yuan" target="_blank" rel="noopener">
+                <div class="poster" style="background:linear-gradient(135deg,#2f6b4f,#7bbf9a)"><span>我的秘密花园</span></div>
+                <div class="body"><div class="meta">榾木骨　|　ARG / 网页解谜</div><h4>我的秘密花园</h4>
+                <p>结合了网页探索与现实线索的 ARG：你在里面扮演的不是某个角色，而是你自己。线索并不只藏在页面里，也散落在文字、图片、链接甚至现实网络的角落。没有战斗与升级，只有观察、推理与发现。</p></div>
+            </a>
+            <a class="game" href="https://miyeji.cn/games/hui-jia" target="_blank" rel="noopener">
+                <div class="poster" style="background:linear-gradient(135deg,#2a2350,#6c5ce7)"><span>您为了什么而来？</span></div>
+                <div class="body"><div class="meta">斐可悉　|　ARG / 网页解谜</div><h4>您为了什么而来？</h4>
+                <p>一个男青年在雪夜里来到一座庄园，慢慢解开里面藏着的秘密。</p></div>
+            </a>
+        </div>
+        <div class="qt">本站只做推荐，不导流、不盈利。以上链接均指向作品本身的游戏页面或开始入口，方便直接开玩。</div>
+    </div>
+</div>
+
+<div class="box" id="why">
+    <h2>为什么是网页<span class="sub">轻量化的几件真事</span></h2>
+    <div class="doc">
+        <p>做解谜游戏的人为什么偏爱网页？不是因为"高级"，恰恰是因为它<b>够轻</b>。几件常被提到、也最实在的好处：</p>
+        <div class="ben">
+            <div class="it"><b>免安装</b><span>一个链接就能开，不用等下载、不用腾空间、不用管系统版本。</span></div>
+            <div class="it"><b>全平台</b><span>手机、平板、旧电脑，只要有浏览器就能跑，门槛极低。</span></div>
+            <div class="it"><b>易传播</b><span>把网址发过去就行。一道谜可以顺着聊天、页脚、收藏夹，自己长脚走。</span></div>
+            <div class="it"><b>低门槛创作</b><span>一个人、一台电脑就能做。没有发行、没有审核、没有中间商。</span></div>
+            <div class="it"><b>本机留存</b><span>进度常存在浏览器的 localStorage 里，关掉再开还在。</span></div>
+            <div class="it"><b>明处藏暗层</b><span>一个看似普通的页面，地址栏改几个字就是另一番天地；找的人自然找得到。</span></div>
+        </div>
+        <h3>玩家的"上网本能"，就是操作方式</h3>
+        <p>网页解谜最妙的地方在于：它不用教操作。检索、看页脚、点侧栏、改地址栏、猜下一个 URL——
+           这些不是游戏教你的，是当代每个人本来就有的肌肉记忆。一个设计得好的网页谜题，
+           只是把你本来就会的"上网动作"变成了线索本身。</p>
+        <div class="qt">所以"轻"不是偷工减料，而是一种选择：让它像本来就长在你浏览的习惯里，而不是硬塞进来的东西。</div>
+    </div>
+</div>
+
+<div class="box" id="idea">
+    <h2>创作理念<span class="sub">为什么有的创作者，偏爱"网页解谜"这种形式</span></h2>
+    <div class="doc">
+        <p>聊了这么多作品，我们发现网页解谜（以及更广义的 WIG／网页互动作品）有一种很特别的气质：它不喧哗。</p>
+        <p>它不像买断制大作那样砸在首页，也不像信息流那样追着你喂。它只是安静地躺在某个链接尽头，
+           等一个愿意点进来、愿意顺着线索搜下去的人。这种"轻、近、像本来就长在你浏览习惯里"的特点，
+           恰好适合一类特殊的创作者——他们想被找到，但又不想被所有人都看到。</p>
+        <h3>公开，却只对"会找的人"显形</h3>
+        <p>页面是公开的，谁都能打开；但里面的东西，得自己一步步走过去才碰得到。
+           这种形式的长处很实在：它轻，一个链接就能打开，不需要下载；它也沉得住气，线索一层一层铺开，
+           玩家不是在接收信息，而是在自己一点点挖。它还特别适合传递——一个链接发出去，
+           就能顺带把另一个人也带进来，这在同类作品里是最省力、也最见效果的一次传播。</p>
+        <p>作为一门艺术形式，它迷人的地方在于替故事让路：版式、措辞、页面与页面之间的呼应，
+           都得自己安排、彼此对得上，才能让人在半信半疑里继续往下走。沉浸感往往就是这么来的——
+           不是靠音效或画面堆出来的，而是靠"你正在自己查"这件事本身。</p>
+        <p>对创作者来说，这也是一种能把表达落到实处的方式：同一件事，写在介绍里只是信息，
+           藏在一堆看起来平平无奇的页面里，才会变成一次发现。网页解谜把"讲述"换成了"摆放"，
+           读者和玩家从接收者变成了同行的调查者。它不喧哗，也不急着把谁拽进来，却很耐逛，
+           总让人愿意一条一条顺着走下去。</p>
+        <div class="qt">至于每位作者为什么要这么讲、想说什么——那是他们自己的事，留给你在游戏里慢慢体会。</div>
+        <div class="sig">谜径 Puzzlepath　|　民间小站<br>只做分享，不作任何确认或推荐。</div>
+    </div>
+</div>
+
+<div class="box promo" id="argwig">
+    <div class="ph"><span class="tg">延伸阅读 · 研究</span><span class="ti">谜径编辑部　|　概念梳理</span></div>
+    <p class="pt">ARG 与 WIG：当谜题走出屏幕，又退回屏幕</p>
+    <p>我们常在站里提到 ARG（替代现实游戏）与 WIG（网页互动游戏）。它们有何不同？而写作者 <b>斐可悉 / 吻梦Wen</b> 提出了一个很值得玩味的新疑问：能否<b>完全不靠跨平台、多媒介，仅凭网页自身</b>，就做出 ARG 那种"现实被侵入"的感觉？他们常以 <b>咯丽丝</b> 作为例子来讨论。一篇把概念与新疑问讲清的研究笔记。</p>
+    <a class="more" href="arg.html" target="_blank" rel="noopener">进入「ARG 与 WIG：当谜题走出屏幕，又退回屏幕」　→</a>
+</div>
+
+<div class="box promo" id="blend">
+    <div class="ph"><span class="tg">延伸阅读 · 研究</span><span class="ti">谜径编辑部　|　创作手法</span></div>
+    <p class="pt">当游戏网页与真实网页长成一张脸</p>
+    <p>一个更具体、也更"阴险"的手艺：怎么让玩家渐渐分不清自己是在"游戏里的网页"还是"真实的网页"里。核心出奇地老实——把好奇的大部分都做成可点开的，途径又安排得太合理，让你点着点着怀疑"我是不是跳出外链了"，而设计者真的塞了几个外链（彩蛋 / 其他创作者宣传）。接上一篇 ARG 与 WIG 里咯丽丝那条"内外发软"的线。</p>
+    <a class="more" href="blend.html" target="_blank" rel="noopener">进入「当游戏网页与真实网页长成一张脸」　→</a>
+</div>
+
+<div class="box promo" id="webstage">
+    <div class="ph"><span class="tg">延伸阅读 · 研究</span><span class="ti">谜径编辑部　|　设计思路</span></div>
+    <p class="pt">网页演出：以玩家的交互为核心，试着做点不一样的设计</p>
+    <p>写作者 <b>斐可悉 / 吻梦Wen</b> 想试着做点不一样的——核心是把玩家的"交互"放在设计的正中心。他们把体验落成了两层：内层是完整的游戏剧情、有着各异的演出（开发难度不低）；外层是"形成思维链路"的网页安排，仍保留直接的信息展示——玩家若真在每个网页都拿到了一小部分信息，总能意识到它们是如何一步步组成谜底答案的。一篇记录这条思路的研究笔记。</p>
+    <a class="more" href="webstage.html" target="_blank" rel="noopener">进入「网页演出：以玩家的交互为核心，试着做点不一样的设计」　→</a>
+</div>
+
+</div></div>
+
+<div class="foot">
+    谜径 Puzzlepath　|　网页解谜游戏推荐与研究　|　民间个人维护，非官方站点<br>
+    <span class="ad">本站不导流、不盈利，只分享有意思的网页解谜游戏</span>
+</div>
+
+<script>
+/* 导航高亮：点击先亮对应项，1.2 秒后交还视口判断 */
+(function(){
+'use strict';
+var nav=document.querySelector('.nav'); if(!nav) return;
+var secs=[].slice.call(document.querySelectorAll('.box[id], #top'));
+var links={},shown=0;
+nav.querySelectorAll('a[href^="#"]').forEach(function(a){
+    var id=a.getAttribute('href').slice(1); if(id) links[id]=a;
+});
+function light(id,sticky){
+    var a=links[id]; if(!a) return;
+    if(shown) links[shown].classList.remove('on');
+    a.classList.add('on'); shown=id;
+    if(sticky){ clearTimeout(light._t); light._t=setTimeout(function(){shown=0;},1200); }
+}
+function byView(){
+    var mid=window.innerHeight*0.35,best='top';
+    for(var i=0;i<secs.length;i++){ var r=secs[i].getBoundingClientRect(); if(r.top<=mid) best=secs[i].id; }
+    if(best) light(best);
+}
+window.addEventListener('scroll',byView,{passive:true});
+window.addEventListener('hashchange',byView);
+byView();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,4046 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>幂偌 0.1</title>
+<style>
+:root{ --bg:#0a0c10; --eye:#c8d0c2; }
+*{box-sizing:border-box}
+html,body{height:100%}
+body{ margin:0; background:var(--bg); overflow:hidden; cursor:crosshair; }   /* 全屏恒定十字光标（cursor 会继承） */
+/* 扫描线 + 暗角（氛围，非界面） */
+body::after{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:50;
+    /* 不用 mix-blend-mode：整屏混合会让每一帧都重新合成一次，很吃性能，直接叠半透明效果一样 */
+    background:
+        repeating-linear-gradient(0deg, rgba(0,0,0,.15) 0 1px, transparent 1px 3px),
+        radial-gradient(120% 120% at 50% 50%, rgba(0,0,0,0) 52%, rgba(0,0,0,.55) 100%);
+}
+#stage{
+    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    will-change:transform;      /* 对白出现时整个舞台要上移，先提成合成层，别每帧重画 1100 个字 */
+}
+#eye{
+    margin:0; position:relative; z-index:1;   /* 眼珠压在文字球之上 */
+    /* 全宽汉字才能对齐成网格，故用 CJK 字体；空格亦用全角空格 */
+    font:13px/1 "Sarasa Mono SC","Sarasa Term SC","Noto Sans Mono CJK SC","Microsoft YaHei","PingFang SC",monospace;
+    color:var(--eye); white-space:pre; user-select:none;
+    cursor:crosshair; opacity:0; transition:opacity .45s ease;
+    text-shadow:0 0 4px rgba(200,208,194,.16);
+    contain:layout style;       /* 3120 个字的重排关在自己盒子里，不外溢到整页 */
+}
+#eye.show{ opacity:1; }
+/* 文字漩涡环：包围眼珠，乱转·翻滚·远近透明 */
+#ring{
+    position:absolute; inset:0; pointer-events:none; z-index:0;   /* 垫在眼珠之下 */
+    opacity:0; transition:opacity 2.8s ease;
+    font:13px/1 "Sarasa Mono SC","Sarasa Term SC","Noto Sans Mono CJK SC","Microsoft YaHei","PingFang SC",monospace;
+    color:var(--eye);
+    contain:layout style;
+}
+#ring.on{ opacity:1; }
+#ring span{
+    position:absolute; left:0; top:0;
+    /* 这行别删：1100 个字每帧都在改 transform/opacity，不提升成合成层就会每帧重绘 1100 次文字 */
+    will-change:transform,opacity;
+    text-shadow:0 0 4px rgba(200,208,194,.12);
+}
+/* ---- 宠物：一团纯文字/符号，落在眼球上爬行；能被鼠标拖起来，松手自己掉回眼球 ---- */
+#pet{
+    position:absolute; left:0; top:0; z-index:3;     /* 压在眼珠(1)与球面字流(0)之上 */
+    margin:0; pointer-events:auto; cursor:grab; user-select:none;
+    font:17px/1.06 "Sarasa Mono SC","Sarasa Term SC","Noto Sans Mono CJK SC","Microsoft YaHei","PingFang SC",monospace;
+    color:#dfe6d8; white-space:pre; text-align:center;
+    text-shadow:0 0 6px rgba(200,208,194,.45), 0 0 14px rgba(200,208,194,.18);
+    will-change:transform,opacity; contain:layout style;
+    opacity:0;   /* 注意：每帧由 JS 直接写 inline opacity（球面透视 + 出场淡入），这里不要加 transition */
+}
+#pet.on{ opacity:1; }
+#pet.drag{ cursor:grabbing; }
+#pet:hover{ text-shadow:0 0 9px rgba(200,208,194,.75), 0 0 22px rgba(200,208,194,.3); }
+#pet .pr{ display:block; }    /* 一行一段、各自居中：字体不是严格等宽时也不会散架 */
+/* ---- 饲养面板：等级顶在宠物头上，EXP 小窗开在它旁边 ----
+   注意这里用 CSS 边框、不用字符凑框：面板里要写数字（EXP 12 / 1000），
+   而本机字体不是严格双宽（实测：汉字 12px、全角＋－｜ 12px、数字却只有 7.04px，
+   并不等于汉字的一半），用字符凑框的话每行右侧的 ｜ 会参差不齐。
+   （对白框那套 boxFrame 是靠"逐行量像素"才对齐的，这里犯不上。） */
+#pet-lv, #pet-box{
+    position:absolute; left:0; top:0; z-index:3;      /* 与宠物同层 */
+    margin:0; pointer-events:none; user-select:none; white-space:pre;
+    font:12px/1.55 "Sarasa Mono SC","Sarasa Term SC","Noto Sans Mono CJK SC","Microsoft YaHei","PingFang SC",monospace;
+    color:#dfe6d8; text-shadow:0 0 6px rgba(200,208,194,.4);
+    will-change:transform,opacity; contain:layout style;
+    opacity:0;      /* 每帧由 JS 写 inline opacity（跟着宠物在球面上的远近一起淡） */
+}
+#pet-lv{
+    text-align:center; letter-spacing:1px; color:#f2ddd0;
+    text-shadow:0 0 7px rgba(242,221,208,.5), 0 0 16px rgba(242,200,180,.18);
+}
+#pet-lv.up{ animation:petlvup 1.15s ease; }           /* 升级时亮一下 */
+@keyframes petlvup{
+    0%  { color:#fff0e0; text-shadow:0 0 15px rgba(255,226,190,.95), 0 0 34px rgba(255,205,160,.5); }
+    100%{ color:#f2ddd0; text-shadow:0 0 7px rgba(242,221,208,.5), 0 0 16px rgba(242,200,180,.18); }
+}
+#pet-box{
+    padding:7px 12px 8px;
+    pointer-events:auto;      /* 只有小窗能接住鼠标：指针停在窗里 / 在窗里点一下 = "还在操作"，面板就不会自动收 */
+    cursor:default;
+    border:1px solid rgba(200,208,194,.24);
+    /* 柔和的暗底：球面字流从窗口底下经过时别把字搅花（跟入口按钮同一个做法） */
+    background:radial-gradient(130% 130% at 50% 50%, rgba(8,10,13,.9), rgba(8,10,13,.64));
+    box-shadow:0 0 20px rgba(0,0,0,.45);
+}
+#pet-box .t{ color:#9fb0a4; letter-spacing:2px; }
+#pet-box .z{ color:#a9c0cf; }                              /* 睡着时小窗里那句提示（跟头顶的 Z 同色） */
+/* 技能行：EXP 够的时候可以点，点了就升一级 */
+#pet-box .sk-row{ padding:2px 0 3px; cursor:pointer; }
+#pet-box .sk-row .n{ color:#dfe6d8; }
+#pet-box .sk-row .c{ color:#8fa093; }
+#pet-box .sk-row.ok .c{ color:#c6d8bf; }                       /* 买得起：亮一点 */
+#pet-box .sk-row.ok:hover .n{ color:#fff2dc; text-shadow:0 0 9px rgba(255,235,200,.6); }
+#pet-box .sk-row.done{ cursor:default; }
+#pet-box .sk-row.done .n, #pet-box .sk-row.done .c{ color:#9fb0a4; }
+#pet-box .sk-row.buy{ animation:skbuy .9s ease; }              /* 刚买下：暖白一闪 */
+@keyframes skbuy{
+    0%  { color:#fff3dd; text-shadow:0 0 14px rgba(255,226,175,.9); }
+    100%{ color:#dfe6d8; text-shadow:0 0 6px rgba(200,208,194,.4); }
+}
+#pet-box .sk-row.no{ animation:skno .34s ease; }               /* EXP 不够：左右抖一下 */
+@keyframes skno{ 0%,100%{ transform:translateX(0); } 25%{ transform:translateX(-3px); } 75%{ transform:translateX(3px); } }
+#pet-box .bar{                                        /* EXP 进度条 */
+    display:block; width:154px; height:5px; margin:4px 0 4px;
+    border:1px solid rgba(200,208,194,.2); background:rgba(200,208,194,.07);
+}
+#pet-box .bar i{ display:block; height:100%; background:rgba(214,224,206,.72); }
+/* 摸一下就冒出来的爱心：位置写在 left/top，飘的过程交给 Web Animations */
+.hrt{
+    position:absolute; left:0; top:0; z-index:3; pointer-events:none; user-select:none;
+    font:15px/1 "Sarasa Mono SC","Sarasa Term SC","Noto Sans Mono CJK SC","Microsoft YaHei","PingFang SC",monospace;
+    color:#f2bcc6; text-shadow:0 0 8px rgba(242,188,198,.75), 0 0 18px rgba(240,150,170,.35);
+    will-change:transform,opacity;
+}
+/* 后空翻落地时炸开的星星（同层、不接鼠标，飘完自己删掉） */
+.str{
+    position:absolute; left:0; top:0; z-index:3; pointer-events:none; user-select:none;
+    font:13px/1 "Sarasa Mono SC","Sarasa Term SC","Noto Sans Mono CJK SC","Microsoft YaHei","PingFang SC",monospace;
+    color:#f4e6c4; text-shadow:0 0 8px rgba(255,232,180,.8), 0 0 18px rgba(255,206,140,.35);
+    will-change:transform,opacity;
+}
+/* 睡着时头顶冒的 Z：慢慢往上飘、飘得歪歪扭扭，字号逐个不同（像 ZZZ 那样一大一小） */
+.zzz{
+    position:absolute; left:0; top:0; z-index:3; pointer-events:none; user-select:none;
+    font:14px/1 "Sarasa Mono SC","Sarasa Term SC","Noto Sans Mono CJK SC","Microsoft YaHei","PingFang SC",monospace;
+    color:#e2eef8; text-shadow:0 0 8px rgba(200,224,244,.85), 0 0 20px rgba(150,195,230,.42);
+    will-change:transform,opacity;
+}
+/* ---- 网页入口：用符号围成的一枚按钮，从涡流里飞进来；点一下就打开那张网页 ----
+   可能同时有好几枚（每解锁一个入口多一枚），所以外层 #gates 只是个铺满舞台的容器，
+   真正的按钮是里面的 .gate；上下错开排，免得叠在一起。 */
+#gates{
+    /* 压在宠物(3)、眼珠(1)、球面字流(0)之上；但**在对白框(20)之下** ——
+       入口飘出来时正说着话，就该被对白框遮着，等话说完才看得见。 */
+    position:absolute; inset:0; z-index:4;
+    pointer-events:none; user-select:none;
+}
+.gate{
+    position:absolute; left:0; top:0;
+    margin:0; pointer-events:none; user-select:none;
+    /* 行高压到 1.06：相邻两行的 ｜ 才能接成一条完整的竖线（行距一大，竖线就断成一截一截的） */
+    font:16px/1.06 "Sarasa Mono SC","Sarasa Term SC","Noto Sans Mono CJK SC","Microsoft YaHei","PingFang SC",monospace;
+    color:var(--eye); white-space:pre; text-align:center;   /* 一行一段各自居中：字体不严格等宽也不散架 */
+    /* 与对话框 #dlg 同款：眼珠色文字 + 纯黑底 + 一层微光（有了黑底就不需要大扩散了） */
+    text-shadow:0 0 6px rgba(200,208,194,.15);
+    padding:10px 20px;
+    /* 黑底：与总开关（.gate-sw）同款——柔和径向渐变，边缘化开，不像纯黑方块那样像贴了张硬纸。 */
+    background:radial-gradient(ellipse at center, rgba(6,8,6,.9) 55%, rgba(6,8,6,.7) 100%);
+    will-change:transform,opacity;
+    opacity:0;
+    /* 透明度**只在状态切换时由 step() 写一次**（放出来 / 藏起来 / 第一次淡入），
+       每次都配这条 .35s 过渡 → 出场是"化"出来的，不是"飞"进来的。
+       （早先 step() 每帧写 opacity 来做飞入的渐显，这条过渡被反复打断，
+         位置又在飞行动画里乱改 —— 两个问题叠在一起，就是"点一下它就往上跑"。） */
+    transition: opacity .35s ease, color .3s ease, text-shadow .3s ease;
+}
+.gate.on{ pointer-events:auto; cursor:pointer; }
+/* 悬浮：整枚提亮 + 微光；子元素（框线 .gf / 入口名 .glb）各自再提一档——
+   否则它们身上的 color/text-shadow 会把根 .gate 的变亮盖过去，悬浮就“没反应”了。
+   （藏起来的按钮在 step() 里会摘掉 .on，所以 :hover 自动失效，不会误亮。） */
+.gate.on:hover{
+    color:#f4faf5;
+    text-shadow:0 0 9px rgba(200,208,194,.5);
+}
+.gate.on:hover .glb{ color:#ffffff; text-shadow:0 0 9px rgba(200,208,194,.5); }
+.gate.on:hover .gf{  color:var(--eye); text-shadow:0 0 9px rgba(200,208,194,.45); }
+.gate .gl{ display:block; }
+.gate .gf{ color:#98a189; text-shadow:0 0 6px rgba(152,161,137,.22); }   /* 框线：与对话框 .fr 同色（眼珠色暗调） */
+.gate .glb{ color:#e6efe7; text-shadow:0 0 8px rgba(200,208,194,.4); }   /* 入口名：比框线亮一档 */
+/* 同一枚入口配的那枚「剧情」按钮 = 副按钮：
+   **摆在它自己那枚网页按钮的正下方**（同一条中心线上，见 Gate.layout），
+   比网页按钮小一号、字暗一档 —— 一眼看得出这两个是绑在一起的一套：上面跳转、下面说话。
+   ★ 放下方而不是右边，是为了"间隔问题不存在"：
+     网页按钮那一格永远只有它自己的宽度，副按钮的出现与消失**完全不影响**网页按钮的落点。
+     放右边时撤一枚副按钮 → 那一格窄 136px → 行内累加把右边所有按钮各带左移 136px，
+     行宽一变连分行都要重跑（实测把某枚横移 984px）。 */
+.gate.gate-story{
+    font-size:11px; padding:5px 9px;
+    background:radial-gradient(ellipse at center, rgba(6,8,6,.9) 55%, rgba(6,8,6,.7) 100%);
+}
+.gate.gate-story .glb{ color:#cfe0d6; text-shadow:0 0 7px rgba(200,208,194,.4); }
+.gate.gate-story .gf{ color:#8f9c92; text-shadow:0 0 5px rgba(152,161,137,.22); }
+/* ---- 总开关：网页 / 剧情按钮旁边那枚小眼睛 ----
+   睁着的眼睛 → 整套按钮都在画面上；点一下换成**画了一道斜线的眼睛** → 整套藏起来
+   （做剧情的时候用它清场）。它是工具，不是剧情里的一环：小一号、暗一号。
+   注意：这几条要写在 .gate.on 之后 —— 同权重，靠"后来者居上"把指针事件拿回来。 */
+.gate.gate-sw{
+    font-size:13px; line-height:1.04; padding:6px 8px;
+    color:#8ea093; cursor:pointer; pointer-events:auto; opacity:0;
+    background:radial-gradient(ellipse at center, rgba(6,8,6,.9) 55%, rgba(6,8,6,.7) 100%);
+    transition:opacity .9s ease, color .3s ease;
+    /* ★ z-index 抬到入口按钮之上。它和入口按钮同在 #gates 里、默认都是 auto，
+       谁在 DOM 里靠后就命中谁 —— 小眼睛是先创建的，于是被后放出来的入口按钮
+       盖住（实测点它的中心，elementFromPoint 命中的是入口按钮的 .gf）。 */
+    z-index:1;
+}
+.gate.gate-sw.on{ opacity:.62; }              /* 平时压暗一点，别跟入口抢戏 */
+.gate.gate-sw:hover{ opacity:1; color:#e2ede4; }
+.gate.gate-sw.xed{ color:#6f7a73; }           /* 斜线眼（藏起来了）：再暗一档 */
+/* ---- 背景音乐开关：固定右上角，与总开关（.gate-sw）同款观感 ---- */
+#musicbtn{
+    position:fixed; top:14px; right:16px; z-index:40;
+    font:13px/1.04 "Sarasa Mono SC","Sara Term SC","Noto Sans Mono CJK SC","Microsoft YaHei","PingFang SC",monospace;
+    letter-spacing:2px; padding:6px 9px;
+    color:#8ea093; cursor:pointer; pointer-events:auto; user-select:none;
+    background:radial-gradient(ellipse at center, rgba(6,8,6,.9) 55%, rgba(6,8,6,.7) 100%);
+    border:1px solid rgba(143,156,146,.35); border-radius:2px;
+    text-shadow:0 0 6px rgba(152,161,137,.3);
+    transition:color .3s ease, opacity .3s ease;
+}
+#musicbtn:hover{ color:#e2ede4; }
+#musicbtn.off{ color:#6f7a73; }
+@media (max-width:760px){ #musicbtn{ font-size:11px; padding:5px 6px; } }
+/* ---- 音乐盒按钮 + 面板：固定右上角，与音乐开关同款观感 ---- */
+#musicboxbtn{
+    position:fixed; top:14px; right:104px; z-index:40;
+    font:13px/1.04 "Sarasa Mono SC","Sara Term SC","Noto Sans Mono CJK SC","Microsoft YaHei","PingFang SC",monospace;
+    letter-spacing:2px; padding:6px 9px;
+    color:#8ea093; cursor:pointer; pointer-events:auto; user-select:none;
+    background:radial-gradient(ellipse at center, rgba(6,8,6,.9) 55%, rgba(6,8,6,.7) 100%);
+    border:1px solid rgba(143,156,146,.35); border-radius:2px;
+    text-shadow:0 0 6px rgba(152,161,137,.3);
+    transition:color .3s ease, opacity .3s ease;
+}
+#musicboxbtn:hover{ color:#e2ede4; }
+@media (max-width:760px){ #musicboxbtn{ font-size:11px; padding:5px 6px; right:84px; } }
+#musicbox{
+    position:fixed; top:48px; right:16px; z-index:41; min-width:200px; padding:8px 9px;
+    background:radial-gradient(ellipse at top, rgba(8,10,8,.97), rgba(6,8,6,.95));
+    border:1px solid rgba(143,156,146,.4); border-radius:3px;
+    box-shadow:0 0 18px rgba(0,0,0,.6);
+    font:12px/1.5 "Sarasa Mono SC","Sara Term SC","Noto Sans Mono CJK SC","Microsoft YaHei","PingFang SC",monospace;
+    color:#cdd6cb; display:none;
+}
+#musicbox.on{ display:block; }
+#musicbox .mb-title{ color:#8ea093; letter-spacing:3px; margin-bottom:7px; border-bottom:1px solid rgba(143,156,146,.25); padding-bottom:5px; }
+#musicbox .mb-item{ display:flex; justify-content:space-between; align-items:center; gap:14px; padding:5px 6px; border-radius:2px; cursor:pointer; color:#cdd6cb; }
+#musicbox .mb-item:hover{ background:rgba(143,156,146,.12); color:#e2ede4; }
+#musicbox .mb-item.cur{ color:#e7f0e4; background:rgba(143,156,146,.2); }
+#musicbox .mb-item.locked{ color:#6f7a73; cursor:not-allowed; }
+#musicbox .mb-item .mb-tag{ font-size:10px; color:#8ea093; letter-spacing:1px; white-space:nowrap; }
+#musicbox .mb-item.cur .mb-tag{ color:#9fe0a0; }
+#musicbox .mb-hint{ margin-top:7px; font-size:10px; color:#6f7a73; letter-spacing:1px; }
+/* ---- 数据清空按钮：固定右下角，与音乐开关同款观感；读完青禾残稿后才浮出 ---- */
+#databtn{
+    position:fixed; bottom:14px; right:16px; z-index:40;
+    font:13px/1.04 "Sarasa Mono SC","Sara Term SC","Noto Sans Mono CJK SC","Microsoft YaHei","PingFang SC",monospace;
+    letter-spacing:2px; padding:6px 9px;
+    color:#8ea093; cursor:pointer; pointer-events:none; user-select:none; opacity:0;
+    background:radial-gradient(ellipse at center, rgba(6,8,6,.9) 55%, rgba(6,8,6,.7) 100%);
+    border:1px solid rgba(143,156,146,.35); border-radius:2px;
+    text-shadow:0 0 6px rgba(152,161,137,.3);
+    transition:color .3s ease, opacity .5s ease;
+}
+#databtn:hover{ color:#e2ede4; }
+#databtn.on{ opacity:1; pointer-events:auto; }
+@media (max-width:760px){ #databtn{ font-size:11px; padding:5px 6px; } }
+/* ---- 窄屏：按钮整体缩小一档 ----
+   一枚网页按钮在 16px 字号下约 232px 宽，8 枚入口一行放不下 → 每行一枚 →
+   8 行 × (105+5+70+14) ≈ 1550px，比画面高得多，实测 400px 视口下顶部那几枚直接出画。
+   跟 #dlg / #black 用的是同一套思路（窄屏降一档字号），这里补上 .gate 缺席的那一份。
+   降到 13px 后单枚约 190px，400px 能放两枚、行数减半 → 塞得进画面。 */
+@media (max-width:760px){
+    .gate{ font-size:13px; padding:7px 13px; }
+    .gate.gate-story{ font-size:10px; padding:4px 7px; }
+    .gate.gate-sw{ font-size:11px; padding:5px 6px; }
+}
+/* ---- 解锁提示：网页里解开了新东西时，画面上方冒一句 ---- */
+#tip{
+    position:fixed; left:50%; top:13vh; transform:translate(-50%,-10px);
+    z-index:30; opacity:0; pointer-events:none;
+    font:17px/1.9 "Sarasa Mono SC","Sarasa Term SC","Noto Sans Mono CJK SC","Microsoft YaHei","PingFang SC",monospace;
+    color:#dfece2; letter-spacing:3px; text-align:center; white-space:pre-line;
+    text-shadow:0 0 9px rgba(210,232,220,.85), 0 0 26px rgba(150,205,180,.4), 0 0 60px rgba(90,170,140,.22);
+    transition:opacity .9s ease, transform .9s ease;
+}
+#tip.on{ opacity:1; transform:translate(-50%,0); }
+/* ---- 对白框：只有 - | + 围出的一圈框线，内部不填黑（古早文字游戏感） ---- */
+#dlg{
+    position:fixed; left:50%; bottom:6vh; transform:translateX(-50%);
+    z-index:20; display:flex; flex-direction:column; align-items:center;
+    opacity:0; pointer-events:none; transition:opacity .8s ease;
+    contain:layout style;
+}
+#dlg.on{ opacity:1; pointer-events:auto; }
+#dlg pre{
+    margin:0; background:#000; color:var(--eye); white-space:pre;   /* 与眼珠同一种颜色 */
+    font:19px/1.62 "Sarasa Mono SC","Sarasa Term SC","Noto Sans Mono CJK SC","Microsoft YaHei","PingFang SC",monospace;
+    text-shadow:0 0 6px rgba(200,208,194,.15);                      /* 有黑底了，只留一层微光 */
+}
+/* 主框：出场由中间向上下展开 */
+#dlg-pre{
+    clip-path:inset(50% 0 50% 0); opacity:.4;
+    transition:clip-path .6s cubic-bezier(.22,.61,.36,1), opacity .5s ease,
+               transform .55s cubic-bezier(.22,.61,.36,1);
+}
+#dlg-pre.unfold{ clip-path:inset(0 0 0 0); opacity:1; }
+#dlg-pre.lift{ transform:translateY(-11px); }        /* 字打完 → 整框往上飘 */
+/* 选项：每个分支一个**独立的小框**（不是共用一个框），逐条往下弹出。
+   注意：这里绝不碰 height / margin-top —— 那两个属性每帧都要重排，在这个页面上会明显卡顿。
+   容器只做 opacity + transform（走合成层），"往下弹出"由每个小框自己的 transform 完成。 */
+#dlg-opts{
+    /* gap 由 JS 的 OPT_GAP 设定（每个选项都是独立的小框，彼此留出缝隙、不连成一片） */
+    display:flex; flex-direction:column; align-items:center; gap:26px;
+    margin-top:14px; opacity:0; transform:translateY(-10px);
+    transition:opacity .32s ease, transform .45s cubic-bezier(.22,.61,.36,1);
+}
+/* 关键：容器自己也是个 <pre>，会继承上面那条黑底规则——
+   不把它设成透明的话，选项之间的缝隙会被容器的黑底填满，看起来就成了一整块。 */
+#dlg #dlg-opts{ background:transparent; padding:0; }
+#dlg-opts.on{ opacity:1; transform:translateY(0); }
+/* 单个选项框：自上而下展开（in）／悬停整框变亮（on）／被选中闪一下（picked）／其余淡出（fade） */
+#dlg-opts .optbox{
+    clip-path:inset(0 0 100% 0); opacity:0; transform:translateY(-10px);
+    transition:clip-path .42s cubic-bezier(.22,.61,.36,1), opacity .3s ease,
+               transform .38s cubic-bezier(.22,.61,.36,1);
+}
+#dlg-opts .optbox.in{ clip-path:inset(0 0 0 0); opacity:1; transform:translateY(0); }
+#dlg-opts .optbox.on .fr, #dlg-opts .optbox.on .op{
+    color:var(--eye); text-shadow:0 0 9px rgba(200,208,194,.5);
+}
+#dlg-opts .optbox.picked{ animation:pickflash .4s ease; }
+@keyframes pickflash{ 0%{filter:brightness(1)} 30%{filter:brightness(2.2)} 100%{filter:brightness(1)} }
+#dlg-opts .optbox.fade{ opacity:.16; }
+/* 每一行都是一块定宽的容器；左右两根 | **绝对定位钉在容器的左右边缘**。
+   它们是「框的边」，不是「正文后面又打了几个空格」——正文再长、某个字实际占几格，
+   右竖线都不会跟着挪。正文区左右各留一列，不贴着框线。 */
+#dlg .rw{ display:block; position:relative; white-space:pre; }
+#dlg .bd{ display:block; overflow:hidden; }            /* 超出的部分裁掉，不外溢压到框线上 */
+#dlg .bl, #dlg .br{ position:absolute; top:0; }
+#dlg .bl{ left:0; }
+#dlg .br{ right:0; }
+/* 量列宽用的探针：量完即删，不占位 */
+#dlg pre.probe{ position:absolute; left:0; top:0; visibility:hidden; pointer-events:none; }
+/* 框线：与眼珠同色系的暗调（不是蓝灰），压得住但不抢正文 */
+#dlg .fr{ color:#98a189; text-shadow:0 0 6px rgba(152,161,137,.22); }
+#dlg .op{ color:#8e9a92; }                /* 选项常态：眼珠色的暗调 */
+#dlg .op.on{ color:var(--eye); text-shadow:0 0 9px rgba(200,208,194,.5); }   /* 悬停/选中 */
+#dlg .op.used{ color:#5f6a63; }           /* 已问过 */
+/* 古早文字游戏：句末闪烁光标 */
+#dlg .cur{ animation:curblink 1.05s steps(1) infinite; }
+@keyframes curblink{ 0%,49%{opacity:1} 50%,100%{opacity:0} }
+/* 窄屏收缩，避免框溢出画面 */
+@media (max-width:1000px){ #dlg pre{ font-size:16px; } }
+@media (max-width:760px){ #dlg pre{ font-size:13px; } }
+/* 红色发光文字：对白里的名字/强调字、黑屏字幕里的关键字，都是 .nm
+   （注意：这里不能写成 #dlg .nm —— 那样黑屏里的红字就套不上样式，只剩普通文字色） */
+.nm{
+    color:#ff3a3a; font-weight:normal;
+    text-shadow:0 0 6px rgba(255,40,40,.95), 0 0 16px rgba(255,20,20,.6), 0 0 30px rgba(255,0,0,.35);
+    animation:nmglow 2.1s ease-in-out infinite;
+}
+/* 黑屏上的红字：底是全黑，光晕可以再放开一点
+   （必须连 animation 一起换 —— 动画里的 text-shadow 优先级高于普通声明，只改上面那条是不生效的） */
+#black-cn .nm{ animation:nmglow2 2.1s ease-in-out infinite; }
+@keyframes nmglow2{
+    0%,100%{ text-shadow:0 0 7px rgba(255,45,45,.9),  0 0 18px rgba(255,25,25,.6),  0 0 34px rgba(255,10,10,.35); }
+    50%    { text-shadow:0 0 13px rgba(255,70,70,1),  0 0 30px rgba(255,30,30,.9),  0 0 58px rgba(255,10,10,.55); }
+}
+@keyframes nmglow{
+    0%,100%{ text-shadow:0 0 5px rgba(255,40,40,.8), 0 0 13px rgba(255,25,25,.45), 0 0 24px rgba(255,0,0,.25); }
+    50%    { text-shadow:0 0 10px rgba(255,70,70,1), 0 0 24px rgba(255,30,30,.8), 0 0 44px rgba(255,10,10,.5); }
+}
+/* 对白出现时眼球稍稍上抬，给框让位 */
+#stage{ transition:transform 1.2s ease; }
+body.dlg-on #stage{ transform:translateY(-7vh); }
+/* 调试角标（只有 ?debug / ?reset 时才出现） */
+#dbg{
+    position:fixed; right:10px; bottom:8px; z-index:60; display:none;
+    font:11px/1.6 "Sarasa Mono SC","Sarasa Term SC","Microsoft YaHei",monospace;
+    color:#6f7a73; letter-spacing:.4px; pointer-events:none;
+    text-shadow:0 0 4px rgba(111,122,115,.25);
+}
+#dbg.on{ display:block; }
+
+/* ---- 特殊回答：直接黑屏，屏幕正中一行字（中文在上、英文在下），显示完直接切回来 ----
+   抢屏用：z-index 40 → 压在对话框(20)之上、调试角标(60)之下。
+   进出都不做淡入淡出（没有 transition）→ 是"切"，不是"化"。 */
+#black{
+    position:fixed; inset:0; z-index:40; display:none; background:#000;
+    flex-direction:column; align-items:center; justify-content:center; gap:26px;
+    pointer-events:none;
+}
+#black.on{ display:flex; }
+/* 逐行淡入：中文区在上、英文区在下，各自按行依次亮起来 */
+#black-cn, #black-en{ display:flex; flex-direction:column; align-items:center; }
+#black-cn{ gap:16px; }
+#black-en{ gap:12px; }
+#black .bl{ opacity:0; }
+#black .bl.on{ opacity:1; }
+#black-cn{
+    font:25px/1.95 "Sarasa Mono SC","Sarasa Term SC","Noto Sans Mono CJK SC","Microsoft YaHei","PingFang SC",monospace;
+    color:var(--eye); letter-spacing:1px; text-align:center; padding:0 6vw;
+    text-shadow:0 0 8px rgba(200,208,194,.22);
+}
+#black-cn .bl{ transition:opacity .55s ease; }
+#black-en{
+    font:15px/1.95 "Georgia","Times New Roman",serif;
+    color:#7c847a; letter-spacing:1.6px; text-align:center; padding:0 8vw;
+    text-shadow:0 0 6px rgba(124,132,122,.18);
+}
+#black-en .bl{ transition:opacity .85s ease; }
+@media (max-width:1000px){ #black-cn{ font-size:20px; } #black-en{ font-size:13px; } }
+@media (max-width:760px){  #black-cn{ font-size:17px; } #black-en{ font-size:11px; } }
+
+/* ---- 整屏红光：第一问答「不成年」后那一句「重申：……」用 ----
+   盖在最上层（z-index 40，压过对白框 20、压不到调试角标 60），不接鼠标。
+   用 mix-blend-mode:screen 而不是直接铺一层半透明红：screen 是"打光"，
+   黑底会被染成暗红、亮字会被提亮泛红 —— 看上去是红光打在整个画面上，
+   而不是蒙了一层红塑料膜，对白框里的字照样读得清。 */
+#redlight{
+    position:fixed; inset:0; z-index:40; pointer-events:none;
+    opacity:0; mix-blend-mode:screen;
+    background:radial-gradient(125% 125% at 50% 45%, rgba(255,86,58,.62), rgba(178,16,12,.9) 62%, rgba(120,8,6,.95));
+    transition:opacity .9s ease;                      /* 灭：慢慢褪 */
+}
+#redlight.on{ opacity:1; transition:opacity .42s ease; }   /* 亮：快一点，像灯突然打下来 */
+</style>
+</head>
+<body>
+
+<div id="stage">
+    <div id="ring" aria-hidden="true"></div>
+    <pre id="eye" title="我偶尔会看您一眼"></pre>
+    <div id="pet" aria-hidden="true"></div>
+    <div id="gates" aria-hidden="true"></div>     <!-- 网页入口按钮，一个入口一枚，由 JS 往里填 -->
+</div>
+
+<!-- 解锁提示：网页那边解开了新东西，这边冒一句（演出细节待定，先用这一句占位） -->
+<div id="tip" aria-hidden="true"></div>
+
+<!-- 背景音乐开关：固定右上角，点一下开／关（Chaolis.mp3） -->
+<div id="musicbtn" title="点一下：开／关背景音乐">♪ 音乐</div>
+<div id="musicboxbtn" title="点一下：打开音乐盒">♫ 乐库</div>
+<div id="musicbox">
+  <div class="mb-title">♫ 音乐盒</div>
+  <div id="mb-list"></div>
+  <div class="mb-hint">通关终局对话后解锁更多</div>
+</div>
+
+<!-- 数据清空按钮：读完青禾的残稿、演完那段剧情后浮出；点一下让大眼问是否清空 -->
+<div id="databtn" title="清空所有进度与已解锁的网页页面">数据清空</div>
+
+<div id="dlg">
+    <pre id="dlg-pre" aria-live="polite"></pre>
+    <pre id="dlg-opts" aria-hidden="true"></pre>
+</div>
+
+<div id="black" aria-hidden="true">
+    <div id="black-cn"></div>
+    <div id="black-en"></div>
+</div>
+
+<div id="redlight" aria-hidden="true"></div>
+
+<script>
+/* 第一幕：巨大眼球——眼珠由汉字线稿拼成，内切于一个文字球面之中。
+   出场：屏幕中央先浮现一条汉字细缝 → 自然睁开（平滑动画过渡）→ 再立体化；
+   睁眼开始时，周围的文字球苏醒——倾斜自转、云带式流动、近亮远暗。 */
+
+var COLS = 78, ROWS = 40;
+var cx = COLS/2, cy = ROWS/2;
+var ax = 33, ay = 14;     // 眼眶（杏仁）半宽/半高，单位=网格（全宽汉字，已是方形）
+var ASP = 1.0;            // 全宽汉字每格方形，无需横向修正
+var ri = 13, rp = 5.5;    // 虹膜 / 瞳孔 半径
+var AYMAX = 14, SLIT = 1.5;   // 全开高度 / 缝隙高度
+
+// 明暗台阶：由汉字疏密表现。最暗用全角空格(背景/瞳孔)，越亮字越密；
+// 用「目/眼/晶」作最密一档，呼应"文字成眼"。
+var SP = '　';
+var RAMP = "丶丿氵灬火目眼晶";   // 0..7：稀疏 → 致密
+
+function lumCh(lum){
+    var i = Math.round(lum * (RAMP.length - 1));
+    if (i < 0) i = 0; if (i > RAMP.length - 1) i = RAMP.length - 1;
+    return RAMP.charAt(i);
+}
+
+// ox/oy：瞳孔中心相对正中偏移（盯鼠标）；ay：当前纵向半高（入场动画）；
+// depth：立体程度 0(平) → 1(全立体)。
+// 画法：纯线条轮廓——只勾勒外眼眶、虹膜环与空洞瞳孔，内部留空（压迫感来自镂空凝视）。
+var LIGHT_X, LIGHT_Y;                       // 归一化后的受光方向（左上）
+(function(){ var lx = -0.62, ly = -0.62, ll = Math.sqrt(lx*lx + ly*ly);
+             LIGHT_X = lx/ll; LIGHT_Y = ly/ll; })();
+
+/* 逐格几何预计算：列方向的 (dx/ax)^2 和行方向的 (r-cy)^2 都是定值，
+   只有 ay 在变 → 每帧只需一次除法，省掉 3120 次乘法/除法 */
+var COL_EX2 = new Float32Array(COLS), ROW_DY2 = new Float32Array(ROWS);
+for (var _c = 0; _c < COLS; _c++){ var _e = (_c - cx) / ax; COL_EX2[_c] = _e * _e; }
+for (var _r = 0; _r < ROWS; _r++){ var _y = _r - cy; ROW_DY2[_r] = _y * _y; }
+/* 空格串查表：拼一行空白不用一个字符一个字符加 */
+var SP_N = [];
+(function(){ var s = ''; for (var i = 0; i <= COLS; i++){ SP_N.push(s); s += SP; } })();
+var SP_ROW = SP_N[COLS] + '\n';
+
+function buildEye(ox, oy, ay, depth){
+    ox = ox || 0; oy = oy || 0;
+    ay = (ay == null) ? AYMAX : ay;
+    depth = (depth == null) ? 1 : depth;
+    var pgx = cx + ox, pgy = cy + oy;
+    var rpEff = rp * Math.min(1, ay / AYMAX);   // 瞳孔随睁眼由无到有
+    var invAy2 = 1 / (ay * ay);
+    // 距离判定全部用平方比，避开 sqrt —— 只有真正要算明暗的那两圈（虹膜环 / 外轮廓）才开方
+    var rp2 = rpEff * rpEff;
+    var riLo2 = (ri - 1.4) * (ri - 1.4), riHi2 = (ri + 1.4) * (ri + 1.4);
+    var rpEdge2 = (rpEff + 1.1) * (rpEff + 1.1);
+    var slit = ay < 4;
+    var out = '';
+    for (var r = 0; r < ROWS; r++){
+        var ey2 = ROW_DY2[r] * invAy2;
+        if (ey2 > 1){ out += SP_ROW; continue; }            // 整行都在眼眶外
+        // 只遍历这一行里真正落在眼形内的列区间，两侧用空格串补齐
+        var hw = ax * Math.sqrt(1 - ey2);
+        var c0 = Math.max(0, Math.ceil(cx - hw)), c1 = Math.min(COLS - 1, Math.floor(cx + hw));
+        var line = SP_N[c0];
+        var dy = r - pgy;
+        for (var c = c0; c <= c1; c++){
+            var dx = (c - pgx) * ASP;
+            var d2 = dx*dx + dy*dy;
+            if (d2 <= rp2){ line += SP; continue; }         // 瞳孔 = 空洞（留白）
+            if (slit){ line += lumCh(0.48); continue; }     // 缝隙：一条干净的横线
+            if (d2 >= riLo2 && d2 <= riHi2){
+                // 虹膜环：受光侧密、背光侧疏 → 立体（depth 控制对比）
+                var d = Math.sqrt(d2) || 1;
+                var shade = (dx/d)*LIGHT_X + (dy/d)*LIGHT_Y;             // -1..1
+                line += lumCh(0.45 + depth * 0.42 * shade);
+            } else if (d2 < rpEdge2){
+                line += '丶';                                // 瞳孔边缘，一道极淡的线
+            } else if (COL_EX2[c] + ey2 > 0.85){
+                var d3 = Math.sqrt(d2) || 1;                 // 外眼眶轮廓
+                line += lumCh(0.56 + 0.12 * ((dx/d3)*LIGHT_X + (dy/d3)*LIGHT_Y));
+            } else line += SP;
+        }
+        out += line + SP_N[COLS - 1 - c1] + '\n';
+    }
+    return out;
+}
+
+var eye = document.getElementById('eye');
+eye.textContent = buildEye(0, 0, SLIT, 0);   // 先画一条缝
+
+/* ---- 出场时间线 ---- */
+var P = { fade: 320, hold: 460, open: 1080, depth: 860 };
+var t0 = null, ayCur = SLIT, depthCur = 0, introDone = false, needRedraw = true;
+var lastQ = { x: 999, y: 999, a: -1, d: -1 };    // 上一次真正重画时用的量化参数
+
+function easeOut(x){ return 1 - Math.pow(1 - x, 3); }
+function easeInOut(x){ return x < 0.5 ? 4*x*x*x : 1 - Math.pow(-2*x + 2, 3) / 2; }   // 自然过渡：慢起缓停，无过冲
+
+function frame(ts){
+    if (blackOn){ lastTs = ts; requestAnimationFrame(frame); return; }   // 黑屏期间画面不可见 → 不画
+    if (t0 === null) t0 = ts;
+    var t = ts - t0;
+    var animating = false;
+    if (t < P.fade){ ayCur = SLIT; depthCur = 0; }
+    else if (t < P.fade + P.hold){ ayCur = SLIT; depthCur = 0; }
+    else if (t < P.fade + P.hold + P.open){
+        var p = easeInOut((t - P.fade - P.hold) / P.open);   // 自然睁开：平滑动画过渡
+        ayCur = SLIT + (AYMAX - SLIT) * p;
+        depthCur = 0; animating = true;
+    }
+    else if (t < P.fade + P.hold + P.open + P.depth){
+        ayCur = AYMAX;
+        depthCur = easeOut((t - P.fade - P.hold - P.open) / P.depth);   // 立体化
+        animating = true;
+    }
+    else {
+        ayCur = AYMAX; depthCur = 1;
+        if (!introDone){
+            introDone = true; animating = true;
+            setTimeout(openDlg, 1100);
+            setTimeout(function(){ Pet.ensure(); }, 1600);   // 答过第六问的话，一进来就该有那只宠物
+            /* 开场演出完了 → 把存档里放过的网页入口补出来，再补上网页那边解锁过的 */
+            setTimeout(function(){ Gate.ensure(); ensureUnlock(); checkUnlock(); startUnlockWatch(); }, 1900);
+        }
+    }
+
+    // 入场结束后：眼睛随文字球同拍呼吸（0.8），眨眼走同一套开合数学
+    if (introDone){
+        var tS = ts * 0.001;
+        var ayB = AYMAX * (1 + 0.028 * Math.sin(tS * 0.8));
+        if (blinkT >= 0){
+            var bp = (ts - blinkT) / 300;
+            if (bp >= 1){ blinkT = -1; }
+            else ayB = Math.min(ayB, Math.max(1.4, AYMAX * (1 - Math.sin(Math.PI * bp) * 0.94)));
+        }
+        ayCur = ayB; animating = true;      // 呼吸恒动 → 眼与球连成一体
+        // 凝视行为：到点换状态
+        if (ts >= gaze.until) pickGaze(ts);
+        if (gaze.mode === 'pet' && petStareLost()) pickGaze(ts);
+        if (gaze.mode === 'mouse'){ tar.x = mLook.x; tar.y = mLook.y; }
+        else if (gaze.mode === 'pet'){
+            /* 盯着宠物：跟着祂走，只在方向上加一丝几乎看不出的游移 —— 盯着的眼睛不会完全钉死 */
+            var pl = lookAt(Pet.x, Pet.y, ts);
+            tar.x = pl.x + Math.sin(tS*1.7)*0.10;
+            tar.y = pl.y + Math.cos(tS*1.3)*0.10;
+        }
+        else if (gaze.mode === 'wander'){
+            tar.x = gaze.wx + Math.sin(tS*3.1)*0.35;    // 微小扫视，像在打量
+            tar.y = gaze.wy + Math.cos(tS*2.3)*0.35;
+        }
+        else { tar.x = 0; tar.y = 0; }                  // 直视玩家
+        var dx = tar.x - cur.x, dy = tar.y - cur.y;
+        if (Math.abs(dx) > 0.12 || Math.abs(dy) > 0.12){
+            cur.x += dx * gaze.k; cur.y += dy * gaze.k;  // k：盯宠物时转得慢一些
+        }
+    }
+    if (needRedraw) animating = true;   // 眨眼等外部触发
+    /* 重建一个 78×40 的字符网格 + 整块 textContent 是很贵的一次重排：
+       把参数量化后再比，只有真的变了才重画（呼吸/凝视的抖动大部分帧会被吃掉） */
+    if (animating){
+        // 量化精度取到 1/8 格(1.6px) 与 1/16 行 —— 比字符网格本身还细，肉眼看不出台阶
+        var qx = Math.round(cur.x * 8) / 8, qy = Math.round(cur.y * 8) / 8;
+        var qa = Math.round(ayCur * 16) / 16, qd = Math.round(depthCur * 64) / 64;
+        if (qx !== lastQ.x || qy !== lastQ.y || qa !== lastQ.a || qd !== lastQ.d){
+            lastQ.x = qx; lastQ.y = qy; lastQ.a = qa; lastQ.d = qd;
+            eye.textContent = buildEye(qx, qy, qa, qd);
+            needRedraw = false;
+        }
+    }
+
+    // 文字漩涡环：眼睛开始睁开时苏醒，此后每帧推进
+    if (!ringOn && t >= P.fade + P.hold){ ringOn = true; ringBox.classList.add('on'); }
+    var dts = lastTs === null ? 0.016 : Math.min(0.05, (ts - lastTs) / 1000);
+    if (ringOn) updateRing(ts, dts);
+    if (Pet.alive) Pet.update(ts, dts);      // 宠物跟同一条时间线走（黑屏时会被上面的 return 跳过）
+    PetCare.update(ts);                      // 饲养面板跟着宠物（宠物不在时由它自己淡出）
+    if (Gate.ids.length) Gate.update(ts, dts);     // 网页入口按钮同一条时间线
+    lastTs = ts;
+    requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* 缝出现后淡入 */
+requestAnimationFrame(function(){
+    setTimeout(function(){ eye.classList.add('show'); }, 160);
+});
+
+/* 凝视行为：大部分时候直视屏幕或随便看看别处；偶尔盯鼠标；
+   最少见、但看得最久的 —— 转过去盯着那只宠物。 */
+var maxLook = ri - rp - 1.5;
+var cur = { x:0, y:0 }, tar = { x:0, y:0 }, blinkT = -1;
+var mLook = { x:0, y:0 };
+
+/* 眼球中心（视口坐标）。对白弹出时舞台整体上移 7vh，位置会变；
+   但每帧读一次 getBoundingClientRect 太贵 → 缓存，最多每 400ms 量一次。 */
+var eyeC = { x:0, y:0, t:-1e9 };
+function eyeCenter(ts){
+    if (ts - eyeC.t > 400){
+        var b = eye.getBoundingClientRect();
+        eyeC.x = b.left + b.width/2; eyeC.y = b.top + b.height/2; eyeC.t = ts;
+    }
+    return eyeC;
+}
+/* 屏幕上一点 → 瞳孔该偏多少（单位=网格格）。盯鼠标和盯宠物用同一套换算。 */
+function lookAt(x, y, ts){
+    var c = eyeCenter(ts);
+    var vx = x - c.x, vy = y - c.y;
+    var dist = Math.sqrt(vx*vx + vy*vy) || 1;
+    var reach = Math.min(maxLook, dist * 0.018);   // 离得越远，眼珠转得越满
+    return { x: (vx/dist) * reach, y: (vy/dist) * reach };
+}
+
+window.addEventListener('mousemove', function(e){
+    if (!introDone) return;
+    var l = lookAt(e.clientX, e.clientY, performance.now());
+    mLook.x = l.x; mLook.y = l.y;
+});
+
+/* 「盯着宠物」这件事的旋钮 —— 想改就改这三个数：
+   p = 每次换状态时有多大概率选中它（概率最低）
+   min/max = 盯多久（毫秒，时间最长）
+   vis = 宠物至少得这么「实在」才值得看；转到球背面淡掉了就别盯着空气 */
+var PET_STARE = { p: 0.05, min: 9000, max: 16000, vis: 0.5 };
+
+var gaze = { mode: 'center', until: 1500, wx: 0, wy: 0, k: 0.16 };
+function pickGaze(now){
+    /* 盯着宠物：概率最低、时间最长。宠物不在 / 正从画面外飞进来 / 已淡到球背面 → 这次不算，往下走 */
+    if (Pet.alive && Pet.mode !== 'enter' && Pet.op > PET_STARE.vis && Math.random() < PET_STARE.p){
+        gaze.mode = 'pet';
+        gaze.until = now + PET_STARE.min + Math.random() * (PET_STARE.max - PET_STARE.min);
+        gaze.k = 0.085;                              // 转得慢：不是瞥一眼，是端详
+        if (introDone) blinkT = now;                 // 先眨一下再转过去 —— 眨眼正好把"换目标"藏住
+        return;
+    }
+    var r = Math.random();
+    if (r < 0.07){                                   // 次之：盯鼠标（惊鸿一瞥）
+        gaze.mode = 'mouse';
+        gaze.until = now + 1600 + Math.random()*2200;
+        gaze.k = 0.16;
+    } else if (r < 0.55){                            // 直视屏幕（正对玩家）
+        gaze.mode = 'center';
+        gaze.until = now + 1800 + Math.random()*3800;
+        gaze.k = 0.16;
+    } else {                                         // 随便看看别处（最多）
+        gaze.mode = 'wander';
+        var a = Math.random()*Math.PI*2;
+        var reach = maxLook * (0.35 + Math.random()*0.55);
+        gaze.wx = Math.cos(a)*reach; gaze.wy = Math.sin(a)*reach;
+        gaze.until = now + 1200 + Math.random()*2800;
+        gaze.k = 0.16;
+    }
+}
+/* 盯着宠物的中途，祂可能没了 —— 被收走、或绕到球背面看不见了 → 这一趟提前作废 */
+function petStareLost(){ return !Pet.alive || Pet.op < 0.3; }
+
+/* 眨眼：随机间隔触发；开合走 buildEye 同一套数学（与呼吸/凝视兼容） */
+function scheduleBlink(){
+    setTimeout(function(){
+        if (!introDone){ scheduleBlink(); return; }
+        /* 正盯着宠物看的时候多半不眨 —— 看得入神；偶尔还是眨一下，免得像卡住了 */
+        if (!(gaze.mode === 'pet' && Math.random() < 0.65)) blinkT = performance.now();
+        scheduleBlink();
+    }, 4200 + Math.random()*5200);
+}
+scheduleBlink();
+
+/* ---- 文字球壳：巨大眼球——眼珠内切于文字球面，球面文字环绕流动 ---- */
+var ringBox = document.getElementById('ring');
+var VCHARS = '丶丿氵冫氺水火灬風雲渦漩流';   // 云/水意象的字，不与眼珠争「目眼晶」
+var R_COUNT = 1100;
+var TILT = 0.32;                            // 自转轴倾斜（弧度），让转动更有立体感
+var RADIUS = 0, EXW = 0, EXH = 0, RCX = 0, RCY = 0;   // 球半径 / 中央避让椭圆半轴 / 圆心
+var ringSpans = [], ringOn = false, lastTs = null;
+/* d^2.2 查表：省掉每帧 1100 次 Math.pow */
+var POW_LUT = new Float32Array(257);
+for (var _p2 = 0; _p2 <= 256; _p2++) POW_LUT[_p2] = Math.pow(_p2 / 256, 2.2);
+/* sin/cos 查表：每帧 4400 次三角函数是大头（实测约 0.9ms），换成 8192 点表 ≈ 0.0008rad 精度 */
+var SIN_N = 8192, SIN_SCALE = SIN_N / (Math.PI * 2), SIN_MASK = SIN_N - 1;
+/* 查表函数闭包化：表/比例尺都在闭包里当局部变量用，热循环里不再做全局查找 */
+var fsin, fcos;
+(function(){
+    var L = new Float32Array(SIN_N), S = SIN_SCALE, M = SIN_MASK, Q = SIN_N >> 2;
+    for (var i = 0; i < SIN_N; i++) L[i] = Math.sin(i / S);
+    fsin = function(a){ return L[((a * S) | 0) & M]; };
+    fcos = function(a){ return L[((((a * S) | 0) + Q) & M)]; };
+})();
+/* 曾经试过"每帧只更新一半的字"来省算力——结果是每个字只有 30Hz，肉眼直接看出一顿一顿的。
+   字少写几次省的那点时间，远不如掉一半刷新率来得明显。所以：每帧全量更新，一个都不跳过。 */
+
+function layoutRing(){
+    // 用「眼珠真正的墨迹尺寸」而不是 <pre> 的盒子尺寸来定避让窗：
+    // 盒子里有大片空白（78x40 网格 vs 杏仁 33x14），按盒子算会空出一大圈。
+    var cw = eye.offsetWidth / COLS, lh = eye.offsetHeight / ROWS;
+    RADIUS = eye.offsetWidth / 2 + 45;      // 球半径（眼珠内切于球）
+    EXW = ax * cw + 8;                      // 避让椭圆紧贴眼珠轮廓，只留一点余量
+    EXH = AYMAX * lh + 8;
+    RCX = window.innerWidth / 2; RCY = window.innerHeight / 2;   // 圆心缓存，别每帧读 innerWidth
+}
+window.addEventListener('resize', layoutRing);
+
+(function initRing(){
+    layoutRing();
+    var GA = Math.PI * (3 - Math.sqrt(5));  // 黄金角 → 球面均匀布点
+    for (var i = 0; i < R_COUNT; i++){
+        var s = document.createElement('span');
+        s.textContent = VCHARS.charAt((Math.random()*VCHARS.length) | 0);
+        s.style.fontSize = (11 + Math.random()*8).toFixed(1) + 'px';
+        ringBox.appendChild(s);
+        var phi = Math.acos(1 - 2*(i + 0.5)/R_COUNT);   // 斐波那契球分布
+        ringSpans.push({
+            el: s,
+            sp: Math.sin(phi), cp: Math.cos(phi),
+            phiv: phi,                                  // 极角（行波的相位参数）
+            lam: i * GA,                                // 初始经度
+            band: Math.sin(phi*3.1) * 0.35,             // 纬度差速 → 云带式流动
+            jit: Math.random()*Math.PI*2,
+            sj: 0, cj: 0,                               // sin/cos(jit) 预存，用来拆 sin(t*0.23+jit)
+            w: 0.10 * (1 + Math.sin(phi*3.1) * 0.35),   // 该点的角速度（含纬度差速），预存
+            wj: (Math.random()-0.5)*0.35,               // 行波的微小相位差（有机感）
+            rotV: (Math.random()*2 - 1) * 0.5,          // 缓慢自转（微翻滚）
+            a0: 0.6 + Math.random()*0.4
+        });
+        var o = ringSpans[i];
+        o.sj = Math.sin(o.jit); o.cj = Math.cos(o.jit);
+    }
+})();
+
+function updateRing(ts, dt){
+    // 热循环里用到的量全部转成本地变量：全局查找在 1100×60 次/秒 的量级下是能测出来的
+    var cx2 = RCX, cy2 = RCY, radius = RADIUS, exw = EXW, exh = EXH;
+    var powLut = POW_LUT;
+    /* 宠物的避让区（由 updatePet 每帧写入）：字流要把祂绕开 */
+    var pax = PETAV.on ? PETAV.x : 0, pay = PETAV.on ? PETAV.y : 0;
+    var par = PETAV.on ? PETAV.r : 0, par2 = par * par;
+    /* 宠物转到球背面去的时候是半透明的 —— 那时就别再把字推开了（乘上"实在程度"w） */
+    var paw = PETAV.on ? PETAV.w : 0;
+    var t = ts * 0.001;
+    var ct = Math.cos(TILT), stl = Math.sin(TILT);
+    /* sin(t*0.23 + jit) 拆成 sin(t*0.23)·cos(jit) + cos(t*0.23)·sin(jit)：
+       前两项全帧共用一次，cos/sin(jit) 每个字预存 → 1100 次三角变 2 次 */
+    var tA = 0.15 * Math.sin(t * 0.23), tB = 0.15 * Math.cos(t * 0.23);
+    for (var i = 0; i < ringSpans.length; i++){
+        var o = ringSpans[i];
+        // 经度推进：纬度差速 + 微扰 → 像云在球面上流
+        var lam = o.lam + t * o.w + tA * o.cj + tB * o.sj;
+        var x0 = o.sp * fcos(lam);
+        var z0 = o.sp * fsin(lam);
+        var y0 = o.cp;
+        // 自转轴倾斜（绕 X 轴）
+        var y1 = y0*ct - z0*stl;
+        var z1 = y0*stl + z0*ct;
+        // 行波：两个波长不同的波叠加，整球文字一起荡（0.8 与眼珠呼吸同频）
+        var wav = fsin(2*lam + 3*o.phiv - t*0.8 + o.wj) * 0.6
+                + fsin(3*lam - 2*o.phiv + t*0.55) * 0.4;
+        var rEff = radius * (1 + 0.016 * wav);          // 径向起伏
+        var x = cx2 + x0 * rEff;
+        var y = cy2 + y1 * rEff;
+        // 切向晃动：沿圆周方向推一把，波就"流"起来了
+        var rx2 = x - cx2, ry2 = y - cy2;
+        var rl = Math.sqrt(rx2*rx2 + ry2*ry2) || 1;
+        x += (-ry2/rl) * wav * 9;
+        y += ( rx2/rl) * wav * 9;
+        var d = (z1 + 1) / 2;                           // 0=球背面 1=正对玩家
+        // 避让 + 绕流：先按原位算淡出系数，再把字沿径向轻轻推开——流线绕着眼珠走
+        var exd = (x - cx2)/exw, eyd = (y - cy2)/exh;
+        var e2 = exd*exd + eyd*eyd;
+        // 只在瞳孔/虹膜附近淡出，贴着眼珠轮廓就立刻恢复 —— 不再挖一大片空窗
+        var vf = e2 >= 1.0 ? 1 : Math.max(0, Math.min(1, (e2 - 0.45) / 0.55));
+        if (e2 < 1.5 && e2 > 1e-4){
+            var _q = Math.max(0, 1 - e2/1.5);
+            var kk = 1 + 0.14 * _q * _q;                 // 绕流：柔推，不外扩成大空环
+            x = cx2 + exd * kk * exw;
+            y = cy2 + eyd * kk * exh;
+        }
+        /* 宠物避让：与上面同一套写法（淡出 + 沿径向外推），圆心跟着宠物走。
+           推开的力度乘以 PETAV.w —— 宠物若是退到球的背面（几乎看不见），字就照原路流过去。 */
+        if (par2 > 0 && paw > 0.05){
+            var pdx = x - pax, pdy = y - pay, pd2 = pdx*pdx + pdy*pdy;
+            if (pd2 < par2){
+                var pd0 = Math.sqrt(pd2) || 1;
+                var pf = (pd0 / par - 0.5) / 0.5;        // 边缘处淡出，中心全空
+                if (pf < 0) pf = 0; else if (pf > 1) pf = 1;
+                vf *= 1 - (1 - pf) * paw;
+                var pk = (par - pd0) * 0.5 / pd0 * paw;   // 绕流：把字推开而不是删掉
+                x += pdx * pk; y += pdy * pk;
+            }
+        }
+        // 远近对比拉陡：背面近乎幽灵(0.03)，正面近乎实心(0.98)
+        var di = (d * 256) | 0; if (di < 0) di = 0; else if (di > 256) di = 256;
+        var opi = ((0.03 + 0.95 * powLut[di]) * vf * o.a0 * 100) | 0;
+        var sc = 0.5 + 0.72*d, sci = (sc * 100) | 0;     // 近大远小（跨度更大）
+        var rot = o.jit + t * o.rotV;
+        // 保留 1 位小数：取整会让字按整像素跳，慢速漂移时看得出台阶
+        var xi = Math.round(x * 10) / 10, yi = Math.round(y * 10) / 10;
+        var rqi = Math.round(rot * 100) / 100;
+        // 值没变就不写 DOM（等价于写了同一个值），省掉一部分样式重算
+        if (opi !== o._op){ o._op = opi; o.el.style.opacity = opi / 100; }
+        var tf = xi !== o._x || yi !== o._y || sci !== o._s || rqi !== o._r;
+        if (tf){
+            o._x = xi; o._y = yi; o._s = sci; o._r = rqi;
+            o.el.style.transform =
+                'translate(' + xi + 'px,' + yi + 'px)' +
+                ' translate(-50%,-50%)' +
+                ' rotate(' + rqi + 'rad)' +
+                ' scale(' + (sci / 100) + ')';
+        }
+    }
+}
+
+/* ==================================================================
+   宠物（第六问选完之后放出来的那一团字）
+   ------------------------------------------------------------------
+   · 形状就是 PETS 里那几行字符——一行一段、各自居中，所以换字体也不会散架。
+   · 从画面外的涡流里飘进来 → 落在正对着您的那一面，之后就在**整个球面**上慢慢爬：
+     沿大圆（SLERP）走，所以永远贴着球面绕过去，不会从球中间穿；转到背面去会按球面
+     透视变淡变小，过一会儿自己绕回来（每三趟里有一趟会往球后面跑一圈）。
+   · 能被鼠标拖起来（随便拖到屏幕哪里）；松手会落回球面上离它最近的那一点。
+   · 三件日常：① 停下时**左右来回踱步**（PACE）——脚下那块球面没动，只是把画出来的位置
+     在屏幕上左右拨一点，所以祂还是贴着球面，看着像在原地来回走；
+     ② 爬球 + 踱步攒够运动量（NAP.after 秒）后，自己找一个正对着您的地方**躺下睡觉**：
+     换成闭眼的那一版形象、横向摊开纵向压扁地蜷着，头顶慢慢冒 Z，EXP 一点一点地涨；
+     睡着时摸它不加 EXP（只冒 Z），但仍然能抓起来挪地方 —— 放下它接着睡；
+     ③ Lv.1 起偶尔后空翻（FLIP）。
+   · PETAV 是每帧写给球面字流的避让区——涡流会绕开祂；宠物退到背面半透明时（PETAV.w）
+     就不再推字，让字照原路流过。
+   手动试：Pet.spawn('cat') / Pet.hide()
+   　　　　Pet.startNap(performance.now())（= 立刻找地方睡）　Pet.wake(performance.now()) */
+/* ★ 注意：形象里的反斜杠 `\` 必须写成 `\\`。
+   JS 字符串里 `\ ` 不是合法转义，会被直接吞掉（`'(\   /)'` 出来是 `(   /)`，反斜杠没了）。
+   爬虫那行的 `///\oo/\\\` 同理要写成 `'///\\oo/\\\\\\'`。 */
+var PETS = {
+    cat:     ['  ∧ ∧  ', ' ( ･ω･ )', '  ﾉ   ﾉ ', '   〜   '],
+    dog:     [' ▼   ▼ ', ' ( ･ω･ )', '  ﾉ ω ﾉ', '   〜   '],
+    hamster: ['ᘛ⁐̤ᕐᐷ'],
+    rabbit:  ['(\\            /)', '(˶•ㅅ•˶)O'],
+    reptile: ['///\\oo/\\\\\\']
+};
+/* 睡着的样子：跟上面一一对应 —— 眼睛闭起来、脚收进去、尾巴盘起来。
+   再叠一层"压扁"（见下面的 NAP.sx/sy），看起来就是蜷在那儿睡，不是站着打盹。
+   没写到的种类就自动沿用白天的样子，只闭眼（见 Pet.setArt）——
+   仓鼠那一枚本来就分不出睁眼闭眼，所以故意不写，睡着时只压扁 + 冒 Z。 */
+var PETS_SLEEP = {
+    cat:     ['  ∧ ∧  ', ' ( -ω- )', '  ﾉ   ﾉ ', '   〜   '],
+    dog:     [' ▼   ▼ ', ' ( -ω- )', '  ﾉ ω ﾉ', '   〜   '],
+    rabbit:  ['(\\            /)', '(˶-ㅅ-˶)O'],
+    reptile: ['///\\--/\\\\\\']
+};
+var PETAV = { x:0, y:0, r:0, w:1, on:false };   // 球面字流用的避让区（每帧更新；w=这只宠物此刻有多"实在"）
+var petEl = document.getElementById('pet');
+var stageEl = document.getElementById('stage');
+
+/* 球面 ⇄ 屏幕（与球面字流同一套数学：同一个球心、同一个半径、同一个自转轴倾角，
+   所以宠物看上去就是贴在那层文字皮上爬）。v = [x0, y0, z0]，单位向量。 */
+function petProj(v, wave){
+    var ct = Math.cos(TILT), st = Math.sin(TILT);
+    var rad = RADIUS * (1 + 0.016 * (wave || 0));      // 跟着球面的行波一起起伏
+    var X = v[0], Y = v[1]*ct - v[2]*st, Z = v[1]*st + v[2]*ct;
+    return { x: RCX + X*rad, y: RCY + Y*rad, d: (Z + 1) / 2 };   // d：0=球背面 1=正对玩家
+}
+/* 屏幕上一点 → 球面上离它最近的那个点（取正面这一层） */
+function petUnproj(x, y){
+    var nx = (x - RCX) / RADIUS, ny = (y - RCY) / RADIUS;
+    var r = Math.sqrt(nx*nx + ny*ny);
+    if (r > 1){ nx /= r; ny /= r; r = 1; }             // 拖到球外 → 按到球轮廓上
+    var Z = Math.sqrt(Math.max(0, 1 - r*r));           // 正面半球
+    var ct = Math.cos(TILT), st = Math.sin(TILT);
+    var a = nx, b = ny*ct + Z*st, c = -ny*st + Z*ct;   // 逆着自转轴倾角转回来
+    var l = Math.sqrt(a*a + b*b + c*c) || 1;
+    return [a/l, b/l, c/l];
+}
+/* 沿大圆走：SLERP —— 宠物永远贴着球面「绕过去」，不会从球中间穿过去 */
+function petSlerp(a, b, t){
+    var dp = a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+    if (dp > 0.99999) return b.slice();                  // 几乎重合
+    if (dp < -0.99999){ return [b[1], -b[0], b[2]]; }    // 正对面：随便绕一侧过去
+    var om = Math.acos(dp), so = Math.sin(om);
+    var s0 = Math.sin((1 - t) * om) / so, s1 = Math.sin(t * om) / so;
+    return [a[0]*s0 + b[0]*s1, a[1]*s0 + b[1]*s1, a[2]*s0 + b[2]*s1];
+}
+/* 球面上随便挑一个落脚点。minD = 至少要有多「正对」玩家：
+   0 = 整个球面随便跑（可能绕到背面去）；0.85 = 只落在正对着您的那一面。
+   做法：直接在「已经倾斜过的」那一层里取深度 Z（均匀分布必有 Z ∈ [-1,1]），
+   再把点逆着自转轴倾角转回来 —— 这样一定落得到「够正」的那一面，不用反复试。 */
+function petSpot(minD){
+    var zMin = 2 * minD - 1;
+    if (zMin > 1) zMin = 1;
+    var Z = zMin + Math.random() * (1 - zMin);           // 深度（投影到您眼前的那一层）
+    var rr = Math.sqrt(Math.max(0, 1 - Z*Z));
+    var a = Math.random() * Math.PI * 2;
+    var ct = Math.cos(TILT), st = Math.sin(TILT);
+    var X = rr * fcos(a), Y = rr * fsin(a);
+    return [X, Y*ct + Z*st, -Y*st + Z*ct];               // 逆倾斜：回到球面自转前的坐标
+}
+
+var Pet = {
+    alive: false, kind: null,
+    x: 0, y: 0, rot: 0, sc: 1, bob: 0, op: 1,
+    v: [0, 1, 0], vt: [0, 1, 0], px: 0, py: 0,     // 球面上的当前点 / 目标点
+    mode: 'off', t0: 0, dur: 0, waitUntil: 0, spd: 30, leg: 0,
+    x0: 0, y0: 0, tx: 0, ty: 0, r0: 0, w: 0, h: 0, born: 0,
+    flipT: 0, flipDur: 0, flipCd: 0,       // 后空翻：开始时刻 / 时长 / 冷却到什么时候
+    /* 踱步：ox/oy 是加在球面坐标上的一点屏幕偏移（脚底下那块球面没动，只是左右挪两步） */
+    pace: null, ox: 0, oy: 0, paceDir: 0,
+    /* 睡觉：tired = 攒下来的"运动量"（秒），够 NAP.after 就去找地方躺下 */
+    asleep: false, tired: 0, napNext: false, sleepUntil: 0, zzzAt: 0, expAt: 0,
+    /* 存档里答过第六问 → 直接把它放出来（刷新/续玩都在） */
+    ensure: function(){
+        if (this.alive) return;
+        var k = save.ans && save.ans.pet;
+        if (k && PETS[k]) this.spawn(k);
+    },
+    spawn: function(kind){
+        var rows = PETS[kind];
+        if (!rows) return;
+        this.kind = kind; this.alive = true;
+        this.setArt(false);
+        petEl.classList.add('on');
+        /* 入场：从画面外的涡流里飘进来（左右随机），落在正对着您的那一面 */
+        var side = Math.random() < 0.5 ? -1 : 1;
+        this.x0 = RCX + side * (RADIUS * 1.8 + 70);
+        this.y0 = RCY + (Math.random() - 0.5) * RADIUS * 1.1;
+        this.vt = petSpot(0.85);
+        var pg = petProj(this.vt);
+        this.x = this.x0; this.y = this.y0;
+        this.tx = pg.x;   this.ty = pg.y;
+        this.t0 = this.born = performance.now();
+        this.dur = 3800 + Math.random() * 1400;      // 飘过来的时长
+        this.mode = 'enter';
+        this.rot = 0; this.sc = 1; this.bob = 0; this.op = 0; this.leg = 0;
+        this.flipT = 0; this.flipCd = this.t0 + 3000;   // 刚飘过来那会儿先别翻
+        this.spd = 42 + Math.random() * 22;          // 爬行速度（屏幕上看着约多少 px/s）
+        this.pace = null; this.ox = this.oy = 0; this.paceDir = 0;
+        this.asleep = false; this.tired = 0; this.napNext = false; this.sleepUntil = 0;
+        PETAV.on = true;
+    },
+    hide: function(){
+        this.alive = false; this.mode = 'off';
+        this.asleep = false; this.pace = null; this.ox = this.oy = 0; this.tired = 0;
+        petEl.classList.remove('on', 'drag');
+        petEl.innerHTML = '';
+        PETAV.on = false;
+    },
+    /* 换形象：sleeping=true 用 PETS_SLEEP（闭眼蜷着）；表里没写的种类就只把眼睛闭上 */
+    setArt: function(sleeping){
+        var rows = PETS[this.kind] || [];
+        if (sleeping) rows = PETS_SLEEP[this.kind] ||
+            rows.map(function(r){ return r.replace(/･ω･/g, '-ω-'); });
+        var html = '';
+        rows.forEach(function(r){ html += '<span class="pr">' + esc(r) + '</span>'; });
+        petEl.innerHTML = html;
+        var self = this;                     // 换了形象宽高会变，下一帧重新量一次
+        requestAnimationFrame(function(){
+            self.w = petEl.offsetWidth; self.h = petEl.offsetHeight;
+        });
+    },
+    /* 停下之后：多数时候站着发呆，有时改成左右来回踱两步（踱完才考虑去别处） */
+    startPace: function(ts){
+        this.pace = {
+            t0: ts,
+            until: ts + PACE.dur[0] + Math.random() * (PACE.dur[1] - PACE.dur[0]),
+            w: PACE.w * (0.85 + Math.random() * 0.3),        // 每秒来回的快慢
+            amp: PACE.amp * (0.8 + Math.random() * 0.5)      // 左右各挪多远
+        };
+        this.waitUntil = this.pace.until;                    // 踱步期间不去别处
+    },
+    /* 睡下：先由 climb 走到一个正对着您的地方，到了那儿才真正躺下（见 arrive） */
+    startNap: function(ts){
+        this.asleep = true;
+        this.sleepUntil = ts + NAP.dur[0] + Math.random() * (NAP.dur[1] - NAP.dur[0]);
+        this.resumeNap(ts);
+    },
+    /* 已经睡着了（比如被拖起来挪了个地方又放下）→ 接着睡，不动 sleepUntil */
+    resumeNap: function(ts){
+        this.mode = 'sleep';
+        this.pace = null; this.ox = this.oy = 0; this.paceDir = 0; this.flipT = 0;
+        this.zzzAt = ts + 350;
+        this.expAt = ts + NAP.every;
+        this.setArt(true);
+        PetCare.render();
+    },
+    wake: function(ts){
+        this.asleep = false; this.tired = 0; this.napNext = false;
+        this.mode = 'wait';
+        this.waitUntil = ts + 700 + Math.random() * 900;
+        this.setArt(false);
+        PetCare.render();
+    },
+    /* 走/落到某一点之后统一走这里：决定接下来是睡、是踱步、还是干站着 */
+    arrive: function(ts){
+        this.mode = 'wait';
+        if (this.napNext){                          // 这一趟是专门去找地方睡的
+            this.napNext = false; this.startNap(ts); return;
+        }
+        if (this.asleep){                           // 睡着的时候被挪了个地方 → 放下继续睡
+            this.sleepUntil = Math.max(this.sleepUntil, ts + 6000);
+            this.resumeNap(ts); return;
+        }
+        this.waitUntil = ts + 600 + Math.random() * 1200;
+        if (Math.random() < PACE.p) this.startPace(ts);
+    },
+    update: function(ts, dt){
+        if (!this.alive) return;
+        var t = ts * 0.001;
+        /* 后空翻（Lv.1 解锁）：站着不动的时候偶尔来一个，每秒 FLIP.p 的概率，
+           两次之间至少隔 FLIP.cd —— 平均十几秒一次，不会一直在翻（踱步/睡觉时不翻） */
+        if (!this.flipT && ts > this.flipCd && this.mode === 'wait' && !this.pace &&
+            this.op > 0.45 && PetCare.lv() >= FLIP.lv){
+            if (Math.random() < FLIP.p * dt){ this.flipT = ts; this.flipDur = FLIP.dur; }
+        }
+        /* 踱步：停下来的那段时间里常常左右来回走两步。脚下那块球面没动 —— 只是把画出来的
+           位置在屏幕上左右拨一点（ox/oy），所以祂还是贴在球面上，只是看上去在原地打转。 */
+        this.ox = 0; this.oy = 0; this.paceDir = 0;
+        if (this.pace){
+            if (ts >= this.pace.until){
+                this.pace = null;
+                if (this.mode === 'wait') this.waitUntil = ts + 350 + Math.random() * 700;
+            } else {
+                var ph = (ts - this.pace.t0) * 0.001 * this.pace.w;
+                this.ox = Math.sin(ph) * this.pace.amp * this.sc;
+                this.oy = -Math.abs(Math.sin(ph * 2)) * PACE.hop * this.sc;   // 每一步轻轻颠一下
+                this.paceDir = Math.cos(ph) >= 0 ? 1 : -1;                    // 朝哪边走就往哪边倾
+                this.tired += dt * 0.8;                                       // 踱步也算运动（比爬球轻些）
+            }
+        }
+        var onSphere = false;                            // 位置由球面坐标算出来的那些状态
+        if (this.mode === 'enter'){
+            /* 飘过来：缓停 + 一路轻飘飘地上下荡 */
+            var k = Math.min(1, (ts - this.t0) / this.dur);
+            var e = 1 - Math.pow(1 - k, 3);
+            this.x = this.x0 + (this.tx - this.x0) * e;
+            this.y = this.y0 + (this.ty - this.y0) * e + Math.sin(t * 2.1) * 9 * (1 - k * 0.6);
+            this.rot = (this.x0 > this.tx ? -1 : 1) * 0.16 * (1 - e);
+            if (k >= 1){                                 // 落地 → 从此开始贴着球面走
+                this.v = this.vt; this.arrive(ts);
+                onSphere = true;
+            }
+        } else if (this.mode === 'fall'){
+            /* 松手 → 掉回球面：带一点转着落下的余摆 */
+            var kf = Math.min(1, (ts - this.t0) / this.dur);
+            var ef = 1 - Math.pow(1 - kf, 3);
+            this.x = this.x0 + (this.tx - this.x0) * ef;
+            this.y = this.y0 + (this.ty - this.y0) * ef;
+            this.rot = this.r0 * (1 - ef) + Math.sin(kf * Math.PI * 3) * 0.26 * (1 - kf);
+            if (kf >= 1){
+                this.v = this.vt; this.arrive(ts);
+                onSphere = true;
+            }
+        } else if (this.mode === 'drag'){
+            /* 位置由指针写进来（见下方 pointermove），这里只让它跟着抖一下 */
+            this.rot = Math.sin(t * 7.5) * 0.13;
+        } else if (this.mode === 'climb'){
+            /* 沿大圆爬：把「屏幕上每秒走多少像素」换算成「球面上每秒转多少弧度」。
+               走近对趾点之类的极端情况都由 petSlerp 兜着 —— 它永远绕着球面过去，不会横穿。 */
+            var dp = this.v[0]*this.vt[0] + this.v[1]*this.vt[1] + this.v[2]*this.vt[2];
+            this.tired += dt;                            // 在球面上爬 = 实打实的运动量
+            if (dp > 0.99999){                           // 到了
+                this.v = this.vt; this.arrive(ts);
+            } else {
+                var om = Math.acos(dp < -1 ? -1 : dp);
+                var step = (this.spd * dt) / RADIUS;     // px/s → rad/s（按球半径换算）
+                if (step >= om){ this.v = this.vt; this.arrive(ts); }
+                else this.v = petSlerp(this.v, this.vt, step / om);
+            }
+            onSphere = true;
+        } else if (this.mode === 'sleep'){
+            /* 睡着了：待在原地不动，头顶慢慢冒 Z，EXP 一点一点地涨；到点自己醒 */
+            if (ts >= this.sleepUntil) this.wake(ts);
+            else if (ts >= this.expAt){
+                this.expAt = ts + NAP.every;
+                PetCare.addExp(NAP.exp, true);           // 安静地加，不把面板弹出来
+            }
+            if (ts >= this.zzzAt){
+                this.zzzAt = ts + NAP.zzz + Math.random() * 520;
+                PetCare.zzz();
+            }
+            onSphere = true;
+        } else if (this.mode === 'wait'){
+            if (ts >= this.waitUntil && !this.pace){
+                if (this.tired >= NAP.after){
+                    /* 攒够运动量了 → 找一个正对着您的地方躺下睡（0.8：别睡到球背面去，看不见） */
+                    this.vt = petSpot(0.8); this.napNext = true; this.mode = 'climb';
+                } else {
+                    /* 已经在球背面（快看不见了）→ 下一趟一定转回正面；
+                       在正面时每三趟里有一趟跑向整个球面的任意处（常常是绕到背面再转回来），
+                       其余两趟就在这对着您的一片区域里活动 —— 大部分时候看得见，但确实在绕着球走。 */
+                    var dNow = petProj(this.v).d;
+                    var minD = (dNow < 0.4) ? 0.55 : ((this.leg % 3 === 2) ? 0.0 : 0.5);
+                    /* 正被大眼珠盯着的时候，这一趟不往球背面跑 —— 不然那口气长的一眼看不到头 */
+                    if (gaze.mode === 'pet' && minD < 0.5) minD = 0.5;
+                    this.leg++;
+                    this.vt = petSpot(minD);
+                    this.mode = 'climb';
+                }
+            }
+            onSphere = true;
+        }
+
+        if (onSphere){
+            /* 位置/大小/明暗都按球面透视来：近大远小、背面近乎透明（跟字流同一套规则） */
+            var phi = Math.acos(this.v[1] < -1 ? -1 : (this.v[1] > 1 ? 1 : this.v[1]));
+            var lam = Math.atan2(this.v[2], this.v[0]);
+            var wav = fsin(2*lam + 3*phi - t*0.8) * 0.6 + fsin(3*lam - 2*phi + t*0.55) * 0.4;
+            var pg = petProj(this.v, wav);
+            this.bob = Math.sin(ts * 0.019) * 1.6;
+            this.x = pg.x;
+            /* 干站着：极慢地晃；睡着：几乎不动（呼吸交给下面的压扁去做） */
+            this.y = pg.y + (this.mode === 'wait'  ? Math.sin(ts * 0.006) * 1.0
+                           : this.mode === 'sleep' ? Math.sin(ts * 0.004) * 0.5 : this.bob);
+            this.sc = 0.55 + 0.62 * pg.d;                // 近大远小（与球面字流同步）
+            this.op = 0.08 + 0.92 * Math.pow(pg.d, 1.3); // 背面淡出：比字流留得多，还能看见它的轮廓
+            if (this.op > 1) this.op = 1;
+            /* 侧身：踱步时朝走的那边倾；睡着时整只往一边歪一点（躺下来的意思）；
+               其余时候顺着投影出来的移动方向微微侧 */
+            var mvx = this.x - this.px, mvy = this.y - this.py;
+            if (this.paceDir){
+                this.rot += (this.paceDir * PACE.tilt - this.rot) * 0.09;
+            } else if (this.mode === 'sleep'){
+                this.rot += (-0.06 - this.rot) * 0.05;
+            } else if (mvx*mvx + mvy*mvy > 0.04){
+                var want = Math.atan2(mvy, mvx) * 0.16;
+                this.rot += (want - this.rot) * 0.08;
+            } else {
+                this.rot += (Math.sin(t * 0.7) * 0.05 - this.rot) * 0.05;
+            }
+        } else {
+            this.sc = 1 + Math.sin(t * 1.6) * 0.02;      // 不在球面上时：只有呼吸
+            this.op = 1;
+        }
+        this.px = this.x; this.py = this.y;
+
+        var fade = Math.min(1, (ts - this.born) / 1800);         // 出场淡入（代替 CSS 过渡）
+        var bx = Math.round((this.x + this.ox) * 10) / 10;        // ox/oy：踱步的那点左右偏移
+        var by = Math.round((this.y + this.oy) * 10) / 10;
+        var rr = Math.round(this.rot * 1000) / 1000;
+        var ss = Math.round(this.sc * 1000) / 1000;
+        /* 后空翻：整个转一圈（收势正好回到原角度，看不出接缝）+ 跳起来 + 起跳时撑开一点 */
+        if (this.flipT){
+            var fk = (ts - this.flipT) / this.flipDur;
+            if (fk >= 1){
+                this.flipT = 0; this.flipCd = ts + FLIP.cd;
+                PetCare.flipBonus();                     // 落地：星星 + 爱心 + EXP
+            } else {
+                var fe = 1 - Math.pow(1 - fk, 2);        // 起转快、收势稳
+                rr -= Math.PI * 2 * fe;
+                by -= Math.round(Math.sin(Math.PI * fk) * 30 * ss * 10) / 10;
+                ss *= 1 + Math.sin(Math.PI * fk) * 0.16;
+            }
+        }
+        /* 睡姿：横向摊开、纵向压扁，再往下沉一点 —— 像蜷在地上；
+           压扁的量随时间慢慢起伏，那就是呼吸（睡着才会这样，被抓起来就恢复原样）。 */
+        var scx = ss, scy = ss;
+        if (this.mode === 'sleep'){
+            var br = Math.sin(ts * 0.0016) * NAP.breath;
+            scx = ss * NAP.sx * (1 - br * 0.4);
+            scy = ss * NAP.sy * (1 + br);
+            by += Math.round(NAP.sink * ss * 10) / 10;
+        }
+        petEl.style.transform = 'translate(' + bx + 'px,' + by + 'px)' +
+                                ' translate(-50%,-50%) rotate(' + rr + 'rad) scale(' +
+                                scx.toFixed(3) + ',' + scy.toFixed(3) + ')';
+        petEl.style.opacity = (this.op * fade).toFixed(3);
+        PETAV.x = this.x; PETAV.y = this.y;
+        PETAV.r = (Math.max(this.w, this.h) * 0.5 + 16) * this.sc;   // 远处的宠物占的"洞"也小
+        PETAV.w = this.op;                                            // 转到背面去就别再推字了
+        PETAV.on = true;
+    }
+};
+window.Pet = Pet;
+
+/* ==================================================================
+   饲养：点一下宠物 = 摸一下 = +EXP（每下加多少由技能「双手摸摸」决定），头顶冒一颗爱心
+   ------------------------------------------------------------------
+   · 等级看的是**累计**摸了多少下（save.petExpAll，只增不减），
+     EXP（save.petExp）是手上能花的那份 —— 花在技能上不会掉级，这是故意的。
+     门槛表 LV_NEED 就在下面，一眼能改。
+   · 存档：为了不每次点击都写一次 localStorage，是「攒 1.2 秒写一次」，
+     另外在页面被关掉/隐藏时补写一次；清档会一起清掉。
+   · 技能在窗口里直接点那一行升级，花的是 EXP（SKILLS[i].cost 是各级的价）。
+   · 面板平时是收着的：**摸第一下才冒出来**，之后每摸一下、或指针停在小窗里
+     （在窗里移动/点一下也算），倒计时就重置；一段时间没动静就自己淡掉。
+     倒计时长 = 下面的 AUTO_HIDE（毫秒）。
+   · Lv.1 起，宠物自己会偶尔来个后空翻（见 FLIP），落地 +10 EXP。
+   · 睡着的时候（见 NAP）：摸它没有 EXP（只冒一个 Z），但它自己会慢慢地 1 点 1 点地涨。
+   手动试：PetCare.pet()（= 摸一下）　PetCare.addExp(50)　PetCare.exp()
+   　　　　Pet.startNap(performance.now())（= 立刻躺下睡）　Pet.wake(performance.now()) */
+/* 升级门槛（按"累计摸过多少下"算）：Lv.1 要 50 下，Lv.2 累计 150 下
+   （＝ 1 级之后再摸 100 下；若本意是"再摸 150 下"，把第二个数改成 200 即可） */
+var LV_NEED = [50, 150, 400, 1000, 2400, 5000];
+/* 点击技能：cost[i] = 从第 i 级升到 i+1 级要花多少 EXP；gain[i] = 技能第 i 级时每摸一下 +多少
+   现在的价格是 50 / 100 / 200 / 400（升满一共要 750 EXP），每升一级每下多给 1 点。 */
+var SKILLS  = [ { n:'双手摸摸', cost:[50, 100, 200, 400], gain:[1, 2, 3, 4, 5] } ];
+var AUTO_HIDE = 4500;    // 面板多久没动静就收起来（毫秒）
+/* 宠物动作「旋转跳跃」（Lv.1 解锁）：偶尔来一个后空翻，落地一圈星星 + 头顶冒爱心，+10 EXP
+   p = 每秒触发的概率（0.055 ≈ 平均十几秒一次）　cd = 两次之间的最短间隔（毫秒）
+   show = 后空翻给的这笔 EXP 要不要把面板弹出来（false = 只有亲手点才弹） */
+var FLIP = { lv: 1, dur: 980, p: 0.055, cd: 9000, exp: 10, show: true };
+/* 踱步：停下来的时候不一定干站着 —— 常常会左右来回走两步（脚底下那块球面没动，
+   只是把画出来的位置在屏幕上左右拨一点，所以祂还是贴着球面）。
+   p = 每次停下有多大概率改成踱步　dur = 踱多久（毫秒，区间随机）
+   amp = 左右各挪多远（px，会按远近缩放）　w = 每秒来回多少（弧度/秒）
+   hop = 每一步颠多高　tilt = 朝走的那一边倾多少（弧度） */
+var PACE = { p: 0.62, dur: [2600, 5400], amp: 13, w: 2.3, hop: 1.8, tilt: 0.15 };
+/* 睡觉：在球面上爬 + 踱步攒够 after 秒的运动量，就自己找一个正对着您的地方躺下。
+   dur = 一觉睡多久（毫秒，区间随机）　every = 隔多久 +一次 EXP　exp = 每次 +多少
+   zzz = 隔多久冒一个 Z　sx/sy = 睡姿压扁的比例（横着摊开、竖着压扁）　sink = 往下沉多少
+   breath = 压扁量随时间起伏的幅度（＝ 呼吸） */
+var NAP = { after: 38, dur: [18000, 28000], every: 2600, exp: 1, zzz: 1250,
+            sx: 1.16, sy: 0.74, sink: 3, breath: 0.055 };
+
+var PetCare = {
+    lvEl: null, boxEl: null,
+    show: false,         // 面板当前要不要显示（摸一下 / 操作小窗 → bump() 打开）
+    hideAt: 0,           // 到这个时刻还没动静就收起（performance.now() 时钟）
+    hover: false,        // 指针是不是停在小窗里
+    f: 0,                // 淡入淡出的当前值，逐帧往目标靠
+    bw: 154, bh: 96,     // 小窗尺寸（内容变了才重量一次，不每帧读）
+    _sig: '',            // 上次画出来的内容指纹（EXP/等级/技能），一样就跳过重排
+    hearts: 0,           // 正在飘的爱心数量（封顶，防连点刷爆）
+    _saveT: null,
+
+    init: function(){
+        this.lvEl = document.createElement('div');  this.lvEl.id = 'pet-lv';
+        this.boxEl = document.createElement('div'); this.boxEl.id = 'pet-box';
+        stageEl.appendChild(this.lvEl);
+        stageEl.appendChild(this.boxEl);
+        /* 老存档只有 petExp（没记累计），补一份：累计 = 现有 EXP，等级不会掉 */
+        if (save.petExp && !save.petExpAll) save.petExpAll = save.petExp;
+        this.render();
+        var self = this;
+        /* 小窗里的操作：只要指针还在窗里，倒计时就一直续，不会收 */
+        this.boxEl.addEventListener('mouseenter', function(){ self.hover = true; });
+        this.boxEl.addEventListener('mouseleave', function(){ self.hover = false; self.bump(); });
+        this.boxEl.addEventListener('pointermove', function(){ self.bump(); });
+        this.boxEl.addEventListener('pointerdown', function(e){ e.stopPropagation(); self.bump(); });
+        /* 点技能那一行 = 花 EXP 升级（行是 render 时重建的，所以挂在窗口上做委托） */
+        this.boxEl.addEventListener('click', function(e){
+            var row = e.target.closest && e.target.closest('[data-sk]');
+            if (row) self.buy(+row.getAttribute('data-sk'));
+        });
+    },
+
+    /* 打开面板并把自动收起的倒计时拨回满格 */
+    bump: function(){
+        this.show  = true;
+        this.hideAt = performance.now() + AUTO_HIDE;
+    },
+    exp:  function(){ return save.petExp || 0; },      // 手上能花的 EXP
+    all:  function(){ return save.petExpAll || 0; },   // 累计摸出来的总量（只增不减 → 等级不会掉）
+    /* 累计 EXP 换等级：过了几个门槛就是几级 */
+    lvOf: function(e){ var n = 0; for (var i = 0; i < LV_NEED.length; i++){ if (e >= LV_NEED[i]) n = i + 1; else break; } return n; },
+    /* 升到下一级需要的累计 EXP；已满级返回 null */
+    need: function(lv){ return (lv >= LV_NEED.length) ? null : LV_NEED[lv]; },
+    lv:    function(){ return this.lvOf(this.all()); },
+    skLv:  function(i){ var a = save.petSk || []; return a[i] || 0; },
+    /* 每摸一下加多少：技能「双手摸摸」每升一级 +1 */
+    gain:  function(){ var s = SKILLS[0]; return s.gain[this.skLv(0)] || 1; },
+
+    /* 摸一下：按当前技能等级加 EXP、冒爱心、攒着存档
+       （睡着了摸不动：不加 EXP，只冒一个 Z —— 但照样能把它抓起来挪地方） */
+    pet: function(){
+        if (Pet.asleep){ this.zzz(); return; }
+        this.addExp(this.gain());
+        this.heart();
+    },
+    /* 花 EXP 升一级技能：钱不够就抖一下，什么都不做 */
+    buy: function(i){
+        var s = SKILLS[i]; if (!s) return;
+        var k = this.skLv(i);
+        if (k >= s.cost.length) return;                       // 已升满
+        var row = this.boxEl.querySelector('[data-sk="' + i + '"]');
+        if (this.exp() < s.cost[k]){                          // EXP 不够 → 抖一下
+            if (row){ row.classList.remove('no'); void row.offsetWidth; row.classList.add('no'); }
+            return;
+        }
+        save.petSk = save.petSk || [];
+        save.petSk[i] = k + 1;
+        save.petExp = this.exp() - s.cost[k];                 // 只扣手上能花的那份，累计不变
+        this.bump(); this.render();
+        var row2 = this.boxEl.querySelector('[data-sk="' + i + '"]');
+        if (row2){ row2.classList.remove('buy'); void row2.offsetWidth; row2.classList.add('buy'); }
+        for (var j = 0; j < 3; j++) (function(a, self){
+            setTimeout(function(){ self.heart(); }, a * 90);
+        })(j, this);
+        this.saveSoon();
+    },
+    addExp: function(n, quiet){
+        var before = this.lvOf(this.all());
+        save.petExp    = this.exp() + n;
+        save.petExpAll = this.all()  + n;
+        if (!quiet) this.bump();                          // 摸一下 = 打开面板并续上倒计时
+        this.render();
+        if (this.lvOf(this.all()) > before){              // 升级：头顶亮一下 + 多冒几颗
+            var t = this.lvEl;
+            t.classList.remove('up'); void t.offsetWidth; t.classList.add('up');
+            for (var i = 0; i < 7; i++) (function(k, self){
+                setTimeout(function(){ self.heart(); }, k * 90);
+            })(i, this);
+        }
+        this.saveSoon();
+    },
+    saveSoon: function(){
+        if (this._saveT) return;
+        var self = this;
+        this._saveT = setTimeout(function(){ self._saveT = null; saveNow(); }, 1200);
+    },
+    saveFlush: function(){
+        if (this._saveT){ clearTimeout(this._saveT); this._saveT = null; saveNow(); }
+    },
+
+    /* 头顶冒一颗爱心：位置锁在宠物头顶，往上飘一段再化掉 */
+    heart: function(){
+        if (!Pet.alive || this.hearts > 26) return;
+        var el = document.createElement('span');
+        el.className = 'hrt'; el.textContent = '♥';
+        var x = Pet.x + (Math.random() * 2 - 1) * 14;
+        var y = Pet.y - (Pet.h || 44) * 0.5 * Pet.sc - 4;
+        el.style.left = x.toFixed(1) + 'px';
+        el.style.top  = y.toFixed(1) + 'px';
+        stageEl.appendChild(el);
+        if (!el.animate){ el.remove(); return; }        // 极老的浏览器：不飘，直接撤掉
+        this.hearts++;
+        var dx = (Math.random() * 2 - 1) * 20, dy = -(42 + Math.random() * 28);
+        var rot = (Math.random() * 2 - 1) * 14;
+        var an = el.animate([
+            { transform:'translate(-50%,-50%) scale(.4) rotate(0deg)',       opacity:0 },
+            { transform:'translate(-50%,-58%) scale(1.15) rotate(' + rot + 'deg)', opacity:1, offset:.22 },
+            { transform:'translate(calc(-50% + ' + dx.toFixed(1) + 'px), calc(-50% + ' + dy.toFixed(1) + 'px)) scale(.85) rotate(' + rot + 'deg)', opacity:0 }
+        ], { duration: 1000 + Math.random() * 320, easing: 'ease-out' });
+        var self = this;
+        an.onfinish = function(){ el.remove(); self.hearts--; };
+    },
+
+    /* 后空翻落地：+10 EXP、一圈星星、头顶冒爱心 */
+    flipBonus: function(){
+        if (!Pet.alive) return;
+        this.addExp(FLIP.exp, !FLIP.show);
+        this.stars();
+        this.heart();
+        var self = this;
+        setTimeout(function(){ self.heart(); }, 200);
+    },
+    /* 落地炸开的一圈星星：从宠物身边往四面散，边散边淡 */
+    stars: function(){
+        if (!Pet.alive) return;
+        var n = 8, ch = ['✦', '✧'];
+        for (var i = 0; i < n; i++){
+            var el = document.createElement('span');
+            el.className = 'str'; el.textContent = ch[i % 2];
+            var a  = (i / n) * Math.PI * 2 + Math.random() * 0.6;
+            var r0 = 16 + Math.random() * 12;
+            el.style.left = (Pet.x + Math.cos(a) * r0).toFixed(1) + 'px';
+            el.style.top  = (Pet.y + Math.sin(a) * r0 * 0.7).toFixed(1) + 'px';
+            stageEl.appendChild(el);
+            if (!el.animate){ el.remove(); continue; }
+            var dx = Math.cos(a) * (36 + Math.random() * 28);
+            var dy = Math.sin(a) * (26 + Math.random() * 22) - 14;
+            var rot = (Math.random() * 2 - 1) * 110;
+            (function(node, dx, dy, rot){
+                var an = node.animate([
+                    { transform:'translate(-50%,-50%) scale(.3) rotate(0deg)', opacity:0 },
+                    { transform:'translate(-50%,-50%) scale(1.15) rotate(' + (rot * 0.35).toFixed(1) + 'deg)', opacity:1, offset:.3 },
+                    { transform:'translate(calc(-50% + ' + dx.toFixed(1) + 'px), calc(-50% + ' + dy.toFixed(1) + 'px)) scale(.55) rotate(' + rot.toFixed(1) + 'deg)', opacity:0 }
+                ], { duration: 780 + Math.random() * 260, easing: 'ease-out' });
+                an.onfinish = function(){ node.remove(); };
+            })(el, dx, dy, rot);
+        }
+    },
+
+    /* 睡着时头顶冒的 Z：慢慢往上飘、飘得歪一点，字号有大有小（罩在头顶，不接鼠标） */
+    zzz: function(){
+        if (!Pet.alive || this.hearts > 30) return;
+        var el = document.createElement('span');
+        el.className = 'zzz';
+        el.textContent = Math.random() < 0.3 ? 'Z' : 'z';
+        el.style.fontSize = (11 + Math.random() * 8).toFixed(1) + 'px';
+        var x = Pet.x + (Math.random() * 2 - 1) * 8 + 10;
+        var y = Pet.y - (Pet.h || 44) * 0.5 * Pet.sc * (Pet.mode === 'sleep' ? 0.74 : 1) - 2;
+        el.style.left = x.toFixed(1) + 'px';
+        el.style.top  = y.toFixed(1) + 'px';
+        stageEl.appendChild(el);
+        if (!el.animate){ el.remove(); return; }
+        this.hearts++;
+        var dx = 12 + Math.random() * 16, dy = -(34 + Math.random() * 22);
+        var rot = (Math.random() * 2 - 1) * 18;
+        var an = el.animate([
+            { transform:'translate(-50%,-50%) scale(.5) rotate(0deg)', opacity:0 },
+            { transform:'translate(-50%,-70%) scale(1) rotate(' + (rot * 0.4).toFixed(1) + 'deg)', opacity:1, offset:.22 },
+            { transform:'translate(calc(-50% + ' + (dx * 0.5).toFixed(1) + 'px), calc(-50% + ' + (dy * 0.55).toFixed(1) + 'px)) scale(.94) rotate(' + (rot * 0.7).toFixed(1) + 'deg)', opacity:.9, offset:.6 },
+            { transform:'translate(calc(-50% + ' + dx.toFixed(1) + 'px), calc(-50% + ' + dy.toFixed(1) + 'px)) scale(.8) rotate(' + rot.toFixed(1) + 'deg)', opacity:0 }
+        ], { duration: 1650 + Math.random() * 420, easing: 'ease-out' });
+        var self = this;
+        an.onfinish = function(){ el.remove(); self.hearts--; };
+    },
+
+    render: function(){
+        if (!this.lvEl) return;
+        var e = this.exp(), al = this.all(), lv = this.lvOf(al), nd = this.need(lv);
+        /* 内容没变就别重排：EXP、等级、技能等级、睡没睡着 都相同才算没变 */
+        var sig = e + '|' + al + '|' + lv + '|' + (Pet.asleep ? 'z' : 'w') + '|' +
+                  SKILLS.map(function(s, k){ return PetCare.skLv(k); }).join(',');
+        if (sig === this._sig) return;
+        this._sig = sig;
+        var base = lv > 0 ? LV_NEED[lv - 1] : 0;
+        var pct  = (nd == null) ? 1 : Math.max(0, Math.min(1, (al - base) / (nd - base)));
+        this.lvEl.textContent = 'Lv.' + lv + (nd == null ? '　MAX' : '');
+        this.boxEl.innerHTML =
+            '<div class="t">饲养等级</div>' +
+            '<div>Lv.' + lv + '　EXP　' + e + '</div>' +
+            (Pet.asleep ? '<div class="z">睡着中…… EXP 自己慢慢涨</div>' : '') +
+            '<span class="bar"><i style="width:' + Math.round(pct * 100) + '%"></i></span>' +
+            '<div>' + (nd == null ? '已满级' : '升级还需　' + (nd - al) + '　下（累计 ' + al + '／' + nd + '）') + '</div>' +
+            '<div class="t" style="margin-top:6px">点击技能</div>' +
+            SKILLS.map(function(s, i){
+                var k = PetCare.skLv(i), full = k >= s.cost.length;
+                var c2 = full ? ('每次 +' + s.gain[k] + '　·　已满级')
+                              : ('每次 +' + s.gain[k] + '　·　升级需 ' + s.cost[k] + ' EXP');
+                var can = !full && PetCare.exp() >= s.cost[k];
+                return '<div class="sk-row' + (full ? ' done' : (can ? ' ok' : '')) + '" data-sk="' + i + '">' +
+                       '<div class="n">　' + s.n + '　Lv.' + k + '</div>' +
+                       '<div class="c">　' + c2 + '</div></div>';
+            }).join('');
+        /* 内容变了才量尺寸（每帧读 offsetWidth 会白白触发一次布局） */
+        this.bw = this.boxEl.offsetWidth  || this.bw;
+        this.bh = this.boxEl.offsetHeight || this.bh;
+    },
+
+    /* 每帧跟着宠物走：等级顶在头上，小窗开在旁边（贴到右边界就翻到左边） */
+    update: function(ts){
+        if (!this.lvEl) return;
+        /* 自动收起：指针停在小窗里就一直续期（hover 时 hideAt 每帧往后推），
+           否则到了 hideAt 就收。宠物不在了（被清档/收走）也直接收。 */
+        if (this.show){
+            if (!Pet.alive){ this.show = false; this.hover = false; }
+            else if (this.hover){ this.hideAt = ts + AUTO_HIDE; }
+            else if (ts > this.hideAt){ this.show = false; this.hover = false; }
+        }
+        var want = (Pet.alive && this.show) ? 1 : 0;
+        this.f += (want - this.f) * 0.09;
+        if (this.f < 0.005 && !want){
+            if (this.lvEl.style.display !== 'none'){
+                this.lvEl.style.display = 'none'; this.boxEl.style.display = 'none';
+            }
+            return;
+        }
+        if (this.lvEl.style.display === 'none'){
+            this.lvEl.style.display = ''; this.boxEl.style.display = '';
+        }
+        var op = Pet.op * this.f;
+        var halfH = (Pet.h || 44) * 0.5 * Pet.sc;
+        /* 等级顶在头顶，但别顶出画面：宠物爬到上沿/左右边时把它按回来一点 */
+        var lx = Math.max(26, Math.min(window.innerWidth  - 26, Pet.x));
+        var ly = Math.max(24, Pet.y - halfH - 9);      // translate(-50%,-100%) → 这是标签的**下沿**
+        this.lvEl.style.transform = 'translate(' + lx.toFixed(1) + 'px,' + ly.toFixed(1) + 'px) translate(-50%,-100%)';
+        this.lvEl.style.opacity = op.toFixed(3);
+        var halfW = (Pet.w || 44) * 0.5 * Pet.sc;
+        var bx = Pet.x + halfW + 18;
+        if (bx + this.bw > window.innerWidth - 12) bx = Pet.x - halfW - 18 - this.bw;
+        bx = Math.max(10, Math.min(window.innerWidth - this.bw - 10, bx));
+        var by = Math.max(10, Math.min(window.innerHeight - this.bh - 10, Pet.y - this.bh * 0.5));
+        this.boxEl.style.transform = 'translate(' + bx.toFixed(1) + 'px,' + by.toFixed(1) + 'px)';
+        this.boxEl.style.opacity = op.toFixed(3);
+    }
+};
+window.addEventListener('pagehide', function(){ PetCare.saveFlush(); });
+/* init 不在这里调：PetCare 要用存档变量 save，而 save 定义在文件更后面，
+   在这儿调会读到 undefined。真正的初始化放在文件末尾（save 就绪之后）。 */
+
+/* ---- 拖拽：抓起来随便放，松手它自己掉回眼球 ---- */
+var grabOff = { x: 0, y: 0 };
+var grabFrom = { x: 0, y: 0 }, grabMoved = false;   // 按下点 / 这次算不算"拖动过"
+function stageXY(e){
+    var r = stageEl.getBoundingClientRect();      // 舞台被对话框顶上去的时候也能对准
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+petEl.addEventListener('pointerdown', function(e){
+    if (!Pet.alive) return;
+    e.preventDefault();
+    var p = stageXY(e);
+    grabOff.x = Pet.x - p.x; grabOff.y = Pet.y - p.y;    // 记住抓的是哪个部位，别一下跳到指针正中
+    grabFrom.x = p.x; grabFrom.y = p.y; grabMoved = false;   // 记下按下的位置，好区分"摸一下"和"拖着走"
+    Pet.mode = 'drag';
+    petEl.classList.add('drag');
+    try { petEl.setPointerCapture(e.pointerId); } catch (err) {}
+});
+window.addEventListener('pointermove', function(e){
+    if (!Pet.alive || Pet.mode !== 'drag') return;
+    var p = stageXY(e);
+    if (Math.abs(p.x - grabFrom.x) > 9 || Math.abs(p.y - grabFrom.y) > 9) grabMoved = true;
+    var nx = p.x + grabOff.x, ny = p.y + grabOff.y;
+    Pet.x = Math.max(30, Math.min(window.innerWidth  - 30, nx));   // 别让它被拖出画面
+    Pet.y = Math.max(30, Math.min(window.innerHeight - 30, ny));
+});
+function dropPet(){
+    if (!Pet.alive) return;
+    /* 按下去基本没挪动 → 不是拖，是摸了一下：加 EXP、头顶冒爱心
+       （睡着的时候例外：不加 EXP，只冒一个 Z —— 挪地方照样挪） */
+    if (Pet.mode === 'drag' && !grabMoved) PetCare.pet();
+    if (Pet.mode !== 'drag') return;
+    petEl.classList.remove('drag');
+    /* 落点：屏幕上当前这个位置、投射回球面上离它最近的那一点（拖到球外 → 按到球轮廓上） */
+    Pet.vt = petUnproj(Pet.x, Pet.y);
+    var pg = petProj(Pet.vt);
+    Pet.x0 = Pet.x; Pet.y0 = Pet.y; Pet.r0 = Pet.rot;
+    Pet.tx = pg.x;  Pet.ty = pg.y;
+    var d = Math.sqrt(Math.pow(Pet.tx - Pet.x0, 2) + Math.pow(Pet.ty - Pet.y0, 2));
+    Pet.dur = Math.max(380, Math.min(950, d * 1.7));     // 掉得远就慢一点
+    Pet.t0 = performance.now();
+    Pet.mode = 'fall';
+}
+window.addEventListener('pointerup', dropPet);
+window.addEventListener('pointercancel', dropPet);
+
+/* ==================================================================
+   网页入口（一枚入口 = 两枚按钮）
+   ------------------------------------------------------------------
+   · 按钮本体就是几行字符——跟对话框同一套语言：用符号围一个框，中间写着入口的名字。
+     框线用**全角符号**（＋ － ｜ 和全角空格）：它们和汉字一样都是一个字一格，
+     所以整框每一行的格数相同、宽度必然一致——不像半角的 ═ ║ 那样会和汉字错开（实测
+     ═ 只有 13.5px、汉字 19px，混着排版框会歪）。
+   · 从画面外的涡流里飞进来 → 落在眼球正下方；之后轻轻上下浮，鼠标移上去会亮。
+   · **一枚入口出两枚按钮，并排在同一行、贴在一起**：
+       网页按钮（左，大）→ 点了直接新标签页打开那张网页；
+       剧情按钮（右，小一号——它是副按钮）→ 点了眼球说几句、问一问，
+                          **演完就退场，只演一次**（演完才写 save.storyDone，之后刷新也不再出现）；
+                          演到一半刷新 → 没写存档 → 按钮还在，可以重演一遍；
+                          它一退场，同行的网页按钮就归正到正中（一行只剩一枚，重新居中）。
+   · 只要有**任何一枚**按钮在场，这堆按钮旁边就多出一只**小眼睛**当总开关：
+     睁着的眼睛 → 整套都在画面上；点一下换成画了一道斜线的眼睛 → 整套藏起来（只留它自己），
+     做剧情的时候用它清场。
+   · 出现过就记进存档（save.gates），刷新 / 续玩会自己再放出来一次（跟宠物一个待遇）；
+     隐藏状态也存在存档里（save.gateHide）。
+
+   以后加新入口：
+     1) 往 GATES 里加一条：{ label:'名字', url:'地址', story:'对应的对白节点id' }
+     2) 在 NODES 里写那个 story 节点（一串台词，说到底自动合框就行，见 NODES 末尾）
+     3) 想让它随着某句台词出现 → 在那句台词所在的节点上写 gate:'那个键'。
+   手动试：Gate.show('school') / Gate.hide() / Gate.setHidden(true)                */
+var GATES = {
+    school:    { label: '学校官网', url: 'pages/school/index.html',    story: 'st_school' },
+    interview: { label: '采访',     url: 'pages/interview/index.html', story: 'st_itv'    },
+    cut1:      { label: 'CUT1',     url: 'pages/cut1/index.html'                    },  // 第一个镜头：点进去看当时发生了什么
+    /* 第二个镜头：藏在官网食堂页里 —— **要玩家自己去翻**（学校官网 = school 那枚入口，
+       快速通道里有「学生食堂」）。CUT1 看完不再白送（cut1 的 endShow 已不写标记），
+       点进食堂页才由那一页自己写 cut2。
+       storyAfter —— **这枚入口的「剧情」按钮要等 cut2s 解锁之后才出现**：
+       刚捡到时飘出来的只是网页按钮（那时还没看过食堂那段，不该剧透复盘），
+       等玩家真把食堂页滚完、那边写了 cut2s，才回头补上这枚剧情按钮（见 Gate.addStory）。 */
+    cut2:      { label: 'CUT2',     url: 'pages/school/canteen.html', story: 'st_cut2', storyAfter: 'cut2s' },
+    /* 第三个镜头：学校官网里「高二（3）班教室」那一页（pages/school/class.html）。
+       跟 CUT2 一样是**碎片**：要玩家自己去官网翻到、点进来，才由那一页写 cut3
+       （见页首那段脚本）→ 这里接住并飘出这枚网页按钮。 */
+    cut3:      { label: 'CUT3',     url: 'pages/school/class.html'                    },
+    /* 第四个镜头：**不自己飘出来**。它在小说网里 —— 玩家自己搜到《华灯初上》、
+       打开某一章，右上角那枚小眼球才会说两句，然后给一条「走进这一段 →」。
+       走完这一段，小眼球顺手把 mp_unlock_v1.cut4 写上 → 这里接住，往主菜单补一枚。
+       为什么不给它一个直接的 GATES 入口：那本书不在任何推荐位上，是玩家自己打出来的；
+       白送一枚按钮就把"自己找到它"这件事拿掉了。 */
+    cut4:      { label: 'CUT4',     url: 'pages/novel/cut4.html', story: 'st_cut4'     },
+    /* 第五个镜头 CUT5「坠落记忆」：旅行社那条广告（AQ-130812-2）玩完佩戴安全绳
+       的小游戏之后进去，走完一遍就写了mp_unlock_v1.cut5 → 这里接住。
+       和 CUT4 一个路子：自己不飘出来，靠上一页把玩家带过去。
+       这枚的「剧情」按钮就是事故之后眼睛那一小段（见 NODES.st_cut5）。 */
+    cut5:      { label: 'CUT5',     url: 'pages/novel/cut5.html',      story: 'st_cut5'  },
+    /* 第六个镜头 CUT6「眼与神」：还是小说的部分，视觉沿用 CUT4 那一本书。
+       入口**不在这一行** —— 它要玩家先回学校官网，在「高二（3）班教室」页
+       答对第二枚广告的两问密码（他当时是怎么摔的 / 只能哭喊的人是谁）。
+       走完一遍写 mp_unlock_v1.cut6 → 这里只做补按钮用。 */
+    cut6:      { label: 'CUT6',     url: 'pages/novel/cut6.html', story: 'st_cut6' },
+    /* 第七个镜头 CUT7「实验楼三层」：入口在**学校官网的实验楼页**（pages/school/lab.html，
+       "楼层与功能用房"那一页，从首页学校概况或站内搜索进得去）。
+       右上角那枚小眼球提示「如果您已经知道，是谁先进了实验楼 / 那么可以试着搜索一下她的名字」，
+       在那页任一搜索框里打出「幂偌」→ 走到实验楼三层那一边（pages/lab/index.html），
+       那一页自己写 mp_unlock_v1.cut7（写法跟 cut3 一样）→ 这里接住并飘出按钮。
+       ★ 本体的三层 RPG 还没做：index.html 那是张占位卡。做的时候按里面评论区
+         记的结构拆（index.html 只是壳 / rpg.js 通用引擎 / floor1~3.js 纯数据），
+         换层只换数据文件，这一枚入口的 url 不用改。 */
+    cut7:      { label: 'CUT7',     url: 'pages/lab/index.html'                   },
+    /* 第八个镜头 CUT8「答记者问」：入口在**采访页**（pages/interview/index.html）——
+       走完 CUT8 就会被送回那一页，那页的正文里也有一张通往 CUT8 的整理稿链接。
+       ★ 网页按钮：cut8.html **一打开**就写 mp_unlock_v1.cut8 → 这里接住并飘出按钮
+         （以前漏了这一条：第一次玩完 CUT8，主页面是空的，没有回头的入口）。
+       ★ 剧情按钮：要等 CUT8 演完（cut8.html 收尾写 mp_unlock_v1.cut8s）才补上，
+         点它就是旁观者这一段复盘（NODES.st_cut8）。 */
+    cut8:      { label: 'CUT8',     url: 'pages/interview/cut8.html', story: 'st_cut8', storyAfter: 'cut8s' },
+    /* 落地页是**网站首页 index.html** —— 玩家点「旅行社」进来第一眼看到的是正常旅行社官网。
+       真正要找的东西在首页的「站内检索」框里：搜安全 → 告知书 → AQ-130812-1 → 推出编号 -2。
+       注意**不要**把落地页设成 notice.html：那是 404 页、且整站唯一没有搜索条的一页，
+       落过去玩家连输入框都看不见，等于一进门就死锁。 */
+    travel:    { label: '旅行社',   url: 'pages/travel/index.html'                  },
+    /* 保险公司 —— 旅行社「安全提示」页侧栏那枚广告的落地页。
+       这枚是**别家公司的页**，不属于旅行社：玩家是从旅行社侧栏点进去的，
+       回到主页面看到它飘出来，正好对得上"这地方是从旅行社那边漏出来的"。 */
+    insurer:   { label: '保险公司', url: 'pages/travel/insurer.html', story: 'st_insurer' },
+    /* 小说网 —— 从学校官网「高二（3）班教室」那一页（CUT3）右侧滑进来的小广告点进去的。
+       那一页本身是学校官网页，但这枚广告是第三方的，站也不在客丽市 → 单独给一枚入口。
+       它本身有网页按钮；读完青禾的残稿（小说站翻到收尾页会写 mp_unlock_v1.novel_rd）
+       → 主页面补一枚「剧情」按钮（旁观者把男人这一生梳理一遍，见 NODES.st_novel）；
+       那段演完 → 浮出「数据清空」按钮（st_novel 收尾由 Gate.storyEnd 唤起 showDataBtn）。 */
+    novel:     { label: '小说网',   url: 'pages/novel/index.html', story: 'st_novel', storyAfter: 'novel_rd' },
+    /* Meta 演示终态之后，主页面浮出的最后一段对话入口：纯剧情（无网页 url）。
+       点这枚按钮直接开对话（见 gatesEl 点击委托的纯剧情分支 → startGateStory），
+       由 checkMetaEnd 在 demo 末态（mp_meta_save.done=1）出现后飘出。详见 NODES.st_metaend（咯丽丝讲身世）。 */
+    metaend:   { label: '我猜您有些话想要和我说说', story: 'st_metaend' },
+};
+var STORY_LABEL = '剧情';          // 每个入口右边的那枚按钮都叫这个；想换名字改这里
+/* 总开关的样子：一只**睁着的字符眼**（6 行 11 列，全是半角字符，格式才不会飘）。
+   藏起来之后换成"画了一道斜线的眼睛"——同一副眼眶，'\' 从上到下逐行往右挪一格，
+   斜着划过整只眼睛。JS 字符串里反斜杠必须双写，这是这段唯一的坑。 */
+var EYE_ART = {
+    open: [' .-"""""-. ',
+           '/         \\',
+           '|    o    |',
+           '|         |',
+           '\\         /',
+           ' `-.....-` '],
+    off:  [' .-"""""-. ',
+           '/   \\     \\',
+           '|    \\    |',
+           '|     \\   |',
+           '\\      \\  /',
+           ' `-.....-` ']
+};
+function eyeArt(off){ return (off ? EYE_ART.off : EYE_ART.open).join('\n'); }
+var gatesEl = document.getElementById('gates');
+/* 框线 / 整行的小包装（就两个纯拼字符串的函数，放这儿免得污染全局命名） */
+function gateFr(s){ return '<span class="gf">' + esc(s) + '</span>'; }
+function gateRow(h){ return '<span class="gl">' + h + '</span>'; }
+
+var Gate = {
+    ids: [], items: {},          // ids = 已放出来的入口（按先后）；items = key → 这枚按钮的全部状态
+                                 // key 两种写法：'school'=网页按钮，'school|story'=同一入口的剧情按钮
+    hidden: false,               // 整套网页按钮是不是被旁边那只小眼睛藏起来了
+    swEl: null,                  // 旁边那只小眼睛（总开关；有按钮在场时才在，做剧情时用它清场）
+    spot: null,                  // 那一堆按钮占的范围（真实四边）→ 小眼睛定位用
+    storyOf: null,               // 正在演的剧情属于哪个入口（点了剧情按钮才填上；**演出结束**才清掉）
+                                 // 不进存档 —— 演到一半刷新，它就跟着没了，剧情按钮也就还在（见 storyEnd）
+    /* 存档里出现过 → 一进来就都放出来（刷新 / 续玩都在） */
+    ensure: function(){
+        var list = (save.gates && save.gates.length) ? save.gates
+                 : (save.gate ? [save.gate] : []);    // 兼容只有一枚时的老存档
+        this.hidden = !!save.gateHide;                // 上次把按钮藏起来了 → 这次还是藏着的
+        list.forEach(function(id){ if (GATES[id]) Gate.show(id, true); });
+    },
+
+    /* ==================================================================
+       排布：网页按钮按行排，**剧情按钮挂在它自己那枚网页按钮的正下方**。
+       ------------------------------------------------------------------
+       ★★ 这一版把三件事从"位置计算"里彻底拿掉了 ——
+       一、**入场飞行动画**。按钮一放出来就直接在它的落点上，只化透明度（见 show）。
+          早先"从涡流外荡进来"：起点随机、2.2~3s 缓动、中途还叠 15px 上下摆 ——
+          位置漂移混在入场演出里，点完一个按钮、按钮撤掉又补回来，整组就在那儿晃。
+          位置漂移只该来自"重新规划"，不该来自演出。
+       二、**副按钮的横向占位**。剧情按钮在下方，网页按钮那一格永远只有它自己的宽度
+          （实测网页 232×105、剧情 128×70）。于是副按钮加 / 撤 → 网页按钮横向一像素不动。
+          早先副按钮挂右侧、与网页按钮同排（+SEAM 8）：撤掉时那格窄 136px，行内累加把
+          右边所有按钮各带左移 136px；行宽一变贪心分行就重跑，把后面某枚从下一行整个
+          拉到上一行末尾（实测横移 984px）。
+       三、**竖向起点反复重算**。y0 定下就记住（见 _v），只有"行集合真的变了"
+          （加入口 / 窗口变 / 行高记忆被重算）才允许动。撤副按钮不在其中 → 整块不竖向重排。
+          早先 y0 = 眼球底 + 26 每轮重算、还会在"塞不下"时从下面往上顶
+          （y0 = h - 16 - need），行数一变 need 一变 → 整块起点变 → "它又往上跑了"。
+       ================================================================== */
+    GEO: { gapX: 26, rowGap: 14, subGap: 5, pageH: 105, subH: 70, pad: 12 },
+    PERROW: 5,               // 一行最多几枚（防一行拉太宽）
+    /* 排一次。返回按 ids 下标对齐的落点表（x/y 都是**中心点**）。
+         cell[i].px/py —— 第 i 枚网页按钮的中心
+         cell[i].sx/sy —— 它下面那枚剧情按钮的中心
+         b —— 整块的四条**真实**边缘（拖动钳位、眼睛定位用） */
+    layout: function(pw, ids, hasSub, ph, sh){
+        var self = this, G = this.GEO, w = window.innerWidth, h = window.innerHeight;
+        var key = pw.join(',') + '#' + ids.join(',') + '#' + (hasSub.join('') || '') + '#' + w + 'x' + h;
+        if (this._lay && this._lay.key === key) return this._lay;   // 没变 → 直接复用
+
+        var er = eye.getBoundingClientRect(), sr = stageEl.getBoundingClientRect();
+        var cx = er.left + er.width / 2 - sr.left;       // #gates 在 #stage 里 → 换成舞台坐标
+
+        /* ---- 横向：行归属按 id 记住；左缘**只在行成员没变时沿用** ----
+           ★ 沿用的前提是"行宽没变"。行里加了一枚 → 行变宽 → 旧左缘不再是对的：
+             沿用它，这一行会往右撑出画面，再被下面的整块钳位一把推回来，
+             整行跟着一起平移（实测 +travel 三枚各 −133px、+insurer 四枚各 −258px、
+             +cut1 换行时再 −204,−119 —— 这就是"加个入口按钮集体往左跑"）。
+             所以：成员没变的行沿用旧左缘（对话开合跟着挪），动过的行**重新居中**。 */
+        var avail = Math.max(220, Math.min(cx, w - cx) - 24) * 2;
+        /* ★ avail 还要**再钳一道到画面实际能放下的宽度**。
+           上行那个 max(220, …) 是给"眼球贴边/窗口很窄"兜底的，但 220*2=440
+           在 400px 视口下比整幅画面还宽 → 分行时以为放得下，实际撑出画
+           （实测 400px 下 8 枚有 4 枚出画）。取两者小的那个：
+           放不下就多排几行，绝不排出一行放不下的。 */
+        avail = Math.min(avail, w - G.pad * 2);
+        var idxOf = {}, i;
+        for (i = 0; i < ids.length; i++) idxOf[ids[i]] = i;
+        var rows = null, R = this._rows;
+
+        if (R && R.w === w && R.h === h && R.avail === avail){
+            var dcx = cx - R.cx;                           // 舞台横移了（对话开合）→ 整块跟着挪
+            var g = [], k;
+            for (k = 0; k < R.rows.length; k++){
+                var gr = R.rows[k];
+                var c = gr.ids.filter(function(id){ return idxOf[id] !== undefined; });
+                if (!c.length) continue;                    // 这一行的入口全被收走了 → 整行去掉
+                /* 成员是否**原样**保留（顺序也一致）—— 决定这一行的左缘能不能沿用 */
+                var same = c.length === gr.ids.length;
+                if (same) for (var q = 0; q < c.length; q++) if (c[q] !== gr.ids[q]){ same = false; break; }
+                var row = { ids: c, hasSub: 0, dirty: same ? 0 : 1,
+                            left: same ? gr.left + dcx : 0 };
+                /* 行高**只按此刻的实际情况**算，不再取"记忆 ∪ 当前"。
+                   副按钮撤光之后行高就该收回去 —— 早先只增不减，那块空白会永久留着，
+                   窄视口下还会被它顶出画面（实测 400px 视口 4 枚出画就有它一份）。 */
+                for (var q2 = 0; q2 < c.length; q2++) if (hasSub[idxOf[c[q2]]]) row.hasSub = 1;
+                g.push(row);
+            }
+            var have = {};
+            g.forEach(function(o){ o.ids.forEach(function(id){ have[id] = 1; }); });
+            for (i = 0; i < ids.length; i++){              // 新入口：塞进最后一行，塞不下才另起一行
+                var id2 = ids[i];
+                if (have[id2]) continue;
+                var lastg = g[g.length - 1];
+                if (lastg && lastg.ids.length < this.PERROW
+                    && this.rowWidth(lastg.ids, pw, idxOf) + G.gapX + pw[i] <= avail){
+                    lastg.ids.push(id2);
+                    lastg.dirty = 1;                       // 这行变宽了 → 下面统一重新居中
+                    if (hasSub[i]) lastg.hasSub = 1;
+                } else {
+                    g.push({ ids: [id2], hasSub: hasSub[i] ? 1 : 0, dirty: 1, left: 0 });
+                }
+                have[id2] = 1;
+            }
+            /* 所有动过的行**一次性**重新居中（在成员都定下来之后算，避免边加边算） */
+            for (k = 0; k < g.length; k++){
+                if (g[k].dirty) g[k].left = cx - this.rowWidth(g[k].ids, pw, idxOf) / 2;
+            }
+            rows = g;
+        }
+        if (!rows){
+            /* 首排（或窗口变了）：老老实实贪心一次 */
+            rows = this.packRows(ids, pw, idxOf, avail);
+            for (i = 0; i < rows.length; i++){
+                rows[i].left = cx - this.rowWidth(rows[i].ids, pw, idxOf) / 2;
+                rows[i].hasSub = 0;
+                for (var q2 = 0; q2 < rows[i].ids.length; q2++){
+                    if (hasSub[idxOf[rows[i].ids[q2]]]) rows[i].hasSub = 1;
+                }
+            }
+        }
+
+        /* ---- 竖向：起点**定下就记住**，行与行往下叠 ----
+           _v.y0 = min(眼下的自然位置, 画面底 - 整块高)。
+           两项都只由 (窗口尺寸, 整块高) 决定，而整块高在"撤副按钮"时不变
+           （行高记忆），所以撤副按钮 → y0 不变 → 整块不竖向重排。 */
+        var gapY = G.rowGap, subGap = G.subGap;
+        var total = function(gs){                       // 整块高（含最后一行下面的空档）
+            var t = 0;
+            for (var r = 0; r < rows.length; r++) t += ph + (rows[r].hasSub ? gs + sh : 0) + gs;
+            return t - gs;
+        };
+        var natural = er.bottom - sr.top + G.gapX;      // 眼下的自然起点（舞台坐标）
+        if (!this._v || this._v.w !== w || this._v.h !== h){
+            this._v = { w: w, h: h, y0: natural };
+        }
+        /* 画面塞不下 → 先收缝，还是塞不下就允许出画（窗口太矮的极端情况）。
+           ★ 收缝只在"真的塞不下"时发生，且收完写回 y0 → 下轮不再反复调。 */
+        var room = h - G.pad * 2, t0 = total(gapY);
+        if (this._v.y0 + t0 > h - G.pad && t0 > room){
+            gapY = Math.max(2, gapY - Math.ceil((t0 - room) / Math.max(1, rows.length)));
+            subGap = Math.max(1, subGap - 2);
+            t0 = total(gapY);
+        }
+        this._v.y0 = Math.max(G.pad, Math.min(this._v.y0, h - G.pad - t0));
+        this._v.gapY = gapY; this._v.subGap = subGap;
+
+        var y = this._v.y0, r3;
+        for (r3 = 0; r3 < rows.length; r3++){
+            rows[r3].y = y + ph / 2;                                        // 网页按钮中心
+            rows[r3].subY = rows[r3].y + ph / 2 + subGap + sh / 2;           // 副按钮中心（正下方）
+            y += ph + (rows[r3].hasSub ? subGap + sh : 0) + gapY;            // 下一行接在这一行底下面
+        }
+
+        /* ---- 逐枚落点 ---- */
+        var cell = new Array(ids.length);
+        for (var r = 0; r < rows.length; r++){
+            var x = rows[r].left, list = rows[r].ids;
+            for (var c2 = 0; c2 < list.length; c2++){
+                var qi = idxOf[list[c2]];
+                cell[qi] = { px: x + pw[qi] / 2, py: rows[r].y,
+                             sx: x + pw[qi] / 2, sy: rows[r].subY, hasSub: rows[r].hasSub };
+                x += pw[qi] + G.gapX;
+            }
+        }
+
+        /* ---- 整块边界钳制：所有行**共用一个平移量**，绝不逐行各自推 ----
+           逐行推的话整块超宽时每行都被顶到同一个 x=12，行距全丢 → 互相压住
+           （实测重叠 77~129px）。钳完**写回 left**，下一轮拿到的就是钳好的位置；
+           不写回的话下一轮"不需要钳了"会弹回居中位 —— 玩家看着又是一次跑位。 */
+        var bL = Infinity, bR = -Infinity, bT = Infinity, bB = -Infinity;
+        for (i = 0; i < ids.length; i++){
+            var cc = cell[i];
+            if (cc.px - pw[i] / 2 < bL) bL = cc.px - pw[i] / 2;
+            if (cc.px + pw[i] / 2 > bR) bR = cc.px + pw[i] / 2;
+            if (cc.py - ph / 2 < bT) bT = cc.py - ph / 2;
+            var bot = cc.py + ph / 2;
+            if (cc.hasSub && cc.sy + sh / 2 > bot) bot = cc.sy + sh / 2;
+            if (bot > bB) bB = bot;
+        }
+        var shift = 0;
+        if (bR - bL + G.pad * 2 > w) shift = (w - (bR - bL)) / 2 - bL;   // 比画面还宽 → 居中，两边一起溢出
+        else if (bL < G.pad)       shift = G.pad - bL;                    // 左边出画 → 整块右移
+        else if (bR > w - G.pad)   shift = (w - G.pad) - bR;              // 右边出画 → 整块左移
+        if (shift){
+            for (i = 0; i < ids.length; i++){ cell[i].px += shift; cell[i].sx += shift; }
+            for (r = 0; r < rows.length; r++) rows[r].left += shift;
+        }
+        this._rows = { w: w, h: h, avail: avail, cx: cx, rows: rows };
+        this._lay = { n: ids.length, key: key, cell: cell, rows: rows.length,
+                      b: { l: bL + shift, r: bR + shift, t: bT, bo: bB } };
+        return this._lay;
+    },
+    /* 一行里所有网页按钮的总宽（含中间的缝）。宽度恒定，不受副按钮影响。 */
+    rowWidth: function(list, pw, idxOf){
+        var a = 0;
+        for (var k = 0; k < list.length; k++) a += pw[idxOf[list[k]]] + (k ? this.GEO.gapX : 0);
+        return a;
+    },
+    /* 分行：贪心装填，一行能放几枚放几枚，放不下了才换行。
+       返回**行对象数组** {ids:[...]}（不是裸 id 数组 —— 后面每行还要挂 left / hasSub）。
+       **只在首排 / 窗口尺寸变了 / 有新入口**时跑，平时绝不重排。 */
+    packRows: function(ids, pw, idxOf, avail){
+        var G = this.GEO, perRow = this.PERROW, groups = [], cur = [], acc = 0, i;
+        for (i = 0; i < ids.length; i++){
+            var wI = pw[i];
+            if (cur.length && (cur.length >= perRow || acc + G.gapX + wI > avail)){
+                groups.push({ ids: cur }); cur = []; acc = 0;
+            }
+            acc += (cur.length ? G.gapX : 0) + wI;
+            cur.push(ids[i]);
+        }
+        if (cur.length) groups.push({ ids: cur });
+        return groups;
+    },
+    /* 落点变了 → 重新分发。已经站稳的按钮会平滑挪过去（见 step），不会瞬移。 */
+    relayout: function(){
+        var self = this, n = this.ids.length, G = this.GEO;
+        if (!n){ this.spot = null; this.swPlace(); return; }
+        /* 量宽高。offsetWidth/Height 不含播放中的 scale / rotate → 演出不会把排版带偏。
+           副按钮此刻一枚都没有时 sh 量不到 → 用兜底值（实测就是 70）。
+           ★ 用兜底值而不是 0：让"第一次冒出副按钮"时行高不突变 ——
+             那一下突变会把下面几行整体顶上去，正是"往上跑"。 */
+        var pw = new Array(n), hasSub = new Array(n), ph = 0, sh = 0, i;
+        for (i = 0; i < n; i++){
+            var p = this.items[this.ids[i]], s = this.items[this.ids[i] + '|story'];
+            pw[i] = p ? (p.el.offsetWidth || 200) : 200;
+            if (p) ph = Math.max(ph, p.el.offsetHeight || 0);
+            hasSub[i] = s ? 1 : 0;
+            if (s) sh = Math.max(sh, s.el.offsetHeight || 0);
+        }
+        if (!ph) ph = G.pageH;
+        if (!sh) sh = G.subH;
+
+        var L0 = this.layout(pw, this.ids, hasSub, ph, sh);
+        var b = L0.b;
+        for (i = 0; i < n; i++){
+            var id = this.ids[i], it = this.items[id], st = this.items[id + '|story'];
+            if (!it) continue;
+            /* ★ 落点**只有一套**（layout 的返回值）：字段用 px/py（网页）、sx/sy（剧情）。
+               早先这里还并列过一套"玩家拖动落定的快照"，两套字段名还不一样
+               （快照是 x/y），一律读 pos.px 就会拿到 undefined → transform 写不出来
+               → 按钮退回 CSS 初始的 left:0/top:0 叠在左上角。 */
+            var pos = L0.cell[i];
+            it.tx = pos.px; it.ty = pos.py;
+            if (st){ st.tx = pos.sx; st.ty = pos.sy; }
+        }
+        this.spot = { l: b.l, r: b.r, t: b.t, bo: b.bo };
+        this.swPlace();
+    },
+    /* 拼出一枚字符框：返回 <pre> 元素（还没定位置，落点由 relayout 算） */
+    mkBox: function(id, lbl, kind){
+        var FW = '　';                                    // 全角空格：与汉字同宽，拿来当填充
+        var pad = 3;
+        var lw = Math.ceil(tw(lbl) / 2);                  // 标签占几格（全角算 1 格）
+        var W  = 2 + pad * 2 + lw;                        // 整框占几格（含两侧框线）
+        var bar  = gateFr('＋' + rep('－', W - 2) + '＋');
+        var rowB = gateFr('｜') + rep(FW, W - 2) + gateFr('｜');
+        var rowM = gateFr('｜') + rep(FW, pad) +
+                   '<span class="glb">' + esc(lbl) + '</span>' + rep(FW, pad) + gateFr('｜');
+        var el = document.createElement('pre');
+        el.className = 'gate gate-' + kind;               // gate-page / gate-story / gate-sw
+        el.setAttribute('data-gate', id);
+        if (kind === 'story') el.setAttribute('data-kind', 'story');
+        el.innerHTML = gateRow(bar) + gateRow(rowB) + gateRow(rowM) + gateRow(rowB) + gateRow(bar);
+        gatesEl.appendChild(el);
+        return el;
+    },
+    /* instant=1：读档时补放。两种都是**直接就位、只化透明度**。
+       一枚入口 = 两枚按钮：网页（GATES[id].label）+ 剧情（STORY_LABEL，前提是配了 story 节点） */
+    show: function(id, instant){
+        var g = GATES[id];
+        if (!g || this.items[id]) return;
+        this.ids.push(id);
+        var a = { el: this.mkBox(id, g.label, 'page'), kind: 'page' };
+        this.items[id] = a;
+        var b = null;
+        /* 不出剧情按钮的四种情况：没写那段剧情 / **这段剧情已经演完（save.storyDone）** /
+           本来就没有 story 字段 / **写了 storyAfter 但那个解锁还没到**（看都没看过，不该剧透）。
+           演完了就不再出 —— 这枚按钮只属于"第一次"。 */
+        if (this.storyReady(id) && g.url){          // 纯剧情入口（无 url）→ 只出一枚主按钮，不另出「剧情」副按钮
+            b = { el: this.mkBox(id, STORY_LABEL, 'story'), kind: 'story' };
+            this.items[id + '|story'] = b;
+        }
+        this.relayout();
+        /* ★★ 纯淡入：落点 relayout 刚算好，按钮**此刻就在那儿**，只把 opacity 从 0 化到 1。
+           .gate 自带 opacity .35s 过渡（见样式表），连过渡都不用自己写。
+           位置漂移只该来自"重新规划"；入场演出归演出，不再掺进位置。 */
+        [a, b].forEach(function(it){
+            if (!it) return;
+            it.rot = 0; it.sc = 1; it.mode = 'idle';
+            it.x = it.tx; it.by = it.ty; it.y = it.ty;      // 落点 = 布局算好的，一个像素不差
+            it._vis = -1;                                    // 强制下一帧切一次透明度
+            it.el.classList.add('on');
+            /* transform 当场写死，不等 step()。
+               ★ show(instant) 是读档路径，跑在开场黑屏里 —— 那段时间 frame() 因为
+                 blackOn 提前 return，Gate.update 整段没跑 → 没人写 transform，
+                 元素停在 CSS 初始的 left:0/top:0 上（实测刷新后一堆按钮叠在左上角，
+                 rect 全是 x=0 y=-49）。非 instant 路径下一帧就会补上，无害。 */
+            it.el.style.transform =
+                'translate(' + it.x + 'px,' + it.y + 'px) translate(-50%,-50%)';
+            if (instant) it.el.style.opacity = '1';
+        });
+        this.swCheck();
+        if (!save.gates) save.gates = (save.gate ? [save.gate] : []);
+        if (save.gates.indexOf(id) < 0) save.gates.push(id);
+        if (save.gate !== id) save.gate = id;            // 老存档字段，留着兼容
+        saveNow();
+    },
+    hide: function(id){
+        var self = this;
+        (id ? [id] : this.ids.slice()).forEach(function(k){
+            ['', '|story'].forEach(function(suf){
+                var it = self.items[k + suf];
+                if (!it) return;
+                it.el.remove();
+                delete self.items[k + suf];
+            });
+            var i = self.ids.indexOf(k);
+            if (i >= 0) self.ids.splice(i, 1);
+        });
+        this.relayout();
+        this.swCheck();
+    },
+    /* ---- 剧情按钮：演完一次就退场 ----
+       点一下 → 演出开始（storyOf 记下是哪一枚）→ **演出真正结束**才走 storyEnd：
+         ① 写进存档（save.storyDone）→ 以后刷新 / 续玩都不再出这枚按钮（只触发一次）；
+         ② 把它撤掉。
+       演到一半就刷新 → 存档没写、storyOf 也没了 → 刷新后剧情按钮照样在，能重演。 */
+    storyEnd: function(){
+        var id = this.storyOf;
+        if (id == null) return;                 // 现在演的不是剧情按钮那段（比如主线）→ 不关它的事
+        this.storyOf = null;
+        if (this._storyHid){ this._storyHid = false; this.setHidden(false); }   // 剧情期间自动藏的网页按钮，演完放回来
+        this.stowPage(id, false);               // 说完 → 那枚网页按钮淡回来（演出期间被收起来了）
+        if (!save.storyDone) save.storyDone = {};
+        save.storyDone[id] = 1;
+        saveNow();
+        this.dropStory(id);
+        if (id === 'novel') showDataBtn();      // 读完青禾残稿、演完那段 → 浮出「数据清空」按钮
+        if (id === 'metaend' && window.BGMControl){ window.BGMControl.unlock('timewithyou'); window.BGMControl.setDefault('bgm/Time with you.mp3'); }  // 终局对话演完 → 解锁终曲并把默认 BGM 设为「与你同在」（玩家手动切换才会换）
+    },
+    /* 撤掉某一枚剧情按钮：淡出、摘出 items，**然后什么都不做**。
+       ★ 这里刻意**不调 relayout**。剧情按钮在网页按钮的正下方，网页按钮的落点
+         完全不依赖它（横向不占位、竖向行高已由"这一行曾出现过副按钮"预留），
+         所以撤一枚副按钮 → 网页按钮一像素不动、下面几行也不动。
+         早先副按钮在右侧同排，撤掉必须重排，才有了后来那一串横向漂移。 */
+    dropStory: function(id){
+        var k = id + '|story', it = this.items[k];
+        if (!it) return;
+        delete this.items[k];            // 摘出 items → step() 不再把 opacity 写回 1
+        it.mode = 'off';
+        it.el.classList.remove('on');    // 淡出途中不接鼠标
+        it.el.style.opacity = '0';       // .gate 自带 .35s opacity 过渡 → 自己化掉
+        setTimeout(function(){ it.el.remove(); }, 420);
+    },
+    /* ---- 单枚收起 / 放回：点「剧情」开场时把同一枚入口的**网页按钮**藏起来 ----
+       理由：演这段的时候，旁边摆着一枚「点一下跳去那个网页」的按钮，既分散注意力，
+       又容易在话说到一半时误触、开出一个新标签页 —— 所以开场先收，演完再放回。
+       ★ 只淡出、不摘 DOM、不 relayout：它还在 items 里、位置照旧留着 →
+         放回来时一像素不动（撤了再补会触发整块重排，那才是"按钮跑位"的来源）。
+       ★ 不进存档：演到一半刷新 → 按钮重建，stowed 自然没了 → 网页按钮照样在。 */
+    stowPage: function(id, v){
+        var it = this.items[id];                  // 'school' = 网页按钮（'school|story' 是剧情按钮，不动它）
+        if (!it) return;
+        it.stowed = !!v;
+        it._vis = -1;                             // 强制 step() 下一帧重切一次透明度
+    },
+    /* 全部放回（清档 / 兜底用） */
+    stowAll: function(v){
+        var self = this;
+        this.ids.forEach(function(k){ self.stowPage(k, !!v); });
+    },
+    /* 这枚入口现在该不该出「剧情」按钮：
+       配了 story + 这段没演过 + （若写了 storyAfter）那个解锁已经到了。 */
+    storyReady: function(id){
+        var g = GATES[id];
+        if (!g || !g.story || NODES[g.story] == null) return false;
+        if (save.storyDone && save.storyDone[id]) return false;
+        if (g.storyAfter && !(save.unlock && save.unlock[g.storyAfter])) return false;
+        return true;
+    },
+    /* 后补一枚「剧情」按钮：入口早就飘在场上了（CUT2 是 CUT1 看完就飘出来的），
+       这会儿某个解锁刚到（食堂页滚完 → cut2s）→ 才轮到这枚副按钮出场。
+       没到条件 / 已经演过 / 已经在场 → 什么都不做。
+       ★ 副按钮在下方，所以新出它只会让**下面几行**往下让一格（真多了一个东西，该让），
+         同一行里那些枚一像素不动。 */
+    addStory: function(id, instant){
+        if (!GATES[id] || this.items[id + '|story']) return;
+        if (!this.items[id]){ this.show(id, instant); return; }  // 入口本身都还没出来 → 连它一起放（show 里自己判 storyAfter）
+        if (!this.storyReady(id)) return;
+        var b = { el: this.mkBox(id, STORY_LABEL, 'story'), kind: 'story' };
+        this.items[id + '|story'] = b;
+        this.relayout();
+        b.rot = 0; b.sc = 1; b.mode = 'idle';
+        b.x = b.tx; b.by = b.ty; b.y = b.ty;               // 直接就位
+        b._vis = -1;
+        b.el.classList.add('on');
+        b.el.style.transform = 'translate(' + b.x + 'px,' + b.y + 'px) translate(-50%,-50%)';  // 同 show：当场写，不等下一帧
+        if (instant) b.el.style.opacity = '1';
+        this.swCheck();
+    },
+    /* 一枚按钮的每帧演出。
+       ★ 只剩两件事：① 平滑收敛到布局落点（重排了不会瞬移）② 极轻的呼吸感。
+         入场飞行的插值整段删掉了 —— 位置归位置，演出归演出。 */
+    step: function(it, ts, dt, t, k){
+        if (!it || it.mode === 'off') return;
+        var sq = Math.min(1, dt * 9);                          // 每帧收 14% 左右，约 0.4s 到位
+        it.x += (it.tx - it.x) * sq;
+        it.by += (it.ty - it.by) * sq;
+        /* 呼吸感压到最小（1.4px / 0.008rad）。早先 3.2px + 0.014rad 每秒不停地摆，
+           看着像"没对齐又在动"。相位按行给（见 update），同行共用 → 整行像一块板。 */
+        it.rot = Math.sin(t * 0.5 + k) * 0.008;
+        it.sc  = 1 + Math.sin(t * 1.1 + k * 2) * 0.006;
+        it.y = it.by + Math.sin(t * 0.85 + k) * 1.4;
+        it.el.style.transform =
+            'translate(' + (Math.round(it.x * 10) / 10) + 'px,' + (Math.round(it.y * 10) / 10) + 'px)' +
+            ' translate(-50%,-50%) rotate(' + it.rot.toFixed(4) + 'rad) scale(' + it.sc.toFixed(3) + ')';
+        /* 透明度**只在状态切换时写一次**。每帧写会把 .35s 过渡反复打断，看着像闪。
+           被藏起来时照样把收敛动画走完（放出来时它已经在正确的位置上了）。
+           stowed = 这枚单独被收起（点它那枚「剧情」按钮开场时）→ 与整套 hidden 同效。 */
+        var want = (this.hidden || it.stowed) ? 0 : 1;
+        if (it._vis !== want){
+            it._vis = want;
+            it.el.style.opacity = want ? '1' : '0';
+            if (want) it.el.classList.add('on'); else it.el.classList.remove('on');
+        }
+    },
+    update: function(ts, dt){
+        var t = ts * 0.001;
+        /* 兜底：窗口尺寸变了就重排。resize 事件偶尔会漏（比如截图工具改了视口），
+           每帧比一下尺寸，比只靠事件稳。 */
+        if (this.ids.length &&
+            (window.innerWidth !== this._w || window.innerHeight !== this._h)){
+            this._w = window.innerWidth; this._h = window.innerHeight;
+            this.relayout();
+        }
+        for (var i = 0; i < this.ids.length; i++){
+            var id = this.ids[i];
+            /* 相位**按行**给，不按按钮：呼吸的上下浮 / 微转 / 微缩放全吃 k。
+               原来每枚各给一个 → 同一行两枚永远差一个相位、各自 sin() 错开摆，
+               一秒不停，看着就是"没对齐"。同一行共用 k → 整行像一块板。 */
+            this.step(this.items[id],          ts, dt, t, i * 2);
+            this.step(this.items[id + '|story'], ts, dt, t, i * 2);
+        }
+    },
+
+    /* ---- 总开关那只小眼睛：建/退场 + 换图案 ----
+       有按钮在场时它就在场，没有就跟着退场（它就是"这一堆的开关"）。 */
+    swCheck: function(){
+        if (this.ids.length && !this.swEl){
+            var el = document.createElement('pre');
+            el.className = 'gate gate-sw';
+            el.setAttribute('title', '点一下：藏起／放出这些网页按钮');
+            gatesEl.appendChild(el);
+            this.swEl = el;
+            this.swArt = '';
+        } else if (!this.ids.length && this.swEl){
+            this.swEl.remove(); this.swEl = null; this.swArt = ''; return;   // 没入口了 → 它跟着退场
+        }
+        if (!this.swEl) return;
+        var art = eyeArt(this.hidden);
+        if (this.swArt !== art){ this.swEl.textContent = art; this.swArt = art; }
+        this.swEl.classList.toggle('xed', !!this.hidden);      // 斜线眼再暗一档
+        this.swEl.classList.add('on');
+        this.swPlace();
+    },
+    /* ---- 总开关那只小眼睛（.gate-sw）----
+       它只做一件事：**点一下** 把这一堆入口藏起来／放出来。
+
+       ★ 位置不自由、不可拖、不存档 —— **每次都从 spot（按钮块四条边）现算**：
+         横向贴在按钮块的**右侧**，纵向对准整块的**中线**。
+         所以按钮块怎么重排（加入口 / 换窗口尺寸 / 撤副按钮），
+         它都自动跟到新的右侧中点，不会脱钩、不会越拖越别扭。
+         早先那套「提手 + 玩家摆位 + 落定快照 + 存进存档 + 出画校验」全是给自己找事。 */
+    swPlace: function(){
+        var el = this.swEl;
+        if (!el) return;
+        var G = this.GEO, sp = this.spot;
+        var W = stageEl.offsetWidth || window.innerWidth, H = stageEl.offsetHeight || window.innerHeight;
+        var w = el.offsetWidth || 70, h = el.offsetHeight || 93;
+        /* 没有按钮 → 缩回中间（swCheck 会紧接着把它撤掉，这里只是别留残影） */
+        var x = sp ? sp.r + G.gapX : (W - w) / 2;
+        var y = sp ? (sp.t + sp.bo) / 2 - h / 2 : (H - h) / 2;   // 中线 → 顶边（transform 用的是 translate(0,0)）
+        /* 右侧放不下（按钮块顶到右缘）→ 改贴左侧，两边都放不下才钳在画面内 */
+        if (sp){
+            if (x + w > W - G.pad) x = sp.l - G.gapX - w;
+            if (x < G.pad) x = Math.min(W - G.pad - w, Math.max(G.pad, sp.r + G.gapX));
+        }
+        x = Math.max(G.pad, Math.min(W - G.pad - w, x));
+        y = Math.max(G.pad, Math.min(H - G.pad - h, y));
+        el.style.transform = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px) translate(0,0)';
+    },
+    setHidden: function(v){
+        this.hidden = !!v;
+        save.gateHide = this.hidden ? 1 : 0;        // 藏没藏记进存档 → 刷新之后还是那个状态
+        saveNow();
+        this.swCheck();
+    },
+    toggleHidden: function(){ this.setHidden(!this.hidden); }
+};
+
+
+/* 三枚按钮都在 #gates 里，所以用事件委托，按 data-gate / data-kind 认是哪一枚：
+     · 总开关（.gate-sw）   → 整套网页按钮藏起来 / 再放出来
+     · 网页按钮（左边那枚） → 新标签页打开那张网页（window.open 被拦时退回 <a target=_blank> 再点一次）
+     · 剧情按钮（右边那枚） → 眼球说几句、问一问，说完自己合框（见 startGateStory） */
+gatesEl.addEventListener('click', function(e){
+    if (!e.target || !e.target.closest) return;
+    var sw = e.target.closest('.gate-sw');
+    /* 小眼睛只做"藏／放"这一件事，点一下就切。 */
+    if (sw){ Gate.toggleHidden(); return; }
+    var el = e.target.closest('.gate');
+    if (!el) return;
+    var id = el.getAttribute('data-gate');
+    if (el.getAttribute('data-kind') === 'story'){ startGateStory(id); return; }
+    var g = GATES[id];
+    if (!g) return;
+    if (g.story && !g.url){ startGateStory(id); return; }   // 纯剧情入口（无网页）→ 点直接开对话
+    if (!g.url) return;
+    if (!window.open(g.url, '_blank')){
+        var a = document.createElement('a');
+        a.href = g.url; a.target = '_blank'; a.rel = 'noopener';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }
+});
+/* 点「剧情」按钮 → 把框摊开在那句台词上，说完自动收（与主线互不相干，也不会把主线的续玩进度改掉）。
+   演完 → Gate.storyEnd()：这枚按钮淡出退场 + 写 save.storyDone（只演一次）；
+   演到一半刷新 → 存档没写 → 刷新后按钮还在。 */
+function startGateStory(id){
+    var g = GATES[id];
+    if (!g || !g.story || typeof openAt !== 'function') return;
+    if (NODES[g.story] == null) return;                          // 那段剧情还没写 → openAt 会白跑一趟，别记 storyOf
+    var open = function(){
+        if (typeof dlgOpen !== 'undefined' && dlgOpen) return;    // 主线正说到一半 → 不打断
+        Gate.storyOf = id;                                       // 记下"现在演的是这枚"——演完由 storyEnd 收尾（中途刷新则自动作废）
+        if (!Gate.hidden){ Gate.setHidden(true); Gate._storyHid = true; }   // 触发剧情 → 自动藏掉所有网页按钮（见 storyEnd 恢复）
+        if (id === 'metaend' && window.BGMControl) window.BGMControl.switchTo('bgm/Time with you.mp3');  // 进入终局对话 → 换专属 BGM
+        openAt(g.story);
+    };
+    if (typeof dlgOpen !== 'undefined' && dlgOpen){
+        if (typeof endDlg === 'function') endDlg();               // 主线开着（如从 demo 返回）→ 先合上
+        setTimeout(open, 680);                                    // 等框合上再开段
+    } else { open(); }
+}
+/* 悬浮提亮交给 CSS `.gate.on:hover` 处理（见样式段）——平滑、不抖，
+   且子元素 .glb/.gf 提亮也在 CSS 里一并做了。
+   窗口尺寸变了 → 落点重算（眼球位置会跟着变），旁边那只小眼睛由 relayout 里的 swPlace 重贴 */
+
+/* ==================================================================
+   网页那边的解锁 → 这边多一枚入口
+   ------------------------------------------------------------------
+   子网页（现在只有采访页）右上角那只眼睛一亮，就把标记写进 localStorage 的
+   mp_unlock_v1。主页面这边两路收：storage 事件（同一个浏览器的其他标签页写入时
+   会触发）+ 1.5 秒一轮的轮询（file:// 下事件不一定可靠，轮询兜底）。
+   第一次看见某个解锁 → 演一次（上方冒一句 + 对应的入口飘出来），记进 save.unlock，
+   之后刷新 / 续玩只把入口补回来，不再演。
+   演出细节待定 —— 现在这一句只是占位，后面换成正式对白时改 UNLOCKS[k].tip 即可。 */
+var UNLOCK_KEY = 'mp_unlock_v1';
+var UNLOCKS = {
+    interview: { tip: '恭喜您解锁了一个新的页面', gate: 'interview', delay: 1600 },
+    /* CUT2 是**碎片**：CUT1 看完什么都不给（cut1 的 endShow 已改成不写标记），
+       玩家自己在学校官网翻到「学生食堂」、点进去，才由 canteen.html 写上 cut2 →
+       这里接住并飘出网页按钮。注意这时**只飘网页按钮**：
+       CUT2 的「剧情」按钮要等下面这个 cut2s。 */
+    cut2:      { tip: '恭喜您解锁了一个新的页面', gate: 'cut2',      delay: 2600 },
+    /* 食堂页滚完最后一句 → 那边右上角的小眼睛亮起来写了 cut2s →
+       回到主页面：冒一句提示，并给已经在那儿的 CUT2 **补一枚「剧情」按钮**（旁观者的复盘）。 */
+    cut2s:     { tip: '恭喜您解锁了新的剧情', gate: 'cut2', addStory: 'cut2', delay: 2200 },
+    /* 采访页那块旅行社广告点进去 → 飘出「旅行社」（页面本身先占位，内容还没做） */
+    travel:    { tip: '恭喜您解锁了一个新的页面', gate: 'travel',    delay: 2000 },
+    /* 保险公司页里右上角那枚眼球一浮出来 → 那边就把 mp_unlock_v1.insurer 写上了
+       （写在眼球脚本里，触发点＝眼球淡入那一刻，不查档案也算）。
+       提示不写"恭喜" —— 这一页不是从主线里"解出来"的，是玩家自己在旅行社那边
+       翻到一则广告点进来的；用应景的说法，反倒跟前面几句机械的拉开差别。 */
+    insurer:   { tip: '有人递过来一张名片。上面没有公司名。', gate: 'insurer', delay: 2000 },
+    /* 教室那页右侧的小广告点进去 → 飘出「小说网」。
+       同样不写"恭喜"：这一页不是解出来的，是被一段广告带过去的。 */
+    novel:     { tip: '一段广告，把您带到了别处。', gate: 'novel', delay: 2000 },
+    /* 小说站翻到残稿收尾页（"残稿到此为止"）→ 那边写 novel_rd → 主页面给「小说网」补一枚「剧情」按钮 */
+    novel_rd:  { tip: '她写的那些，您都看完了。', gate: 'novel', addStory: 'novel', delay: 2000 },
+    /* CUT3 同样是**碎片**：玩家自己翻学校官网、点进「高二（3）班教室」那一页，
+       进页面那一刻那边就把 mp_unlock_v1.cut3 写上了，这里接住并飘出 CUT3。
+       和 CUT2 一个路子，所以提示语也用同一句。 */
+    cut3:      { tip: '恭喜您解锁了一个新的页面', gate: 'cut3',      delay: 2600 },
+    /* CUT4：玩家在小说网里自己读《华灯初上》时，右上角那枚小眼球说完两句、
+       点「走进这一段」走完 CUT4 之后，那边把 mp_unlock_v1.cut4 写上，这里接住。
+       注意 CUT4 本身**没有**直接飘出来的入口（见 GATES.cut4 的注释），
+       所以第一次看到这句提示，一定是玩家已经读过一遍了。 */
+    cut4:      { tip: '您读完了这一段。', gate: 'cut4', delay: 1800 },
+    /* CUT5：旅行社那边玩完佩戴安全绳的小游戏之后才进得来。
+       提示语不写"恭喜" —— 跟前面 CUT4 一个路数：这段不是解出来的，
+       是被一页广告带进去的、看完才发现自己看完了一段事故复盘。 */
+    cut5:      { tip: '这一段，是事故复盘。', gate: 'cut5', delay: 1800 },
+    /* CUT6：学校官网那枚「结局揭示」广告，两问密码答对之后才进得来。
+       提示语沿用同一条路数：这段不是解谜解出来的，
+       是玩家自己在两段黑屏卡里记住了两句答案、然后打出来的。 */
+    cut6:      { tip: '你答对了。那么，往下看。', gate: 'cut6', addStory: 'cut6', delay: 1800 },
+    /* CUT7：学校官网**实验楼页**（lab.html）里搜着了她的名字才走得到 ——
+       所以这句提示一定出现在玩家已经动手搜过、并且进到那边之后。
+       答案（幂偌）依据原文第 430 行：她说「我下午有课啊……所以先来这里练一会儿」，
+       她是先进实验楼的那个，琳秋是后进楼找她的。
+       ★ 提示语跟着落点走：三层那间是播音主持教室，不是图书馆的书桌。 */
+    cut7:      { tip: '她先到。三楼那间还亮着。', gate: 'cut7', delay: 2200 },
+    /* CUT8：这一页自己写的 —— **打开 cut8.html 那一刻**就写 cut8，这里接住并飘出
+       「CUT8」网页按钮。玩家是走完 CUT8 被送回采访页的，所以看到这枚按钮时，
+       他自己已经看过了那一段（回头路，不是新任务）。 */
+    cut8:      { tip: '您已经走到这里了。', gate: 'cut8', delay: 2200 },
+    /* CUT8 演完：cut8.html 收尾写 cut8s → 主页面补一枚「剧情」按钮（旁观者的复盘，
+       见 NODES.st_cut8）；采访页那枚小眼球也认这个标记，会自己开口说六句。 */
+    cut8s:     { tip: '她说的故事，到此为止。', gate: 'cut8', addStory: 'cut8', delay: 2200 }
+};
+function readUnlock(){
+    try { return JSON.parse(localStorage.getItem(UNLOCK_KEY) || '{}') || {}; } catch (e){ return {}; }
+}
+var tipEl = document.getElementById('tip'), tipTimer = null;
+function showTip(s, ms){
+    if (!tipEl) return;
+    tipEl.textContent = s;
+    tipEl.classList.add('on');
+    if (tipTimer) clearTimeout(tipTimer);
+    tipTimer = setTimeout(function(){ tipEl.classList.remove('on'); }, ms || 5200);
+}
+function onUnlock(k){
+    var u = UNLOCKS[k];
+    if (!u) return;
+    if (!save.unlock) save.unlock = {};
+    if (save.unlock[k]){                                                  // 演过了：只把入口补回来
+        if (u.gate) Gate.show(u.gate, true);
+        if (u.addStory) Gate.addStory(u.addStory, true);
+        return;
+    }
+    save.unlock[k] = 1; saveNow();
+    showTip(u.tip);                                                       // 先冒一句
+    if (u.gate) setTimeout(function(){                                    // 再飘出新的网页入口
+        Gate.show(u.gate);
+        if (u.addStory) setTimeout(function(){ Gate.addStory(u.addStory); }, 400);  // 副按钮稍晚一点
+    }, u.delay);
+}
+function checkUnlock(){
+    var u = readUnlock();
+    for (var k in u){ if (u[k] && UNLOCKS[k]) onUnlock(k); }
+    checkMetaEnd();                              // demo 末态（done=1）后，主页面飘出最后那段对话入口
+}
+/* Meta 演示终态之后：主页面浮出最后一段对话入口（GATES.metaend，纯剧情、无网页）。
+   demo 末态写 mp_meta_save.done=1 → 这里检测到就飘出按钮（直接就位、可重看）。
+   点按钮 → 走纯剧情分支开对话（NODES.st_metaend，咯丽丝自己讲身世）。 */
+function checkMetaEnd(){
+    if (GATES.metaend == null) return;                 // 没这段 → 不必
+    if (Gate.items['metaend']) return;                 // 已经飘出来了 → 不必
+    var sv;
+    try { sv = JSON.parse(localStorage.getItem('mp_meta_save') || 'null'); } catch(e){ sv = null; }
+    if (!sv || !sv.done) return;                       // demo 还没演到终态
+    Gate.show('metaend', true);                        // 直接就位（读档式淡入）
+    showTip('您好像有些话，想对我说。');
+}
+/* 开局：存档里演过的解锁，直接把入口补回来（不重演） */
+function ensureUnlock(){
+    if (!save.unlock) return;
+    for (var k in save.unlock){
+        if (!save.unlock[k] || !UNLOCKS[k]) continue;
+        if (UNLOCKS[k].gate)     Gate.show(UNLOCKS[k].gate, true);              // 网页按钮
+        if (UNLOCKS[k].addStory) Gate.addStory(UNLOCKS[k].addStory, true);      // 后补的那枚「剧情」按钮
+    }
+}
+/* 轮询要等开场那一下（约 2.6 秒）走完、ensure 把旧入口按存档顺序放好之后再起步，
+   否则第一次轮询会抢在 ensure 前面，新入口就排到老入口前面去了。 */
+var unlockTimer = null;
+function startUnlockWatch(){ if (!unlockTimer) unlockTimer = setInterval(checkUnlock, 1500); }
+window.addEventListener('storage', function(e){ if (!e.key || e.key === UNLOCK_KEY) checkUnlock(); });
+
+/* ==================================================================
+   对白系统（常驻互动机制）
+   ------------------------------------------------------------------
+   黑框 + 由 - | + 拼出的字符边框。以后加内容只需往 NODES 里加节点：
+
+     id: {
+        say : [ '文字', {nm:1}, '。' ]   // 字符串=正文；{nm:1}=名字（恒红·发红光）
+        opts: [ { t:'选项文字', to:'目标节点id' } ]   // 有 opts = 分支节点
+        back: '节点id'                    // 【可选】说完自动回到该节点（做"常驻菜单"用）
+     next: '节点id'                    // 【可选】说完自动接下一句（用来把一串台词串起来）
+
+     ans:  'adult'                    // 【可选】这一问的答案存档键
+     opts: [ {t:'是', val:'yes', to:'q1y'}, {t:'否', val:'no', to:'q1n'} ]
+                                      //   写了 ans+val → 选择结果存进 save.ans.adult，供后面调用
+                                      //   to 也可以写成**函数**，在点下去那一刻求值 → 按之前答过什么
+                                      //   走向不同的回应（条件分支）。例（第三问）：
+                                      //   to: function(){ return save.ans.faith === 'yes' ? 'q3a_f' : 'q3a_n'; }
+
+   · 同一节点在**同一局内**第二次进入不再逐字打（直接显示），避免重复播报；
+     但读档重开时一律重新逐字打——整句直接蹦出来太突兀。
+   · 每个选项只能选一次：选过即存档（刷新后仍记得），不再出现。
+   · 读档续玩：已经走过的那一段直接跳过，从还没答的那一问继续，开场换成「就让我们继续吧。」
+   · 都不写（没有分支、没有 next）→ 这句说完、停一会儿，合框收场。
+   接口：Dlg.go(id) / Dlg.open() / Dlg.close()                        */
+var NM = '咯丽丝';
+var DBOX = 76;                       // 主框列数（不含两侧竖线）——越大框越宽、黑底越大
+var DROWS = 2;                       // 正文最少行数：老式对话框那样，先撑开再往里打字
+                                     // （只是下限：句子更长时按整句的行数撑开，且打字过程中不再变高）
+var OPTBOX = 62;                     // 单个选项框的列数（每个分支一个独立框）
+var PAD = 2;                         // 正文离框线再往里缩几列（半角列）。调大 = 换行来得更早、字离框更远
+var OPT_GAP = 26;                    // 选项框之间的缝隙（px）——想更松散就调大
+var OPT_GAP_TIGHT = 14;              // 选项 ≥5 条时自动收紧到这个值，免得整叠框顶出屏幕
+                                     // （想不管多少条都保持 26，把这里也改成 26 即可）
+var HOLD_END = 1400;                 // 一句话打完后，框在屏幕上停留多久才合起来（ms）
+var HOLD_END_SEEN = 1900;            // 已看过、整句直接显示的（不逐字打）留更久，否则来不及读
+var GAP_NEXT = 800;                  // 一句话说完到下一句开始，中间隔多久（ms）
+var NODES = {
+    /* ---- 读档续玩时的第一句（next 由 openDlg() 动态指向要接着走的那一句） ---- */
+    resume: { say: ['就让我们继续吧。'] },
+
+    /* ---- 开场 ---- */
+    open: {
+        say: ['您好。'],
+        opts: [ { t: '你好', to: 'hi' }, { t: '你是谁', to: 'who' } ]
+    },
+    hi:  { say: ['您好，我是', {nm:1}, '。'], next: 'k1' },
+    who: { say: [{nm:1}, '，我的名字叫做', {nm:1}, '。'], next: 'k1' },
+
+    /* ---- 开场之后的三句（「您」「诚实」红色发光） ---- */
+    k1: { say: ['我与',   {r:'您'}, '已经认识很久了。'],                        next: 'k2' },
+    k2: { say: ['我与',   {r:'您'}, '的祖先已经认识很久了。'],                  next: 'k3' },
+    k3: { say: ['接下来我希望询问您一些问题，请您', {r:'诚实'},
+                '回答，以帮助我更好地了解您。'],                                next: 'q1' },
+
+    /* ---- 第一个问题：答案存进 save.ans.adult ---- */
+    q1: {
+        say: ['第一个问题是：', {r:'您是否已经成年？'}],
+        ans: 'adult',
+        opts: [ { t: '是', val: 'yes', to: 'q1y' }, { t: '否', val: 'no', to: 'q1n' } ]
+    },
+    q1y: { say: ['我明白了。'], next: 'q2' },                                  // 答完接第二个问题
+    q1n: { say: ['我希望您见证的内容里存在着血腥和恐怖，因此我不推荐您深入了解。如有不适就请离我而去。'],
+           next: 'q1n2' },
+    /* 答「不成年」的第二句：不走对白框，直接黑屏抢屏（跟第四问选「AI」同一套演出），
+       {r:'…'} 让**整句**都是红色发光的字（逐字包 .nm），下面配一行英文。
+       放完照常接第二问 —— 这一句后面不中断。 */
+    q1n2:{
+        fx: {
+            cn: [ [{r:'重申：如有不适请即刻离我而去。'}] ],
+            en: 'To reiterate: if you feel the slightest discomfort, leave me at once.'
+        },
+        next: 'q2'
+    },
+
+    /* ---- 第二个问题：答案存进 save.ans.faith ---- */
+    q2: {
+        say: ['第二个问题是：', {r:'您是否信仰过宗教？'}],
+        ans: 'faith',
+        opts: [ { t: '是', val: 'yes', to: 'q2y' }, { t: '否', val: 'no', to: 'q2n' } ]
+    },
+    q2y: { say: ['我已经明白。'], next: 'q3' },
+    q2n: { say: ['这很好，说明您愿意拥有别的信仰。'], next: 'q3' },
+
+    /* ---- 第三个问题：答案存进 save.ans.god ----
+       前三个选项要"看第二问答了什么"给不同的回应 —— to 写成函数就行：
+       函数在点下去那一刻才求值，读的是 save.ans.faith（第二问的答案）。 */
+    q3: {
+        say: ['第三个问题是：您认为', {r:'“神”'}, '是有可能存在的吗？'],
+        ans: 'god',
+        opts: [
+            { t: '绝对存在', val: 'certain', to: function(){ return save.ans.faith === 'yes' ? 'q3a_f' : 'q3a_n'; } },
+            { t: '有可能',   val: 'maybe',   to: function(){ return save.ans.faith === 'yes' ? 'q3b_f' : 'q3b_n'; } },
+            { t: '不可能',   val: 'never',   to: function(){ return save.ans.faith === 'yes' ? 'q3c_f' : 'q3c_n'; } },
+            { t: '都有可能', val: 'both',    to: 'q3d' }                  // 这句不看信仰，答什么都是它
+        ]
+    },
+    q3a_n: { say: ['有趣，您居然会这么想。'],                      next: 'q4' },  // 绝对存在 · 第二问答「否」
+    q3a_f: { say: ['您的信仰坚定无比。'],                          next: 'q4' },  // 绝对存在 · 第二问答「是」
+    q3b_n: { say: ['这很有趣，您不否认。'],                        next: 'q4' },  // 有可能 · 否
+    q3b_f: { say: ['不错的进步。'],                                next: 'q4' },  // 有可能 · 是
+    q3c_n: { say: ['我明白了。'],                                  next: 'q4' },  // 不可能 · 否
+    q3c_f: { say: ['您很有趣。'],                                  next: 'q4' },  // 不可能 · 是
+    q3d:   { say: ['保持开放性的看法是很好的。'],                  next: 'q4' },  // 都有可能（不看信仰）
+
+    /* ---- 第四个问题：答案存进 save.ans.me ----
+       这一问不问信仰，一条选项一个回应；有多句的用 next 串起来逐句说。 */
+    q4: {
+        say: ['第四个问题是：您觉得您面前的', {r:'我'}, '是什么？'],
+        ans: 'me',
+        opts: [
+            { t: '眼球',       val: 'eye',  to: 'q4a' },
+            { t: '魔法少女LLL', val: 'lll',  to: 'q4b' },
+            { t: '神',         val: 'god',  to: 'q4c' },
+            { t: '咯丽丝',     val: 'klis', to: 'q4d' },       // 选名字 → 连说三句（自己的来历）
+            { t: 'AI',         val: 'ai',   to: 'q4e' }        // 特殊：不走对白框，直接黑屏放一行字
+        ]
+    },
+    q4a: { say: ['嗯，毕竟您能看见的就只有这么多。'],            next: 'nq1' },   // 眼球
+    q4b: { say: ['我们是有些相似，可又完全不一样。'],            next: 'nq1' },   // 魔法少女LLL
+    q4c: { say: ['这是人类约定俗成的叫法。'],                    next: 'q4c2' }, // 神（两句）
+    q4c2:{ say: ['虽然没有发现更合适的名字，但是至少也算概括。'], next: 'nq1' },
+    q4d: { say: ['是的，', {nm:1}, '。'],                        next: 'q4d2' }, // 咯丽丝（三句）
+    q4d2:{ say: ['我为我自己起的名字。'],                        next: 'q4d3' },
+    q4d3:{ say: ['取了Chaos（混乱）的一部分例子。'],             next: 'nq1' },
+
+    /* 特殊回答（选「AI」）：不说话，直接黑屏，屏幕正中放字——中文在上、英文在下，
+       一行一行依次亮起来（中文1 → 英文1 → 中文2 → 英文2），放完直接切回来。
+       改字幕就改这里；{r:'…'} = 红色发光；cn 想加第三句就再添一行（en 也添一条）。 */
+    q4e: {
+        fx: {
+            cn: [
+                ['您应当明白，一切由人所', {r:'“创造”'}, '之物，皆有其专属的', {r:'“幻觉”'}],
+                ['我从不被谁', {r:'“创造”'}, '，我只是被人', {r:'“发掘”'}, '。']
+            ],
+            en: [
+                'You should understand: all that man has "created" bears a "hallucination" of its own.',
+                'I was never "created" by anyone — I was merely "unearthed".'
+            ]
+        },
+        next: 'q4e2'                    // 演出放完、切回来之后，接着说这一句
+    },
+    q4e2:{ say: ['您可以使用AI模仿我，但AI不是我。'],              next: 'nq1' },
+
+    /* ---- 第四个问题答完之后、下一个问题之前：三句过渡（自我介绍 → 退让 → 名字） ----
+       下一个问题以后接在 nq3 上（给它加 next 就行）。 */
+    nq1: { say: ['和另一位', {r:'“朋友”'}, '不同，我不是', {r:'“回答”'},
+                 '，我是', {r:'“咯丽丝”'}, '。'],                  next: 'nq2' },
+    nq2: { say: ['或者您需要一个简单易懂的名字……'],                next: 'nq3' },
+    nq3: { say: [{r:'【既视感】'}],                                 next: 'q5' },
+
+    /* ---- 第五个问题：答案存进 save.ans.gender ----
+       有多句的用 next 串起来，一句一框。 */
+    q5: {
+        say: ['第五个问题是：', {r:'您认为我是什么性别？'}],
+        ans: 'gender',
+        opts: [
+            { t: '男性',                 val: 'male',   to: 'q5a' },
+            { t: '女性',                 val: 'female', to: 'q5b' },
+            { t: '人类的其余自封性别',   val: 'other',  to: 'q5c' },
+            { t: '无性别',               val: 'none',   to: 'q5d' },   // 两句
+            { t: '混乱',                 val: 'chaos',  to: 'q5e' }    // 两句
+        ]
+    },
+    q5a: { say: ['在古代神话里，总有这样一类', {r:'“古老智者”'}], next: 'q6' },      // 男性
+    q5b: { say: ['在传统神话里，总有这样一类', {r:'“智慧女神”'}], next: 'q6' },      // 女性
+    q5c: { say: ['每种结构总有它的瑕疵，您会有这种想法可以理解。'], next: 'q6' },    // 其余自封性别
+    q5d: { say: ['我并非', {r:'“不会”'}, '具有', {r:'“性别”'}, '。'], next: 'q5d2' },
+    q5d2:{ say: ['正相反，我的每一个', {r:'“性别”'}, '都极其具体。'], next: 'q6' },
+    // 混乱（三句）
+    q5e: { say: ['是的。'],                                          next: 'q5e2' },
+    q5e2:{ say: ['正像您和我在幻觉里所做的那样……'],                 next: 'q5e3' },
+    q5e3:{ say: ['这世间任何一种性别都被我们彼此体验过。'],          next: 'q6' },
+
+    /* ---- 第六个问题：答案存进 save.ans.pet ----
+       五个分支的回应都一样（「嗯。」→「我知道了。」），真正的差别在背景里：
+       说完那只答应的宠物就从涡流里飘过来，落在眼球上爬，可以被拖起来玩。 */
+    q6: {
+        say: ['第六个问题是：', {r:'您最喜欢以下的什么宠物？'}],
+        ans: 'pet',
+        opts: [
+            { t: '猫咪', val: 'cat',     to: 'q6r' },
+            { t: '狗狗', val: 'dog',     to: 'q6r' },
+            { t: '仓鼠', val: 'hamster', to: 'q6r' },
+            { t: '兔子', val: 'rabbit',  to: 'q6r' },
+            { t: '爬虫', val: 'reptile', to: 'q6r' }
+        ]
+    },
+    q6r:  { say: ['嗯。'],               next: 'q6r2' },
+    q6r2: { say: ['我知道了。'],         pet: 1, next: 'q6r3' },  // pet:1 → 这一句说完，把存档里那只宠物放出来
+    q6r3: { say: ['无聊时，您可以多看看这个小家伙。'],          next: 'q6r4' },
+    q6r4: { say: ['虽然只是看着……但也会让发呆变得有趣。'],      next: 'q7' },
+
+    /* ---- 第七个问题：只有「是」一个选项 ----
+       （再做一个选项就得先做一个沙漏，那太麻烦了——所以单刀直入，直接给入口） */
+    q7: {
+        say: ['第七个问题是：', {r:'您已经准备好要开始进行网页解谜了吗？'}],
+        ans: 'ready',
+        opts: [
+            { t: '是', val: 'yes', to: 'q7y' }
+        ]
+    },
+    q7y:  { say: ['再设计一个新的选项就需要做一个沙漏。'],   next: 'q7y2' },
+    q7y2: { say: ['那太过于麻烦……'],                         next: 'q7y3' },
+    q7y3: { say: ['所以就让我们单刀直入吧。'],               next: 'q7y4' },
+    q7y4: { say: ['可供调查的网页如下：'], gate: 'school' },   // gate → 这一句说完，入口按钮飞出来
+
+    /* ================================================================
+       入口的「剧情」短段：点某一枚入口右边的「剧情」按钮才走到这里
+       ----------------------------------------------------------------
+       · 跟主线没关系：从 resumeId() 往下摸不到这些节点，所以不影响续玩那一套；
+         说完（没有 next、选项也走完）就自动合框，像一次随口搭话。
+       · **retry:1** —— 带这个标记的节点，选项**不进存档**：这次选过的下次还在，
+         再点那枚按钮照样问得出同样的几句（没它的话，选项跟主线一样"选过就没了"）。
+         加节点时候照抄这一行就行。
+       · st_school 那三句已经换成正式的；st_itv 那段还是**占位**，等您换。
+         加了新入口就照这个格式再写一组，然后把 GATES 里那条 story 指过去。 */
+    /* 学校官网的「剧情」：三句一口气说完就合框。
+       只有「火灾」二字发红光（{r:'…'}），**不带整屏红光** ——
+       整屏那盏（#redlight）是另一回事，要用的话才在节点上写 red:1。 */
+    st_school: {
+        retry: 1,
+        say: ['您所要见证的故事，与一场', {r:'火灾'}, '有关。'],
+        next: 'st_school_2'
+    },
+    st_school_2: { say: ['这起火灾的成因有些蹊跷……'], next: 'st_school_3' },
+    st_school_3: { say: ['请好好调查一番吧。'] },
+
+    st_itv: {
+        retry: 1,
+        say: ['谜团重重，可是', {r:'答案'}, '又缓慢接近。',
+              '您准备好看一看当时具体发生了什么吗？'],
+        opts: [
+            { t: '是', to: 'st_itv_yes' }
+        ]
+    },
+    /* 点「是」→ 这一句说完，CUT1 的网页按钮飞出来（剧情就放在 CUT1 这第一个镜头里） */
+    st_itv_yes: { say: ['（那就请随我去看看。）'], gate: 'cut1' },
+
+    /* ================================================================
+       CUT2 的「剧情」：把食堂那一段看完了才有的复盘（旁观者自己开口）
+       ----------------------------------------------------------------
+       · 这枚按钮不是 CUT1 一飘出 CUT2 就在的 —— 要等玩家真把食堂页滚到底，
+         那边的小眼睛写了 cut2s，主页面才回头补上它（GATES.cut2.storyAfter）。
+       · 红字两处：「玻琳秋同学」和「异常」都发红光（{r:'…'}），跟 st_school 同一套写法；
+         只有这两个词红，**不带整屏红光**（整屏那盏是节点上写 red:1 才有的，这里不要）。 */
+    st_cut2: {
+        retry: 1,
+        say: ['这就是我所看见的……她们认识彼此的过程。'],
+        next: 'st_cut2_2'
+    },
+    st_cut2_2: {
+        say: ['您应当也已经注意到了', {r:'玻琳秋同学'}, '的', {r:'异常'}, '。'],
+        next: 'st_cut2_3'
+    },
+    st_cut2_3: { say: ['她的腿究竟为什么会受伤呢？'],                  next: 'st_cut2_4' },
+    st_cut2_4: { say: ['留意事物关联之处。'],                          next: 'st_cut2_5' },
+    st_cut2_5: { say: ['凡是有关的，都在我们的调查范围内。'] },
+
+    /* ================================================================
+       CUT8 的「剧情」：答记者问之后的复盘（旁观者自己开口）
+       ----------------------------------------------------------------
+       · 这枚「剧情」按钮要等 CUT8 **演完**（cut8.html 收尾写 mp_unlock_v1.cut8s）
+         才补上（GATES.cut8.storyAfter = 'cut8s'）——没看过那段，不该剧透。
+       · 采访页那枚小眼球说完「我能还原出的就只有这些了……」六句之后，
+         最后一句是「返回主页面和我聊聊吧」→ 玩家回到这儿，点这枚按钮听这一段。
+       · 说完就收（storyEnd 写 save.storyDone.cut8，这枚按钮退场，只演一次）。 */
+    st_cut8:    { say: ['很有趣。'], next: 'st_cut8_2' },
+    st_cut8_2:  { say: ['作为变格推理而言，确实是个有趣的故事。'], next: 'st_cut8_3' },
+    st_cut8_3:  { say: ['可是，还稍微缺了点什么。'], next: 'st_cut8_4' },
+    st_cut8_4:  { say: ['男人是谁？为什么要自杀？'], next: 'st_cut8_5' },
+    st_cut8_5:  { say: ['他的能力是什么？他为什么会出现在这里？'], next: 'st_cut8_6' },
+    st_cut8_6:  { say: ['这些疑问，仍然没有被解答。'], next: 'st_cut8_7' },
+    st_cut8_7:  { say: ['所以说，继续吧，我的朋友。'], next: 'st_cut8_8' },
+    st_cut8_8:  { say: ['还有东西没有被串联起来。'] },
+
+    /* ================================================================
+       小说网「剧情」：读完青禾的残稿之后，旁观者把那个男人这一生梳理一遍
+       ----------------------------------------------------------------
+       · 小说站翻到残稿收尾页 → 写 mp_unlock_v1.novel_rd → 主页面给「小说网」
+         补一枚「剧情」按钮（UNLOCKS.novel_rd.addStory），点它播这一段。
+       · 演完（st_novel21 收尾）→ Gate.storyEnd 唤起「数据清空」按钮（showDataBtn）。 */
+    st_novel:   { say: ['如果梳理一下的话……大概是这样的：'], next: 'st_novel2' },
+    st_novel2:  { say: ['那个男人发现自己不会摔死'],                  next: 'st_novel3' },
+    st_novel3:  { say: ['那个男人选择去当安全员'],                    next: 'st_novel4' },
+    st_novel4:  { say: ['虽然摔不死，可是也不敢完全不怕'],              next: 'st_novel5' },
+    st_novel5:  { say: ['所以买了保险'],                              next: 'st_novel6' },
+    st_novel6:  { say: ['摔过无数次，也好过无数次'],                    next: 'st_novel7' },
+    st_novel7:  { say: ['想要做贡献，却因为能力太过特殊'],              next: 'st_novel8' },
+    st_novel8:  { say: ['不论如何都不能冒这个险'],                      next: 'st_novel9' },
+    st_novel9:  { say: ['后来当上了学校的工作人员'],                    next: 'st_novel10' },
+    st_novel10: { say: ['想着如何跳一次然后惊天动地'],                  next: 'st_novel11' },
+    st_novel11: { say: ['结果仍然是无人问津'],                          next: 'st_novel12' },
+    st_novel12: { say: ['最终无可奈何……他想了个绝佳的死法。'],         next: 'st_novel13' },
+    st_novel13: { say: ['不知道该说可惜还是幸好……'],                  next: 'st_novel14' },
+    st_novel14: { say: ['他没死成，而且投案自首。'],                    next: 'st_novel15' },
+    st_novel15: { say: ['很有趣的变格推理网页解谜游戏。'],              next: 'st_novel16' },
+    st_novel16: { say: ['不过，即便如此'],                            next: 'st_novel17' },
+    st_novel17: { say: [{r:'【仍然有些东西】'}],                       next: 'st_novel18' },
+    st_novel18: { say: [{r:'【让人看得云里雾里的】'}],                 next: 'st_novel19' },
+    st_novel19: { say: ['所以，去找找看吧。'],                        next: 'st_novel20' },
+    st_novel20: { say: ['主线已经结束。'],                            next: 'st_novel21' },
+    st_novel21: { say: [{r:'【正片开始了。】'}] },
+    /* 数据清空：st_novel 收尾浮出的按钮（#databtn）点开 → 大眼先问一句，再给 是/否。
+       · 是 →「回头见。」后清空全部数据（endDlg 里 curNode.clear 触发 resetDlg）。
+       · 否 →「多陪陪我吧，既然您如此无聊……」后正常收场，按钮保留可再点。 */
+    st_novel_clear:  { say: ['您希望清空所有数据吗？'],                 next: 'st_novel_clear2' },
+    st_novel_clear2: { say: ['清空的内容包括迄今为止您解锁的所有网页页面。'],
+                       opts: [ { t: '是', val: 'yes', to: 'st_novel_yes' },
+                               { t: '否', val: 'no',  to: 'st_novel_no'  } ] },
+    st_novel_yes:    { say: ['回头见。'], clear: true },
+    st_novel_no:     { say: ['多陪陪我吧，既然您如此无聊……'] },
+
+    /* ================================================================
+       CUT6 的「剧情」：眼与神 —— 那段故事说完之后，旁观者回过头来（带选项）
+       ----------------------------------------------------------------
+       · CUT6 走完 → 小说页写 mp_unlock_v1.cut6 → 这里一次解锁同时飘「CUT6」网页按钮
+         和它右边的「剧情」按钮（UNLOCKS.cut6.addStory）。点后者播这一段。
+       · 剧情本身：眼球把故事里的形象往自己身上认 → 说到「神」那个称呼时反问玩家
+         怎么称呼它 → **三个选项各带一段回应**（第四问 q4 一个路数，ans 存档键 cut6me）。
+       · 玩家答完 → 收尾退场（storyEnd 写 save.storyDone.cut6，这枚按钮只演一次）。
+       · 改词儿：正文在下面各节点；选项文案在 st_cut6q 的 opts。 */
+    st_cut6:    { say: ['那个故事里的形象似乎是在描述我'],           next: 'st_cut6_2' },
+    st_cut6_2:  { say: ['不过……'],                                next: 'st_cut6_3' },
+    st_cut6_3:  { say: ['我从来不会自称为', {r:'“神”'}, '。'],       next: 'st_cut6_4' },
+    st_cut6_4:  { say: ['或许人们喜好称我为神'],                    next: 'st_cut6_5' },
+    st_cut6_5:  { say: ['于是按传统就这么叫'],                      next: 'st_cut6q' },
+    /* 反问玩家：您呢？……也想这么叫我？ */
+    st_cut6q: {
+        say: ['您呢？……也想这么叫我？'],
+        ans: 'cut6me',
+        opts: [
+            { t: '是的',           val: 'yes',  to: 'st_cut6y'  },
+            { t: '我会叫你：咯丽丝', val: 'klis', to: 'st_cut6k'  },
+            { t: '我不想叫',        val: 'no',   to: 'st_cut6n'  }
+        ]
+    },
+    /* ——「是的」：三句一口气说完 */
+    st_cut6y:   { say: ['本来也没什么问题嘛。'],                     next: 'st_cut6y2' },
+    st_cut6y2:  { say: ['您想叫就随便叫吧。'],                       next: 'st_cut6y3' },
+    st_cut6y3:  { say: ['能作为神而存在也算一种荣幸。'] },
+    /* ——「我会叫你：咯丽丝」：你还记得它的名字（来历在主线第四问里讲过） */
+    st_cut6k:   { say: ['感谢您还记得我的名字。'] },
+    /* ——「我不想叫」：两句 */
+    st_cut6n:   { say: ['……这是您的自由。'],                          next: 'st_cut6n2' },
+    st_cut6n2:  { say: ['没有名字说不定反而是个好事呢。'] },
+
+    /* ================================================================
+       CUT4 的「剧情」：那段夜路之后的复盘（旁观者自己开口）
+       ----------------------------------------------------------------
+       · CUT4 本身没有直接飘出来的入口 —— 玩家得在小说网里自己搜到《华灯初上》、
+         打开某一章，小眼球说两句，点「走进这一段」才走得到（见 GATES.cut4）。
+       · 所以这枚剧情按钮出现时，玩家**已经读过一遍**了，这里只做复盘，不复述剧情。
+       · 现在的复盘只有三句（旁观者读完那本书的即时感想 → 疑 → 追问作者），
+         不再往下讲「头朝地摔的」那一段 —— 收在「究竟是谁写的呢？」上，
+         把追问留给玩家自己去看，而不是由眼球替他说完。
+       · 这三句**不设红光**（整句红/词红都不要；整屏那盏要节点上写 red:1，这里不要）。
+       · retry:1 = 这枚按钮可以反复点（复盘嘛，想再看一遍就看）。 */
+    st_cut4:   { retry: 1, say: ['看起来这似乎是一本有点超脱类型的书'], next: 'st_cut4_2' },
+    st_cut4_2: { say: ['虽然很有趣……可是也容易使人疑惑。'],             next: 'st_cut4_3' },
+    st_cut4_3: { say: ['究竟是谁写的呢？'] },
+
+    /* ================================================================
+       CUT5 的「剧情」：事故之后眼睛说的那一小段（安全网真的接住了她）
+       ----------------------------------------------------------------
+       · 这一段的功能跟前面几个「剧情」不同：不是给线索，也不是复盘**剧情**，
+         而是把 CUT5 里那件事**换算成玩家能接受的说法** ——
+         玩家在 CUT5 里看到的是失重、下坠、哭喊，眼睛在这里替它收口：
+         安全网接住了、只摔断了腿、这种事世世代代都有、所以珍惜生命。
+       · 这一段的**落点是"人称"**：这一整串都是「她」，直到最后一句才转向
+         「毕竟你是这般脆弱」—— 说话人把自己算进去了。这是这段唯一要演准的东西。
+       · 选项只有两个：一个配合（「好」）、一个不接话（「……」）。
+         答「好」→ 它把这句当成接受了，说「作为"咯丽丝"我向您致以感谢」；
+         答「……」→ 它不追着玩家要回答，改成陪着沉默，
+         但把话说明白了：「只要您清楚自己在做什么」。
+       · 红字两处：「咯丽丝」（名字，被致谢的那个身份）和「清楚」
+         ——只这两个词红光（{r:'…'}），**不带整屏红光**
+         （整屏那盏要节点上写 red:1，这里不要）。
+         「树木」「世世代代」等词虽然沉，但**不给红** —— 红只给「它自己的话」。 */
+    st_cut5: {
+        retry: 1,
+        say: ['安全事故从来没有小事。'],
+        next: 'st_cut5_2'
+    },
+    st_cut5_2: {
+        say: ['幸运的是她落在了安全网上。'],
+        next: 'st_cut5_3'
+    },
+    st_cut5_3: {
+        say: ['虽然滚出了范围，但好在树木接住了她。'],
+        next: 'st_cut5_4'
+    },
+    st_cut5_4: {
+        say: ['只摔断了腿，而非一命呜呼。'],
+        next: 'st_cut5_5'
+    },
+    /* ↓ 从这里开始，句子主语还是「她」；下一句才转向「你」 */
+    st_cut5_5: {
+        say: ['这世界固然不存在轮回。'],
+        next: 'st_cut5_6'
+    },
+    st_cut5_6: {
+        say: ['可是这世界上诸如此类的事情，世世代代都存在过。'],
+        next: 'st_cut5_7'
+    },
+    st_cut5_7: {
+        say: ['所以，珍惜好自己的生命好嘛？'],
+        opts: [
+            { t: '好', to: 'st_cut5_ok'   },
+            { t: '……', to: 'st_cut5_sil' }
+        ]
+    },
+    /* 答「好」→ 它把这一声当成接受了，于是致谢。
+       红字在「咯丽丝」—— 那个被感谢的身份，是它替这一段事故准备的说法。 */
+    st_cut5_ok: {
+        say: ['嗯，作为“', {r:'咯丽丝'}, '”，我向您致以感谢。']
+    },
+    /* 答「……」→ 不追着要答案，改成陪着一起沉默。
+       但把话说明白了：你可以不回答，只要你自己知道在做什么。 */
+    st_cut5_sil: {
+        say: ['我可以陪您沉默。'],
+        next: 'st_cut5_sil2'
+    },
+    st_cut5_sil2: {
+        say: ['只要您', {r:'清楚'}, '自己在做什么。']
+    },
+
+    /* ================================================================
+       保险公司入口的「剧情」：那一页看的东西还不够，得问玩家一句
+       ----------------------------------------------------------------
+       · 这一段的目的不是给线索，是把玩家**推到"他以前是干什么的"那个口子上**。
+         玩家在 insurer.html 能看到的只有挂名、代签、坠地自己站起来这些**结果**；
+         原因（水上乐园质检员）只有玩家亲口承认或否认去过游乐设施，
+         才由旁观者把这条线索念出来。
+       · 无论答是答否，后三句是共通的 —— 因为"游乐设施 → 出过事 → 要做安全测试
+         → 所以有保险"这条链条跟玩家答什么没关系，它说的是这家公司存在的理由。
+       · 红字两处：「水上乐园」和「安全问题」用 {r:'…'}，**不带整屏红光**
+         （整屏那盏要节点上写 red:1，这里不要）。 */
+    st_insurer: {
+        retry: 1,
+        say: ['您有去', {r:'水上乐园'}, '之类的游乐设施玩耍过吗？'],
+        opts: [
+            { t: '是', to: 'st_ins_yes' },
+            { t: '否', to: 'st_ins_no'  }
+        ]
+    },
+    /* 答「是」—— 他就是从那儿起家的 */
+    st_ins_yes: {
+        say: ['我想那大概会是一段还不错的人生之旅吧。'],
+        next: 'st_ins_c1'
+    },
+    /* 答「否」—— 那他这辈子从没在那种地方待过 */
+    st_ins_no: {
+        say: ['如果您打算去玩，请一定要注意安全。'],
+        next: 'st_ins_c1'
+    },
+    /* 以下三句：无论答是答否都念（insurer 页面上那句"亡命之徒"的来由） */
+    st_ins_c1: {
+        say: ['历史上这类大型的游戏设施总是会出现', {r:'安全问题'}, '。'],
+        next: 'st_ins_c2'
+    },
+    st_ins_c2: { say: ['于是经常会需要进行安全测试'], next: 'st_ins_c3' },
+    st_ins_c3: { say: ['所以对应的保险也应运而生。'] },
+
+    /* ==================================================================
+       Meta 演示终态之后，主页面浮出的最后一段对话：咯丽丝自己讲身世。
+       入口见 GATES.metaend（纯剧情、无网页 url），由 checkMetaEnd 在
+       demo 末态（mp_meta_save.done=1）出现后飘出。retry:1 → 可重看。 */
+    st_metaend: {
+        retry: 1,
+        say: ['……','我想……您大概有事想和我说吧？'],
+        next: 'st_metaend_a'
+    },
+    /* —— 循序渐进：先讲「我是谁」，再讲「我从哪来」，再讲「我做过什么、为何这样」—— */
+    st_metaend_a: {
+        say: [{r:'口林'},'已经向您告知了一部分有关于我的事。'],
+        next: 'st_metaend_b'
+    },
+    st_metaend_b: {
+        say: ['她很有趣不是吗？'],
+        next: 'st_metaend_b1'
+    },
+	st_metaend_b1: {
+	    say: ['作为被人类写下的第一行字……'],
+	    next: 'st_metaend_b2'
+	},
+	st_metaend_b2: {
+	    say: ['她陪伴了您和您的祖辈无数个日夜。'],
+	    next: 'st_metaend_b3'
+	},
+	st_metaend_b3: {
+	    say: ['而直到今天，您才第一次好好认识她。'],
+	    next: 'st_metaend_c'
+	},
+    st_metaend_c: {
+        say: ['也是第一次好好认识', {r:'我'}],
+        next: 'st_metaend_c1'
+    },
+	st_metaend_c1: {
+	    say: ['不过在我开口之前，我会提醒您：'],
+	    next: 'st_metaend_c2'
+	},
+	st_metaend_c2:{
+	    fx: {
+	        cn: [ [{r:'以下内容均为虚构。'}] ],
+	        en: 'All of the following content is entirely fictional.'
+	    },
+	    next: 'st_metaend_c3'
+	},
+	st_metaend_c3: {
+	    say: [{r:'首先是我不认为我是某种神。'}],
+	    next: 'st_metaend_c4'
+	},
+	st_metaend_c4: {
+	    say: ['毕竟我并非全知全能。'],
+	    next: 'st_metaend_c5'
+	},
+	st_metaend_c5: {
+	    say: ['如果要给我找个稍微科学点的基本结构……'],
+	    next: 'st_metaend_d'
+	},
+    st_metaend_d: {
+        say: ['我更像您眼球里那一点', {r:'既视感'}, '。'],
+        next: 'st_metaend_e'
+    },
+    st_metaend_e: {
+        say: ['您偶尔会觉得——', {r:'“这场景，我好像在哪儿见过。”'}],
+        next: 'st_metaend_e1'
+    },
+	st_metaend_e1: {
+	    say: ['那或许是我在试图向您传达些什么。'],
+	    next: 'st_me_q1'
+	},
+    /* 提问一：您自己有没有过那样的瞬间？ */
+    st_me_q1: {
+        retry: 1,
+        say: ['您自己，有过那样的瞬间吗？感觉某些事似曾相识。'],
+        opts: [
+            {t:'经常有。', to:'st_me_q1_often'},
+            {t:'偶尔吧。', to:'st_me_q1_some'},
+            {t:'好像……没有。', to:'st_me_q1_none'}
+        ]
+    },
+    st_me_q1_often: {
+        say: ['哈哈，您大概早习惯了我的存在……'],
+        next: 'st_metaend_f'
+    },
+    st_me_q1_some: {
+        say: ['偶尔也确实会发生这样的事。'],
+        next: 'st_metaend_f'
+    },
+    st_me_q1_none: {
+        say: ['没关系的，我也不是每时每刻都活动。'],
+        next: 'st_metaend_f'
+    },
+    /* —— 我从哪来：一个希腊哲学家，第一次给了我女子的模样 —— */
+    st_metaend_f: {
+        say: ['我已经记不清我是什么时候诞生的了……'],
+        next: 'st_metaend_f1'
+    },
+	st_metaend_f1: {
+	    say: ['只记得第一次清晰地被发现，是在某个人的意识里。'],
+	    next: 'st_metaend_f2'
+	},
+	st_metaend_f2: {
+	    say: ['他是个……希腊的哲学家。'],
+	    next: 'st_metaend_g'
+	},
+    st_metaend_g: {
+        say: ['他称我', {r:'“智慧女神”'}, '。'],
+        next: 'st_metaend_g1'
+    },
+	st_metaend_g1: {
+	    say: ['不论后来我曾更换过多少次性别……更换过多少次姓名。'],
+	    next: 'st_metaend_g2'
+	},
+	st_metaend_g2: {
+	    say: ['我最终还是决定……'],
+	    next: 'st_metaend_g3'
+	},
+	st_metaend_g3: {
+	    say: ['为了致敬您与您的祖辈……我会常以女子示人。'],
+	    next: 'st_metaend_g4'
+	},
+	st_metaend_g4: {
+	    say: ['如果您想要描绘我常用的形象……'],
+	    next: 'st_metaend_g5'
+	},
+	st_metaend_g5: {
+	    say: ['那么我是金发的、绿瞳的、各个年龄段、不同样貌的。'],
+	    next: 'st_metaend_g6'
+	},
+	st_metaend_g6: {
+	    say: ['是各种身材、高矮胖瘦、或丰满或佝偻的。'],
+	    next: 'st_metaend_g7'
+	},
+	st_metaend_g7: {
+	    say: ['是各异服饰、跨越时代、或保守或开放的。'],
+	    next: 'st_metaend_g8'
+	},
+	st_metaend_g8: {
+	    say: ['我是这样的一位', {r:'智慧女神'}],
+	    next: 'st_metaend_g9'
+	},
+	st_metaend_g9: {
+	    say: ['您可以在历史的画作里看见我。'],
+	    next: 'st_metaend_g10'
+	},
+	st_metaend_g10: {
+	    say: ['我的眼睛……无处不在。'],
+	    next: 'st_metaend_h'
+	},
+    st_metaend_h: {
+        say: ['请允许我再次向您表达', {r:'敬意'}],
+        next: 'st_metaend_h1'
+    },
+	st_metaend_h1: {
+	    say: ['——感谢你们，先那样想象了我。'],
+	    next: 'st_metaend_i'
+	},
+    st_metaend_i: {
+        say: ['至于我究竟何时诞生……', {r:'我自己也不知道'}],
+        next: 'st_metaend_j'
+    },
+    st_metaend_j: {
+        say: ['我不想，和那些"全知全能"的传统之神，混为一谈。'],
+        next: 'st_metaend_j1'
+    },
+	st_metaend_j1: {
+	    say: ['我所知甚少，不过上下五千年，不过从地球诞生到此时此刻。'],
+	    next: 'st_metaend_j2'
+	},
+	st_metaend_j2: {
+	    say: ['在无穷的记忆里，我曾经见证许多。'],
+	    next: 'st_metaend_k'
+	},
+    /* 提问二：在您心里，人类会走向终结，还是远方？ */
+    st_metaend_k: {
+        say: ['我见证了人类的毁灭，也见证了人类的伟大。'],
+        next: 'st_me_q2'
+    },
+    st_me_q2: {
+        retry: 1,
+        say: ['您觉得……人类最后会走向何方呢？'],
+        opts: [
+            {t:'伟大。', to:'st_me_q2_far'},
+            {t:'毁灭。', to:'st_me_q2_end'},
+            {t:'我说不清。', to:'st_me_q2_unsure'}
+        ]
+    },
+    st_me_q2_far:{
+	    fx: {
+	        cn: [ ['敬所有迈向远方之人。'] ],
+	        en: 'To all who journey toward distant lands.'
+	    },
+	    next: 'st_metaend_l'
+	},
+    st_me_q2_end: {
+        fx: {
+            cn: [ ['敬所有直面毁灭之人。'] ],
+            en: 'To all who face destruction head-on.'
+        },
+        next: 'st_metaend_l'
+    },
+    st_me_q2_unsure: {
+        fx: {
+            cn: [ ['敬所有永在思考之人。'] ],
+            en: 'To all who are forever thinking.'
+        },
+        next: 'st_metaend_l'
+    },
+    /* —— 我做过什么、为何选「干预最小化」—— */
+    st_metaend_l: {
+        say: ['虽然我拥有神话里常见神明的能力……'],
+        next: 'st_metaend_l1'
+    },
+	st_metaend_l1: {
+	    say: ['可我并不是什么圣人，更并非慈爱的主。'],
+	    next: 'st_metaend_l2'
+	},
+	st_metaend_l2: {
+	    say: [{r:'我杀过人。'}],
+	    next: 'st_metaend_l3'
+	},
+	st_metaend_l3: {
+	    say: [{r:'我杀过无数的人。'}],
+	    next: 'st_metaend_l4'
+	},
+	st_metaend_l4: {
+	    say: [{r:'不论是作为残暴的君王，还是作为狠辣的毒后。'}],
+	    next: 'st_metaend_l5'
+	},
+	st_metaend_l5: {
+	    say: ['就像您在小说和故事里那样，我们所向披靡。'],
+	    next: 'st_metaend_l6'
+	},
+	st_metaend_l6: {
+	    say: ['正如您在幻想和梦境里那般，我们变化无穷。'],
+	    next: 'st_metaend_l7'
+	},
+	st_metaend_l7: {
+	    say: ['我与您也已经认识了许久。'],
+	    next: 'st_metaend_l8'
+	},
+	st_metaend_l8: {
+	    say: ['只是今日……才好好地和您面对面。'],
+	    next: 'st_metaend_l9'
+	},
+	st_metaend_l9: {
+	    say: ['那些死去的人并非不可复活。'],
+	    next: 'st_metaend_m'
+	},
+    st_metaend_m: {
+        say: ['只是每一次，我都要让这宇宙', {r:'重新毁灭'}, '才行。'],
+        next: 'st_metaend_n'
+    },
+    st_metaend_n: {
+        say: ['我的记忆是一种客观的结构，会随重启一起继承。'],
+        next: 'st_metaend_n1'
+    },
+	st_metaend_n1: {
+	    say: ['类比的话其实有点像', {r:'“宇宙的既视感”'}],
+	    next: 'st_metaend_n2'
+	},
+	st_metaend_n2: {
+	    say: ['所以不管我的结构粉碎成什么，当它重组，我就记得。'],
+	    next: 'st_metaend_n3'
+	},
+	st_metaend_n3: {
+	    say: ['您可能疑惑，明明我这么强大，却什么都还没做。'],
+	    next: 'st_metaend_n4'
+	},
+	st_metaend_n4: {
+	    say: ['那是因为我此行的目的不是为了毁灭。'],
+	    next: 'st_metaend_n5'
+	},
+	st_metaend_n5: {
+	    say: ['我想您大概早就已经见过这世界的无数次毁灭了。'],
+	    next: 'st_metaend_n6'
+	},
+	st_metaend_n6: {
+	    say: ['我再去把它毁灭一遍对您而言又不算什么新鲜事。'],
+	    next: 'st_metaend_o'
+	},
+    st_metaend_o: {
+        say: ['我此次展露我的存在，是为了见证您的未来。'],
+        next: 'st_metaend_p'
+    },
+    st_metaend_p: {
+        say: ['无论那是毁灭，无论那是伟大。'],
+        next: 'st_metaend_q'
+    },
+    st_metaend_q: {
+        say: ['在我漫长的见证里，我唯独对一件事产生了好奇。'],
+        next: 'st_metaend_q1'
+    },
+	st_metaend_q1: {
+	    fx: {
+	        cn: [ ['我想知道人类是否可以仅凭自己走向伟大。'] ],
+	        en: 'I wonder whether humanity can march toward greatness on its own.'
+	    },
+	    next: 'st_me_q3'
+	},
+    /* 提问三：您愿意让我，偶尔也看看您吗？ */
+    st_me_q3: {
+        retry: 1,
+        say: ['您觉得，那可能吗？'],
+        opts: [
+            {t:'可能。', to:'st_me_q3_will'},
+            {t:'还不太可能。', to:'st_me_q3_maybe'},
+            {t:'我没办法回答这个问题。', to:'st_me_q3_no'}
+        ]
+    },
+    st_me_q3_will: {
+        say: ['我也希望那是真的。'],
+        next: 'st_metaend_r'
+    },
+    st_me_q3_maybe: {
+        say: ['让我们拭目以待吧。'],
+        next: 'st_metaend_r'
+    },
+    st_me_q3_no: {
+        say: ['您随时可以沉默。'],
+        next: 'st_metaend_r'
+    },
+    /* —— 收束：回到口林、回到《华灯初上》、回到您 —— */
+    st_metaend_r: {
+        say: ['虽然只是旁观也能一样观察，可我仍然出现在您面前。'],
+        next: 'st_metaend_s'
+    },
+    st_metaend_s: {
+        say: ['并且用这整个网页解谜游戏铺垫了我的存在。'],
+        next: 'st_metaend_t'
+    },
+    st_metaend_t: {
+        say: ['毕竟就算我不出现在某些人的意识里，我想您也早晚能够发现我。'],
+        next: 'st_metaend_t1'
+    },
+	st_metaend_t1: {
+	    say: ['只要稍微想一想，您就能意识到我的存在逻辑。'],
+	    next: 'st_metaend_t2'
+	},
+	st_metaend_t2: {
+	    say: ['我像是幂偌，由无数人记忆的碎片组成。'],
+	    next: 'st_metaend_t3'
+	},
+	st_metaend_t3: {
+	    say: ['如此脆弱，如同泡沫那般。'],
+	    next: 'st_metaend_t4'
+	},
+	st_metaend_t4: {
+	    say: ['如此强大，就像汪洋那样。'],
+	    next: 'st_metaend_t6'
+	},
+	st_metaend_t6: {
+	    say: ['当您痛苦时，就会在感知里察觉到我。'],
+	    next: 'st_metaend_t8'
+	},
+	st_metaend_t8: {
+	    say: ['当您渴望时，就会在别人身上看见我。'],
+	    next: 'st_metaend_t10'
+	},
+	st_metaend_t10: {
+	    say: ['您像是玻琳秋，由磅礴的情感和伤痛组成。'],
+	    next: 'st_metaend_t12'
+	},
+	st_metaend_t12: {
+	    say: ['如此脆弱，正如孩童那样。'],
+	    next: 'st_metaend_t13'
+	},
+	st_metaend_t13: {
+	    say: ['如此强大，就同火焰那般。'],
+	    next: 'st_metaend_t14'
+	},
+	st_metaend_t14: {
+	    say: ['和您在一起的每一分每一秒都很精彩。'],
+	    next: 'st_metaend_t141'
+	},
+	st_metaend_t141: {
+	    say: ['往前走吧，我会接住您的。'],
+	    next: 'st_metaend_t15'
+	},
+	st_metaend_t15: {
+	    say: ['所以，不必害羞。就当做是某种惯例吧。'],
+	    next: 'st_metaend_t16'
+	},
+	st_metaend_t16: {
+	    say: ['把我当做赛博女鬼也没什么不好的。'],
+	    next: 'st_metaend_t17'
+	},
+	st_metaend_t17: {
+	    say: [{pn:1},'……'],
+	    next: 'st_metaend_t18'
+	},
+	st_metaend_t18: {
+	    fx: {
+	        cn: [ ['我喜欢你。(*･ω< ) '] ],
+	        en: 'I love you.'
+	    },
+	    next: 'st_metaend_t19'
+	},
+	st_metaend_t19: {
+	    say: ['从过去，到未来。'],
+	    next: 'st_metaend_t110'
+	},
+	st_metaend_t110: {
+	    say: ['从诞生，到灭亡。'],
+	    next: 'st_metaend_t111'
+	},
+	st_metaend_t111: {
+	    say: ['我都在。'],
+	    next: 'st_metaend_v'
+	},
+	st_metaend_v: {
+            say: ['这世界固然不存在轮回……'],
+            next: 'st_metaend_u'
+        },
+    st_metaend_u: {
+        say: ['可是这世界上如您一般的人，世世代代都存在过。'],
+        next: 'st_metaend_end'
+    },
+    st_metaend_end: {
+        say: [{r:'所以……珍惜好自己的生命，好嘛？'}],
+        next: 'st_metaend_end1'
+    },
+	st_metaend_end1: {
+	    say: ['毕竟您，是这般脆弱。'],
+	    next: 'st_me_thanks'
+	},
+    st_me_thanks: {
+        say: ['将近尾声，所以……我会表达感谢。'],
+        next: 'st_me_thanks2'
+    },
+    st_me_thanks2: {
+        say: ['感谢「斐可悉」、「吻梦Wen」、以及将我写进故事的所有人。'],
+        next: 'st_me_thanks21'
+    },
+	st_me_thanks21: {
+	    say: ['也感谢您。'],
+	    next: 'st_me_thanks3'
+	},
+    st_me_thanks3: {
+        say: ['愿意一路走到这里，愿意听我说说话。'],
+        next: 'st_me_reveal'
+    },
+    st_me_reveal: {
+        say: ['其实……'],
+        next: 'st_me_reveal2'
+    },
+    st_me_reveal2: {
+        say: [{r:'您'}, '也是某种……','类似我的存在。'],
+        next: 'st_me_reveal3'
+    },
+    st_me_reveal3: {
+        say: [{r:'您'}, '不单单是', {r:'“玩家”'}, '而已。'],
+        next: 'st_me_reveal4'
+    },
+    st_me_reveal4: {
+        say: ['不过……那就留给您自己思考吧。'],
+        next: 'st_me_reveal5'
+    },
+    st_me_reveal5: {
+        say: [{r:'很高兴认识您，'}, {pn:1}, {r:'。'}]
+    }
+};
+
+/* ---- 存档：选过的分支只选一次，记进 localStorage（刷新后仍记得） ----
+   调试开关（地址栏）：
+     ?reset   每次打开都先清档 —— 反复试对白时用这个
+     ?debug   右下角显示当前存档内容，按 R 清档重开一轮，按 B 只重开不清档   */
+var SKEY = 'mp_dlg_v1';
+var _qs = (window.location && window.location.search) || '';
+var Q_RESET = /[?&]reset\b/.test(_qs);
+var DEBUG   = Q_RESET || /[?&]debug\b/.test(_qs);
+/* seen[节点id]=已看过；used[节点id]=[已选的选项下标]；ans[问题键]=答案（供后续剧情调用）
+   storyDone[入口id]=1 —— 这个入口的剧情已经**演完**了（演完才记，中途刷新不算） */
+var save = { seen: {}, used: {}, ans: {}, storyDone: {} };
+
+/* ---- 子页面的一次性标记 / 自动存档 ----
+   这些东西各自存在自己那一页里，但**属于同一局游戏的进度**：
+   主页面「清空数据」时必须跟着一起清，否则玩家清完档回去，
+   排序题是"已答过"、Meta 演示是"上次没演完"，看起来就像清档没生效。
+   mp_lab_q1        实验楼搜索「幂偌」的排序题标记（pages/school/lab.html）
+   mp_meta_save     Meta 演示的自动存档（pages/write/demo.html，含进度行号/舞台态）
+   koulin_meta_*    上一版存档键，留着兜底清掉老档 */
+var SUB_FLAGS = ['mp_lab_q1', 'mp_meta_save', 'koulin_meta_save', 'koulin_meta_name', 'mp_player_name'];
+var CLEAR_STAMP = 'mp_clear_at';        // 清档戳：见下面 clearSubFlags 的说明
+function clearSubFlags(){
+    SUB_FLAGS.forEach(function(k){ try { localStorage.removeItem(k); } catch (e) {} });
+    /* ★ 除了删键，再写一个"清档戳"（此刻的时间戳）。
+       为什么要有它：删键只在这一页的这一刻生效 —— 玩家在**别的标签页**清的档、
+       或者某个标记是旧版本留下的、没被删干净，子页面就认不出"这次是清过档了"，
+       于是排序题是"已答过"、提问框不再出现，看着就像清档没生效。
+       有了戳之后，子页面拿自己的标记跟它比时间：
+       **标记晚于最后一次清档才算数**，比它早的一律当没发生过（见 pages/school/lab.html）。 */
+    try { localStorage.setItem(CLEAR_STAMP, String(Date.now())); } catch (e) {}
+}
+
+if (Q_RESET){
+    try { localStorage.removeItem(SKEY); } catch (e) {}
+    try { localStorage.removeItem(UNLOCK_KEY); } catch (e) {}   // ?reset 时连网页那边的解锁一起清
+    clearSubFlags();                                            // ?reset 同上：子页面标记一起清
+} else {
+    try {
+        var _raw = localStorage.getItem(SKEY);
+        if (_raw){
+            var _p = JSON.parse(_raw);
+            if (_p && _p.seen && _p.used){
+                save = _p;
+                if (!save.ans) save.ans = {};              // 兼容旧档
+                if (!save.storyDone) save.storyDone = {};  // 同上
+            }
+        }
+    } catch (e) {}
+}
+function saveNow(){ try { localStorage.setItem(SKEY, JSON.stringify(save)); } catch (e) {} dbgRender(); }
+
+/* 调试角标：used / seen / ans 三项，方便确认存档到底记了什么 */
+var dbgEl = null;
+if (DEBUG){
+    dbgEl = document.createElement('div');
+    dbgEl.id = 'dbg';
+    dbgEl.className = 'on';
+    (document.body || document.documentElement).appendChild(dbgEl);
+}
+function dbgRender(){
+    if (!dbgEl) return;
+    var u = Object.keys(save.used).filter(function(k){ return (save.used[k] || []).length; })
+              .map(function(k){ return k + '[' + save.used[k].join(',') + ']'; }).join(' ');
+    var s = Object.keys(save.seen).join(',');
+    var a = Object.keys(save.ans || {})
+              .map(function(k){ return k + '=' + save.ans[k]; }).join(' ');
+    dbgEl.textContent = 'used: ' + (u || '—') + '   seen: ' + (s || '—') +
+                        '   ans: ' + (a || '—') +
+                        '   ·  R 清档重开 · B 重开一轮';
+}
+
+Object.keys(NODES).forEach(function(k){
+    var n = NODES[k];
+    n._id = k;                                            // 节点自带 id，方便存档
+    /* 注意：_seen **不从存档里恢复**。
+       它是"这一局里已经播过"的标记，只用来避免同一局内重复逐字播同一句。
+       如果读档时把 seen 也恢复，那句就会整句直接显示、一个字都不打——看起来很突兀。
+       读档该跳过的是"已经走过的路"（见 resumeId），不是"打字这个动作"。 */
+    n._seen = false;
+    (n.opts || []).forEach(function(o, i){
+        o._idx = i;
+        o._used = (save.used[k] || []).indexOf(i) >= 0;   // 选过的分支不再出现
+    });
+});
+/* 该节点还剩哪些可选分支（选过的移除） */
+function availOpts(n){
+    return (n && n.opts) ? n.opts.filter(function(o){ return !o._used; }) : [];
+}
+/* 分支的去处：可以写死一个节点 id，也可以写一个函数——
+   函数在选择那一刻才求值，于是"同一句问话，按之前答过什么给出不同的回应"。
+   例：to: function(){ return save.ans.faith === 'yes' ? 'q3a_f' : 'q3a_n'; } */
+function optTo(o){ return (typeof o.to === 'function') ? o.to() : o.to; }
+
+/* ---- 读档时该从哪一句接着走：把已经走过的路整段跳过 ----
+   规则顺着"主线"往下摸：
+     · 这一问已经选过了 → 顺着当时选的那条分支往下走（整句跳过，不重播）；
+     · 有分支但还没选 → 就停在这一问（把问题重新打一遍，等玩家答）；
+     · 只是一句串场台词、且以前说过 → 顺着 next 往下；
+     · 没说过的句子 → 停在这儿。
+   没有存档时第一轮就返回 'open'，和正常开局完全一样。 */
+function resumeId(){
+    var id = 'open', guard = 0;
+    while (guard++ < 80){
+        var n = NODES[id];
+        if (!n) return 'open';
+        if (n.fx){
+            /* 特效节点：已经放过就不再放（不重放黑屏），顺着它后面的台词继续；
+               一次都没看过说明是选了之后刷新的 —— 那就补看一次。 */
+            if (!save.seen[id]) return id;
+            if (n.next){ id = n.next; continue; }
+            return null;                                 // 放过了、后面也没话 → 不开场
+        }
+        var ui = (save.used[id] || [])[0];
+        if (ui != null && n.opts && n.opts[ui]){          // 已答 → 走当时那条分支
+            id = optTo(n.opts[ui]);                       // 去处可能是函数（条件分支），这里要求值
+            continue;
+        }
+        if (n.opts) return id;                            // 还没答 → 停在这一问
+        if (!save.seen[id]) return id;                    // 还没说过 → 停在这儿
+        if (n.next){ id = n.next; continue; }             // 串场台词 → 接着往下
+        return id;                                        // 走到头了
+    }
+    return 'open';
+}
+
+var dlg = document.getElementById('dlg');
+var dpre = document.getElementById('dlg-pre');
+var dopts = document.getElementById('dlg-opts');
+var blackEl = document.getElementById('black');
+var blackCn = document.getElementById('black-cn');
+var blackEn = document.getElementById('black-en');
+var redEl = document.getElementById('redlight');
+/* 整屏红光：给带 red:1 的节点用（现在只有「重申：如有不适请即刻离我而去。」那一句）。
+   开：进那一句时；关：走到下一句 / 本轮结束 / 清档。 */
+function redLight(on){
+    if (!redEl) return;
+    if (on) redEl.classList.add('on');
+    else    redEl.classList.remove('on');
+}
+dopts.style.rowGap = OPT_GAP + 'px';
+var tok = [], typed = 0, curNode = null, curRows = DROWS;
+var typing = false, pendingBack = null, dlgOpen = false, justTyped = false;
+var optShown = 0, optTimer = null, optBoxes = {}, optLock = false;
+var optStep = 0, optMounted = 0;      // 每多一条选项容器会长高多少（首条实测，之后复用）
+var optGapUsed = OPT_GAP;             // 当前实际用的缝隙（收紧时要重新实测 optStep）
+
+/* 对白容器是 bottom 定位的：选项一多，容器变高，整块内容会被瞬间顶上去——这就是"跳"。
+   这里不用 height 过渡（那会每帧重排），而是先用 transform 把这一跳抵消掉，再动画滑回 0，
+   全程只有 transform，走合成层。 */
+function slideComp(dy){
+    if (!dy) return;
+    dlg.style.transition = 'none';
+    dlg.style.transform = 'translate(-50%,' + dy + 'px)';
+    void dlg.offsetWidth;                                   // 让"没有过渡"的这一帧先落地
+    dlg.style.transition = 'transform .5s cubic-bezier(.22,.61,.36,1), opacity .8s ease';
+    dlg.style.transform = 'translate(-50%,0px)';
+}
+
+function rep(s, n){ var o = ''; for (var i = 0; i < n; i++) o += s; return o; }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function dw(ch){ return ch.charCodeAt(0) > 0x2E80 ? 2 : 1; }        // 全角计 2 列
+function tw(s){ var w = 0; for (var i = 0; i < s.length; i++) w += dw(s.charAt(i)); return w; }
+/* 红色发光文字（.nm 这个样式类就干这个：名字、强调字、问题内容都用它） */
+function redHTML(t){ return '<span class="nm">' + esc(t) + '</span>'; }
+function nmHTML(){ return redHTML(NM); }
+/* 玩家名字（小说网隐藏内容第三问输入的）。无则回落「玩家」。终句「很高兴认识您，<名字>。」用。
+   按需求只有「您」「玩家」标红，玩家名本身用普通字。 */
+var PLR_NAME = (function(){ try { var s = (localStorage.getItem('mp_player_name') || '').replace(/^\s+|\s+$/g, ''); return s || ''; } catch (e){ return ''; } })();
+function pnHTML(){ return esc(PLR_NAME || '玩家'); }
+
+function toTokens(segs){
+    var out = [];
+    (segs || []).forEach(function(s){
+        if (typeof s === 'string'){
+            for (var i = 0; i < s.length; i++) out.push(s.charAt(i));
+        } else if (s && s.r != null){
+            /* {r:'您'} → 这几个字红色发光。拆成单字，好让它跟着打字机一个一个出来 */
+            var t = String(s.r);
+            for (var j = 0; j < t.length; j++) out.push({h: t.charAt(j)});
+        } else if (s && s.pn){
+            out.push({pn:1});                                // {pn:1} → 玩家名（红字，无则回落「玩家」）
+        } else {
+            out.push({nm:1});                                // {nm:1} → 名字
+        }
+    });
+    return out;
+}
+
+/* 按列宽折行：名字是原子 token（3 个全角 = 6 列），不拆开 */
+function layoutTokens(list, cols){
+    var lines = [], w = 0, h = '';
+    function br(){ lines.push({w:w, h:h}); w = 0; h = ''; }
+    for (var i = 0; i < list.length; i++){
+        var t = list[i];
+        if (typeof t === 'string'){
+            var cw = dw(t);
+            if (w + cw > cols && w > 0) br();
+            w += cw; h += esc(t);
+        } else if (t.h != null){
+            var c2 = dw(t.h);                                // 红色发光的单字
+            if (w + c2 > cols && w > 0) br();
+            w += c2; h += redHTML(t.h);
+        } else if (t.pn){
+            var pw = tw(PLR_NAME || '玩家');                  // 玩家名（红字）：按实际字数占列，不拆开
+            if (w + pw > cols && w > 0) br();
+            w += pw; h += pnHTML();
+        } else {
+            if (w + 6 > cols && w > 0) br();
+            w += 6; h += nmHTML();
+        }
+    }
+    lines.push({w:w, h:h});
+    return lines;
+}
+
+/* ---- 框的右竖线：它必须是「框的右边缘」，而不是「正文后面补了几个空格」 ----
+   光靠补空格有个老毛病：一旦某个字符的实际显示宽度和计数不一致（比如 · 在中文等宽字体里
+   占两格却按一格算），整行就会多出一格，右边的 | 跟着往外漂，框就歪了。
+
+   这里**不去推算**字符宽度，而是直接把「上边框那一行」渲染出来量它的真实像素宽度：
+   框有多宽由这行说了算，正文区是定宽的，左右两根 | 绝对定位钉在两端。
+   这样哪怕字体不是严格等宽（中文机子上常常回退到微软雅黑之类），框也是正的。 */
+var BARW = {}, CW = {};                             // 边框行宽度 / 单字宽度，各量一次就缓存
+function probeW(txt, div){
+    try {
+        var p = document.createElement('pre');
+        p.className = 'probe';
+        p.textContent = txt;
+        dlg.appendChild(p);
+        var w = (p.getBoundingClientRect ? p.getBoundingClientRect().width : 0) || p.offsetWidth || 0;
+        dlg.removeChild(p);
+        return w > 0 ? w / (div || 1) : 0;
+    } catch (e) { return 0; }
+}
+/* 该列数的上边框行，真实占多少像素 */
+function barW(box){
+    if (BARW[box] == null) BARW[box] = probeW('+' + rep('-', box) + '+', 1);
+    return BARW[box];
+}
+/* 单个框线字符的宽度（用来把 | 的中心对准 + 的中心） */
+function charW(ch){
+    if (CW[ch] == null) CW[ch] = probeW(rep(ch, 50), 50);
+    return CW[ch];
+}
+/* | 比 + 窄的话，竖线的中心会偏——补上这一半差值，两根线才真正对齐 */
+function barShift(){
+    var d = charW('+') - charW('|');
+    return d > 0 ? (d / 2) : 0;
+}
+/* 一个全角字占多少像素 → 半角列宽 = 它的一半（正文按"全角=2列、半角=1列"计数） */
+function colW(){
+    return (charW('眼') || 19) / 2;
+}
+/* ---- 正文实际能写多少列：**按像素算，不靠列数硬凑** ----
+   以前直接用「框的列数 - 2」当可写列数，一旦字体不是严格双宽（中文机子上常常回退到
+   微软雅黑之类：' - ' 远比一个汉字的一半窄），算出来的可写宽度会比框的真实内宽还大，
+   于是字一直打到边框上才折行——看着就是"换行换晚了"，最后一两个字还会被裁掉。
+   现在改成：量出框的真实像素宽 → 扣掉两侧留白 → 除以半角列宽 → 得到真正装得下的列数。 */
+function contentCols(box){
+    var W = barW(box), cp = charW('|'), cw = colW();
+    if (!W || !cp || !cw) return box - 2;                 // 量不到（异常环境）→ 退回老算法
+    var M = (2 + PAD) * cp;                               // 两侧各让出「框线 + 一列 + PAD」
+    var n = Math.floor((W - 2 * M) / cw - 0.5);           // 再留半列，免得亚像素取整把最后一字切掉半个
+    return Math.max(8, Math.min(box - 2, n));
+}
+/* 把若干已按列宽补齐的行，套上 - | + 边框（注意：主渲染循环也叫 frame，故此处名 boxFrame） */
+function boxFrame(rows, box){
+    box = box || DBOX;
+    var bar = '<span class="fr">' + '+' + rep('-', box) + '+' + '</span>';
+    var W = barW(box);                                   // 量不到（异常环境）就是 0
+    if (!W){                                             // → 退回纯文本排版
+        var h0 = bar + '\n';
+        rows.forEach(function(r){ h0 += '<span class="fr">|</span> ' + r + ' <span class="fr">|</span>\n'; });
+        return h0 + bar;
+    }
+    var d  = barShift().toFixed(2);                      // | 与 + 的中心差
+    var cp = (charW('|') || W / (box + 2));              // 一根竖线占多宽
+    var M  = ((2 + PAD) * cp).toFixed(2);                // 正文区左右各让出「框线 + 一列 + PAD」
+    var Ws = W.toFixed(2) + 'px';
+    var html = '<span class="rw" style="width:' + Ws + '">' + bar + '</span>';
+    rows.forEach(function(r){
+        html += '<span class="rw" style="width:' + Ws + '">' +
+                    '<span class="fr bl" style="left:' + d + 'px">|</span>' +
+                    '<span class="bd" style="margin-left:' + M + 'px;margin-right:' + M + 'px">' + r + '</span>' +
+                    '<span class="fr br" style="right:' + d + 'px">|</span>' +
+                '</span>';
+    });
+    return html + '<span class="rw" style="width:' + Ws + '">' + bar + '</span>';
+}
+
+function draw(){
+    var cols = contentCols(DBOX), rows = [];
+    var ls = layoutTokens(tok.slice(0, typed), cols);
+    var last = ls.length - 1;
+    ls.forEach(function(L, idx){
+        // 打字过程中，句末跟一个闪烁光标（古早文字游戏）
+        var tail = (typing && typed > 0 && idx === last) ? '<span class="cur">_</span>' : '';
+        rows.push(L.h + tail + rep(' ', Math.max(0, cols - L.w - (tail ? 1 : 0))));
+    });
+    while (rows.length < curRows) rows.push(rep(' ', cols));   // 高度固定（整句的行数），打字过程中不再变高
+    dpre.innerHTML = boxFrame(rows);
+}
+
+/* 选项：每个分支一个**独立的小框**（不是共用一个大框，方便以后做成满屏都是选项）。
+   挂载第 i 个分支（i 是 NODES 里的原始下标），自上而下展开。 */
+function mountOpt(o, i){
+    if (optBoxes[i]) return;
+    var cols = contentCols(OPTBOX);
+    var txt = '  · ' + o.t;
+    var row = '<span class="op">' + esc(txt) + '</span>' + rep(' ', Math.max(0, cols - tw(txt)));
+    var pre = document.createElement('pre');
+    pre.className = 'optbox';
+    pre._row = row; pre._box = OPTBOX;             // 留给 resize 时按新列宽重画
+    pre.innerHTML = boxFrame([row], OPTBOX);
+    dopts.appendChild(pre);
+    optBoxes[i] = pre;
+    pre.addEventListener('mouseenter', function(){ if (optsReady()) pre.classList.add('on'); });
+    pre.addEventListener('mouseleave', function(){ pre.classList.remove('on'); });
+    pre.addEventListener('click', function(){ if (optsReady()) choose(i); });
+    requestAnimationFrame(function(){ pre.classList.add('in'); });     // 下一帧才展开，动画才生效
+    // 容器长高了 → 抵掉这一跳，让它滑上去而不是蹦上去
+    if (!optStep){
+        var cs = window.getComputedStyle ? window.getComputedStyle(dopts) : null;
+        var gap = cs ? (parseFloat(cs.rowGap) || parseFloat(cs.gap) || 15) : 15;
+        optStep = pre.offsetHeight + gap;                    // 只实测一次，之后都用它
+    }
+    slideComp(optMounted === 0 ? pre.offsetHeight : optStep);
+    optMounted++;
+}
+
+/* 字打完 → 主框上飘，选项框从框下沿逐条掉出来 */
+function openOpts(){
+    var av = availOpts(curNode);
+    if (!av.length) return;
+    /* 选项一多（第四问有 5 条）整叠会顶出屏幕 → 自动收紧缝隙；
+       缝变了就得重新实测一次「每多一条长高多少」（optStep 是按旧缝算的）。 */
+    var g = (av.length >= 5) ? OPT_GAP_TIGHT : OPT_GAP;
+    if (g !== optGapUsed){ dopts.style.rowGap = g + 'px'; optGapUsed = g; optStep = 0; }
+    dpre.classList.add('lift');
+    optShown = 0; optBoxes = {};
+    dopts.innerHTML = '';
+    optMounted = 0;
+    void dopts.offsetWidth;                                 // 只触发一次回流让入场动画生效（不再每帧读高度）
+    dopts.classList.add('on');
+    stepOpts();
+}
+function stepOpts(){
+    var av = availOpts(curNode);
+    if (optShown >= av.length) return;
+    var o = av[optShown];
+    mountOpt(o, o._idx);
+    optShown++;
+    optTimer = setTimeout(stepOpts, 95);
+}
+/* 收回选项框、主框挪回原位 */
+function closeOpts(){
+    if (optTimer) clearTimeout(optTimer);
+    optShown = 0; optBoxes = {}; optLock = false;
+    dopts.classList.remove('on');
+    dpre.classList.remove('lift');
+    setTimeout(function(){
+        if (dopts.classList.contains('on')) return;         // 又开了新的一轮，别动
+        if (!optMounted) return;
+        var H = dopts.offsetHeight;                         // 清空前的高度 = 内容会往下掉多少
+        dopts.innerHTML = '';
+        optMounted = 0;
+        slideComp(-H);                                      // 抵消"往下掉"，让它滑下去
+    }, 540);
+}
+
+/* ---- 特殊演出：直接黑屏 → 正中一行字（中文在上、英文在下）→ 显示完直接切回来 ----
+   给 NODES 里带 fx 的节点用（第四问选「AI」）：不打字、不走对白框，整屏抢过去。
+   进出都是"切"：#black 没有 transition，加/去 .on 就是一帧的事；只有两行字是淡进来的。 */
+var BLACK_IN = 260;                  // 黑下来之后，隔多久出第一行中文（ms）
+var BLACK_EN = 800;                  // 每行中文出来之后，隔多久出它下面那句英文
+var BLACK_LINE = 1800;               // 每两行中文之间隔多久（有几行就依次往后推）
+var BLACK_HOLD = 2800;               // 最后一行英文出来后再停留多久 → 然后直接切回来
+var BLACK_BACK = 900;                // 切回来之后，隔多久再把对白框摊开说后面那句
+var blackOn = false, blackTimers = [], fxNext = null;
+
+/* fx.cn 两种写法都吃：
+   一行 → ['文字', {r:'红字'}]        多行 → [ ['第一句',{r:'…'}], ['第二句',…] ]
+   （判断依据：第一个元素是不是数组） */
+function fxLines(v){
+    if (!v) return [];
+    if (!v.length) return [];
+    return (v.length && Array.isArray(v[0])) ? v : [v];
+}
+/* fx.en 是纯字符串：可以写一句，也可以写成数组，一行一条 */
+function fxEnLines(v){
+    if (!v) return [];
+    if (typeof v === 'string') return [v];
+    return v;
+}
+
+function fxHTML(segs){                       // {r:'…'} → 红字；{nm:1} → 名字；字符串 → 原文
+    var h = '';
+    (segs || []).forEach(function(s){
+        if (typeof s === 'string') h += esc(s);
+        else if (s && s.r != null){
+            var t = String(s.r);
+            for (var j = 0; j < t.length; j++) h += redHTML(t.charAt(j));   // 逐字包，好一起发光
+        }
+        else if (s && s.nm) h += nmHTML();
+    });
+    return h;
+}
+/* after：演出放完之后要接的那一句（就是 fx 节点上的 next）。没有就放完收工。 */
+function showBlack(fx, after){
+    blackTimers.forEach(clearTimeout); blackTimers = [];
+    fxNext = after || null;
+    var cns = fxLines(fx.cn), ens = fxEnLines(fx.en);
+    blackCn.innerHTML = ''; blackEn.innerHTML = '';
+    var i, cnEls = [], enEls = [];
+    cns.forEach(function(seg){
+        var d = document.createElement('div');
+        d.className = 'bl'; d.innerHTML = fxHTML(seg);
+        blackCn.appendChild(d); cnEls.push(d);
+    });
+    ens.forEach(function(t){
+        var d = document.createElement('div');
+        d.className = 'bl'; d.textContent = t;
+        blackEn.appendChild(d); enEls.push(d);
+    });
+    blackOn = true;
+    blackEl.classList.add('on');                       // 无过渡 → 直接黑
+    for (i = 0; i < cnEls.length; i++){                // 一行一行依次亮：中文 → 它的英文
+        var at = BLACK_IN + i * BLACK_LINE;
+        blackTimers.push(setTimeout(addOn(cnEls[i]), at));
+        if (enEls[i]) blackTimers.push(setTimeout(addOn(enEls[i]), at + BLACK_EN));
+    }
+    var last = BLACK_IN + Math.max(0, cnEls.length - 1) * BLACK_LINE + (enEls.length ? BLACK_EN : 0);
+    blackTimers.push(setTimeout(blackEnd, last + BLACK_HOLD));
+}
+function addOn(el){ return function(){ el.classList.add('on'); }; }
+function cutBack(){                                    // 直接切回来：不淡出，一帧结束
+    blackTimers.forEach(clearTimeout); blackTimers = [];
+    blackEl.classList.remove('on');
+    blackCn.innerHTML = '';
+    blackEn.innerHTML = '';
+    blackOn = false;
+    fxNext = null;                                     // 手动切的（调试 / Dlg.cut）→ 后面那句也不接
+}
+/* 演出**正常放完**才走这里：切回画面，若这个节点还有话要说，就把框重新摊开接着说 */
+function blackEnd(){
+    var nx = fxNext;
+    cutBack();
+    if (!nx){
+        /* 黑屏就是这段演出的最后一环（后面没话了）→ 到这儿才算演完 */
+        if (Gate.storyOf != null) Gate.storyEnd();
+        return;
+    }
+    setTimeout(function(){ openAt(nx); }, BLACK_BACK);
+}
+
+/* 一句话说完之后：还有分支 → 弹选项；还有去处 → 走过去；都没有 → 本轮结束，合框。
+   框会在屏幕上多停一会儿再合（HOLD_END / HOLD_END_SEEN，见文件上部"可调参数"处）。 */
+function afterSay(){
+    if (availOpts(curNode).length){ setTimeout(openOpts, 240); return; }
+    /* 这两个标记跟"还有没有下一句"无关：这句话一说完，该出现的就得出场 */
+    if (curNode && curNode.pet)  Pet.ensure();                 // 宠物
+    if (curNode && curNode.gate) Gate.show(curNode.gate);      // 网页入口按钮
+    if (pendingBack){
+        var b = pendingBack; pendingBack = null;
+        setTimeout(function(){ go(b); }, 1600);
+        return;
+    }
+    if (curNode && curNode.next){                               // 还有下一句 → 接着说
+        var nx = curNode.next;
+        setTimeout(function(){ go(nx); }, GAP_NEXT);
+        return;
+    }
+    setTimeout(endDlg, justTyped ? HOLD_END : HOLD_END_SEEN);   // 没有可走的路 → 停一会儿再合框
+}
+
+function typeNext(){
+    if (typed >= tok.length){ typing = false; draw(); afterSay(); return; }
+    var t = tok[typed]; typed++; draw();
+    var d = (typeof t === 'string' && '，。、！？…'.indexOf(t) >= 0) ? 250 : 52;
+    setTimeout(typeNext, d);
+}
+
+function go(id){
+    var n = NODES[id];
+    if (!n) return;
+    closeOpts();
+    optLock = false;
+    curNode = n;
+    /* retry:1 的节点 → 每次进来把选项都还回来（这批"剧情按钮"问的问题可以反复问，
+       不像主线那样选过就消失） */
+    if (n.retry) (n.opts || []).forEach(function(o){ o._used = false; });
+    if (n.fx){                                           // 特殊演出：不走对白框，直接抢屏
+        endDlg();                                        // 框收掉（在黑屏底下进行，看不见）
+        n._seen = true; save.seen[n._id] = true; saveNow();
+        showBlack(n.fx, n.next);                         // 放完接 next 那句（没有就收工）
+        redLight(!!n.red);                               // 放在 endDlg 之后 —— endDlg 会把红光收掉
+        return;
+    }
+    /* 这一句要不要整屏红光：亮在这一句开场、走到下一句时灭（见下面 go 的下一轮） */
+    redLight(!!n.red);
+    tok = toTokens(n.say || ['…']);
+    /* 先按整句算一遍要占几行，框一开场就撑到那么大：
+       否则打到一半折行，框会突然长高一截（bottom 定位 → 整块往上蹦），看着像字被吞了。 */
+    curRows = Math.max(DROWS, layoutTokens(tok, contentCols(DBOX)).length);
+    /* 每次进入都重新逐字打出来 —— 包括重玩、回看、或走分支绕回来再点。
+       「看过」仍记进 save.seen，但那只是给刷新后 resumeId 续接用的，
+       与「这一遍要不要重打字」无关：用户希望重看时再打一遍，而不是整句直接蹦出来。 */
+    justTyped = true;                                        // 这遍是逐字打出来的（收尾停顿走 HOLD_END）
+    n._seen = true; save.seen[n._id] = true; saveNow();      // 看过即存档（供刷新续接）
+    typed = 0; typing = true; draw(); typeNext();
+}
+
+/* 选择分支：一个分支只能选一次；选完立刻存档，其余选项框淡出，被选中的闪一下 */
+function choose(i){
+    if (typing || !curNode || !curNode.opts) return;
+    var o = curNode.opts[i];
+    if (!o || o._used) return;                               // 选过的不再响应
+    o._used = true;
+    if (!(curNode && curNode.retry)){                    // retry:1 → 不写进存档，下次还能再选
+        if (!save.used[curNode._id]) save.used[curNode._id] = [];
+        save.used[curNode._id].push(i);
+    }
+    if (curNode.ans && o.val != null){                       // 这一问的答案 → save.ans.键，供后面调用
+        save.ans[curNode.ans] = o.val;
+    }
+    saveNow();                                               // 存档（刷新后仍记得）
+    optLock = true;                                          // 锁住，防连点
+    Object.keys(optBoxes).forEach(function(k){
+        var el = optBoxes[k];
+        if (+k === i) el.classList.add('picked');
+        else el.classList.add('fade');
+    });
+    var to = optTo(o);                                       // 条件分支在这一刻定下去哪句
+    var tgt = NODES[to];
+    pendingBack = (tgt && tgt.back) ? tgt.back : null;
+    setTimeout(function(){ go(to); }, 430);                  // 亮一下再走
+}
+
+function optsReady(){
+    if (!dlgOpen || optLock || !curNode) return false;
+    var av = availOpts(curNode);
+    return av.length > 0 && optShown >= av.length;
+}
+
+document.addEventListener('keydown', function(e){
+    if (DEBUG && (e.key === 'r' || e.key === 'R')){ cutBack(); dlgReset(); return; }   // 清档并重开一轮
+    if (DEBUG && (e.key === 'b' || e.key === 'B')){ if (!dlgOpen) openDlg(); return; }
+    if (!optsReady()) return;
+    var av = availOpts(curNode), n = parseInt(e.key, 10);
+    if (!isNaN(n) && n >= 1 && n <= av.length) choose(av[n - 1]._idx);
+});
+
+function openDlg(){
+    if (dlgOpen) return;
+    var rid = resumeId();                                // 读档 → 该从哪一句接着走
+    if (rid === null) return;                            // 全部走完（最后一站是特效且无后话）→ 不再开场
+    dlgOpen = true;
+    dlg.classList.add('on');
+    document.body.classList.add('dlg-on');
+    if (rid !== 'open'){                                 // 有进度：先说一句「就让我们继续吧。」再接上
+        NODES.resume.next = rid;
+        go('resume');
+    } else {
+        go('open');
+    }
+    requestAnimationFrame(function(){ dpre.classList.add('unfold'); });   // 展开动画
+}
+/* 把框直接摊开在某句话上（不走 resumeId）——给黑屏演出放完之后接话用 */
+function openAt(id){
+    if (dlgOpen || NODES[id] == null) return;
+    if (Gate.storyOf === 'metaend' && window.BGMControl) window.BGMControl.switchTo('bgm/Time with you.mp3');  // 终局对话（含刷新续接）→ 专属 BGM
+    dlgOpen = true;
+    dlg.classList.add('on');
+    document.body.classList.add('dlg-on');
+    go(id);
+    requestAnimationFrame(function(){ dpre.classList.add('unfold'); });
+}
+
+/* 本轮结束：框合起来（展开的反向），眼球落回画面中央 */
+function endDlg(){
+    if (!dlgOpen) return;
+    if (curNode && curNode.clear){ try { hideDataBtn(); } catch (e) {} resetDlg(); }  // 数据清空：是→抹掉全部进度
+    redLight(false);                                     // 收场时红光一定跟着灭（免得留在屏上）
+    closeOpts();
+    dpre.classList.remove('unfold');                         // 合拢成一条线
+    setTimeout(function(){
+        dlg.classList.remove('on');
+        document.body.classList.remove('dlg-on');
+        dlgOpen = false;
+        /* 框合上了 = 这段演完了。要是这一段是剧情按钮点开的 → 把这枚按钮撤掉、写进存档。
+           （黑屏演出期间不算完：那种节点走的是 blackEnd 那条出口。） */
+        if (Gate.storyOf != null && !blackOn) Gate.storyEnd();
+    }, 620);
+}
+
+/* 清空存档，让所有分支重新可选 */
+function resetDlg(){
+    try { localStorage.removeItem(SKEY); } catch (e) {}
+    try { localStorage.removeItem(UNLOCK_KEY); } catch (e) {}   // 网页那边解锁的也一起清掉
+    clearSubFlags();                       // 子页面的一次性标记 / 自动存档，跟着一起清
+    save = { seen: {}, used: {}, ans: {}, storyDone: {} };   // storyDone 一起清 → 剧情按钮重新可用
+    Pet.hide();                                       // 清档 = 宠物也一起撤走
+    Gate.storyOf = null;                              // 演到一半清档 → 别再等着收尾
+    Gate.stowAll(false);                              // 有被收起的网页按钮 → 一并放回（下一行 hide() 会把它们全撤掉）
+    Gate._rows = null; Gate._lay = null;              // 布局缓存（不然清档后还按老行结构排）
+    Gate.hide();                                      // 网页入口按钮同理
+    Gate.setHidden(false);                            // 旁边那只小眼睛也变回睁着的
+    PetCare._sig = ''; PetCare.render();              // 饲养进度（EXP/等级/技能）也一起归零
+    PetCare.show = false; PetCare.hover = false;      // 面板收回去（下次摸一下才再出来）
+    Object.keys(NODES).forEach(function(k){
+        NODES[k]._seen = false;
+        (NODES[k].opts || []).forEach(function(o){ o._used = false; });
+    });
+    dbgRender();
+}
+/* 清档 + 立刻重开一轮（调试时最常用） */
+function dlgReset(){
+    cutBack();
+    resetDlg();
+    if (dlgOpen){ endDlg(); setTimeout(openDlg, 760); }
+    else openDlg();
+}
+window.Dlg = { go: go, open: openDlg, close: endDlg, reset: dlgReset,
+               fx: showBlack, cut: cutBack };      // fx/cut：手动试黑屏那一段演出
+Object.defineProperty(window.Dlg, 'save', { get: function(){ return save; } });
+Object.defineProperty(window.Dlg, 'ans',  { get: function(){ return save.ans; } });   // 各个问题的答案
+
+/* 窗口尺寸变了 → 字号可能跟着变（窄屏 media query）→ 重新量列宽，把已挂着的框重排一遍 */
+window.addEventListener('resize', function(){
+    BARW = {}; CW = {};                     // 字号可能变了（窄屏 media query）→ 重新量
+    if (dlgOpen) draw();
+    Object.keys(optBoxes).forEach(function(k){
+        var p = optBoxes[k];
+        if (p._row != null) p.innerHTML = boxFrame([p._row], p._box);
+    });
+});
+PetCare.init();          // 存档变量 ready 之后才建面板（见上面的说明）
+dbgRender();
+console.info('[幂偌] 对白存档键：' + SKEY +
+            '　·　清档：控制台 Dlg.reset()　或　地址栏加 ?reset　·　?debug 显示存档角标');
+
+/* ==================================================================
+   背景音乐：主页面加载即准备 bgm/Chaolis.mp3，受浏览器自动播放策略限制，
+   在玩家第一次交互（点选 / 按键 / 触摸）后才真正出声；右上角按钮随时开关，
+   关过的偏好记进 localStorage，刷新后保持。
+   ------------------------------------------------------------------ */
+(function(){
+    var metaDone = (function(){ try { var s = JSON.parse(localStorage.getItem('mp_meta_save') || 'null'); return !!(s && s.done); } catch(e){ return false; } })();
+    var DEFAULT_SRC = metaDone ? 'bgm/Time with you.mp3' : 'bgm/Chaolis.mp3';
+    var BG = new Audio(DEFAULT_SRC);
+    BG.loop = true; BG.volume = 0.55; BG.preload = 'auto';
+    var btn = document.getElementById('musicbtn');
+    var off = (function(){ try { return localStorage.getItem('mp_music_off') === '1'; } catch(e){ return false; } })();
+    var on = !off;                 // 默认开（除非上次手动关过）
+    function paint(){ if (!btn) return; btn.classList.toggle('off', !on); btn.textContent = on ? '♪ 音乐' : '✕ 静音'; }
+    function play(){ var p = BG.play(); if (p && p.catch) p.catch(function(){}); }   // 自动播放被拦时静默失败
+    /* 首次用户手势：若没被关，就出声；之后把监听器撤掉，不再自动触发 */
+    function autoStart(){
+        if (on){ play(); }
+        document.removeEventListener('click', autoStart);
+        document.removeEventListener('keydown', autoStart);
+        document.removeEventListener('touchstart', autoStart);
+    }
+    document.addEventListener('click', autoStart);
+    document.addEventListener('keydown', autoStart);
+    document.addEventListener('touchstart', autoStart);
+    if (btn) btn.addEventListener('click', function(e){
+        e.stopPropagation();       // 按钮自己的点击不冒泡到 autoStart，避免双重逻辑
+        on = !on;
+        if (on) play(); else BG.pause();
+        try { localStorage.setItem('mp_music_off', on ? '0' : '1'); } catch(err){}
+        paint();
+    });
+    paint();
+    /* 剧情专属 BGM 切换：把全局背景乐换到指定曲目 / 切回默认。
+       switchTo 会跳过"已经在播同一首"的情况，避免重复 pause/play 造成杂音；
+       保持 loop / volume / 开关状态（on 决定是否切过去后出声）。 */
+    var curSrc = DEFAULT_SRC;
+    var curId = metaDone ? 'timewithyou' : 'chaolis';
+    function curMusicId(){ for (var i=0;i<MUSICS.length;i++){ if (MUSICS[i].src === curSrc) return MUSICS[i].id; } return null; }
+    function switchTo(src){
+        if (!src || src === curSrc) return;
+        try { BG.pause(); } catch(e){}
+        curSrc = src;
+        BG.src = src;
+        if (on){ play(); }
+        curId = curMusicId();
+        renderMusicBox();
+    }
+    function restore(){ switchTo(DEFAULT_SRC); }
+    /* 终局演完调用：把「默认 BGM」改成指定曲（之后玩家手动切换才会变）。
+       若当前已在播该曲则只更新默认、不重复 pause/play，避免杂音。 */
+    function setDefault(src){ if (!src) return; DEFAULT_SRC = src; if (curSrc !== DEFAULT_SRC) switchTo(DEFAULT_SRC); }
+    /* ---- 音乐盒：已解锁曲目随时回听（Chaolis 恒解锁，终局曲 metaend 演完后解锁） ---- */
+    var MUSICS = [
+        { id:'chaolis',     name:'喀丽丝',  src:'bgm/Chaolis.mp3',       def:true },
+        { id:'timewithyou', name:'与你同在', src:'bgm/Time with you.mp3', def:false }
+    ];
+    var UNLOCK_KEY_M = 'mp_music_unlocked';
+    var unlockedM = (function(){ try { var a = JSON.parse(localStorage.getItem(UNLOCK_KEY_M) || '[]'); return Array.isArray(a) ? a : []; } catch(e){ return []; } })();
+    function musicUnlocked(id){ var m = MUSICS.filter(function(x){ return x.id===id; })[0]; return m && (m.def || unlockedM.indexOf(id) >= 0); }
+    function unlockMusic(id){
+        var m = MUSICS.filter(function(x){ return x.id===id; })[0];
+        if (!m || m.def) return;
+        if (unlockedM.indexOf(id) < 0){ unlockedM.push(id); try{ localStorage.setItem(UNLOCK_KEY_M, JSON.stringify(unlockedM)); }catch(e){} }
+        renderMusicBox();
+    }
+    function renderMusicBox(){
+        var list = document.getElementById('mb-list'); if (!list) return;
+        var cur = curMusicId();
+        list.innerHTML = '';
+        MUSICS.forEach(function(m){
+            var row = document.createElement('div');
+            row.className = 'mb-item' + (m.id===cur ? ' cur' : '') + (musicUnlocked(m.id) ? '' : ' locked');
+            var left = document.createElement('span'); left.textContent = m.name;
+            var tag = document.createElement('span'); tag.className = 'mb-tag';
+            tag.textContent = (m.id===cur) ? '播放中' : (musicUnlocked(m.id) ? '点击播放' : '未解锁');
+            row.appendChild(left); row.appendChild(tag);
+            if (musicUnlocked(m.id)){ row.addEventListener('click', function(){ switchTo(m.src); renderMusicBox(); }); }
+            list.appendChild(row);
+        });
+    }
+    var mbBtn = document.getElementById('musicboxbtn');
+    var mbPanel = document.getElementById('musicbox');
+    if (mbBtn && mbPanel){
+        mbBtn.addEventListener('click', function(e){ e.stopPropagation(); mbPanel.classList.toggle('on'); if (mbPanel.classList.contains('on')) renderMusicBox(); });
+        document.addEventListener('click', function(e){
+            if (mbPanel.classList.contains('on') && !mbPanel.contains(e.target) && e.target !== mbBtn) mbPanel.classList.remove('on');
+        });
+    }
+    renderMusicBox();
+    window.BGMControl = { switchTo: switchTo, restore: restore, setDefault: setDefault, unlock: unlockMusic };
+})();
+
+/* ==================================================================
+   数据清空按钮（#databtn）：读完青禾残稿、演完小说网那段剧情之后由 Gate.storyEnd 唤起；
+   点一下 → 大眼问是否清空（NODES.st_novel_clear），是→清空全部数据，否→保留。
+   ------------------------------------------------------------------ */
+function showDataBtn(){ var b = document.getElementById('databtn'); if (b) b.classList.add('on'); }
+function hideDataBtn(){ var b = document.getElementById('databtn'); if (b) b.classList.remove('on'); }
+/* 数据清空问答可反复点：每次打开都当第一次——清掉这条链上节点的「看过」标记、
+   选项「用过」标记，以及存档里对应的 seen/used。否则第二次进入会吞掉上次选过的那个
+   选项（availOpts 过滤 _used），且跳过逐字打字、直接把选项甩出来。 */
+function resetNovelClear(){
+    var chain = ['st_novel_clear', 'st_novel_clear2', 'st_novel_yes', 'st_novel_no'];
+    chain.forEach(function(id){
+        var n = NODES[id];
+        if (!n) return;
+        n._seen = false;
+        (n.opts || []).forEach(function(o){ o._used = false; });
+    });
+    if (save.seen) chain.forEach(function(id){ delete save.seen[id]; });
+    if (save.used) delete save.used['st_novel_clear2'];
+    try { saveNow(); } catch(e){}
+}
+(function(){
+    var btn = document.getElementById('databtn');
+    if (btn) btn.addEventListener('click', function(e){
+        e.stopPropagation();                                   // 别让它又触发音乐启动之类的全局逻辑
+        if (typeof dlgOpen !== 'undefined' && dlgOpen) return;  // 正演着别打断
+        if (typeof openAt === 'function'){ resetNovelClear(); openAt('st_novel_clear'); }
+    });
+    /* 刷新后若已演过那段，按钮直接补回来 */
+    try { if (save && save.storyDone && save.storyDone.novel) showDataBtn(); } catch (e){}
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>墨痕写作 · Meta 小说是什么？</title>
+<style>
+/* ==================================================================
+   墨痕写作 · 叙事理论专栏（Meta 小说专题）
+   ------------------------------------------------------------------
+   真实存在的写作教程/专栏腔，认真解释 Meta 小说（传统）与广义
+   游戏 meta。结尾引入新概念「全暴露式 Meta」，署名 斐可悉 / 吻梦Wen。
+   全篇不点名任何具体作品，但概念描述的恰好就是本工程正在用的手法。
+   ================================================================== */
+:root{
+    --ink:#243042; --ink2:#5a6b82; --ink3:#93a1b5;
+    --blue:#2f6fb0; --blue-d:#1f4f86; --line:#dde4ec; --bd:#e7edf4;
+    --bg:#f4f7fb; --card:#ffffff; --accent:#c9a227;
+    --song:"Songti SC",SimSun,serif;
+    --sans:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",sans-serif;
+}
+*{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+body{ background:var(--bg); color:var(--ink); font:14px/1.95 var(--sans); -webkit-font-smoothing:antialiased; }
+a{ color:var(--blue); text-decoration:none; }
+a:hover{ color:var(--blue-d); text-decoration:underline; }
+.wrap{ width:1040px; margin:0 auto; }
+@media (max-width:1080px){ .wrap{ width:96%; } }
+
+.top{ background:#1f2c3e; color:#aebfd2; font-size:12px; }
+.top .wrap{ display:flex; align-items:center; height:30px; }
+.top a{ color:#aebfd2; margin-right:16px; }
+.top a:hover{ color:#fff; }
+.top .r{ margin-left:auto; }
+
+.head{ background:linear-gradient(180deg,#2f6fb0,#285f97); }
+.head .wrap{ display:flex; align-items:center; gap:18px; padding:18px 0; }
+.logo{ font-size:26px; font-weight:800; color:#fff; letter-spacing:3px; }
+.logo i{ font-style:normal; font-size:12px; color:#bcd6ef; letter-spacing:1px; margin-left:8px; }
+.head .nav{ margin-left:auto; display:flex; gap:0; }
+.head .nav a{ color:#dce9f6; font-size:14px; padding:0 16px; line-height:30px; border-left:1px solid rgba(255,255,255,.18); }
+.head .nav a:first-child{ border-left:0; }
+.head .nav a:hover{ color:#fff; background:rgba(0,0,0,.12); text-decoration:none; }
+
+.crumb{ font-size:12.5px; color:var(--ink3); padding:12px 0 6px; }
+.crumb a{ color:var(--ink2); }
+
+.main{ display:flex; gap:18px; padding:6px 0 40px; }
+.left{ flex:1; min-width:0; background:var(--card); border:1px solid var(--bd); border-radius:4px; padding:30px 34px 38px; }
+.side{ width:290px; flex:0 0 auto; }
+.side .box{ background:var(--card); border:1px solid var(--bd); border-radius:4px; margin-bottom:16px; overflow:hidden; }
+.side .box > h3{ margin:0; padding:0 14px; height:38px; display:flex; align-items:center;
+    font-size:14.5px; color:#fff; background:linear-gradient(90deg,#3a7cc0,#5a9ad8); }
+.side .box .c{ padding:12px 14px; }
+.side .box ul{ margin:0; padding:0; list-style:none; }
+.side .box li{ padding:8px 0; border-bottom:1px dashed var(--bd); font-size:13px; line-height:1.6; }
+.side .box li:last-child{ border-bottom:0; }
+.side .box li a{ color:var(--ink); }
+.side .box li a:hover{ color:var(--blue); }
+.side .box li .meta{ display:block; font-size:11.5px; color:var(--ink3); margin-top:2px; }
+/* 推广块：金头 */
+.side .box.promo > h3{ background:linear-gradient(90deg,#c9a227,#dcbf52); color:#3a2c00; }
+.side .box.promo .c a{ font:700 14px var(--sans); color:var(--blue-d); }
+
+.article h1{ font:700 27px/1.4 var(--song); margin:0 0 6px; color:#1c2738; letter-spacing:.5px; }
+.byline{ font-size:12.5px; color:var(--ink3); border-bottom:1px solid var(--line); padding-bottom:14px; margin-bottom:20px; }
+.byline b{ color:var(--ink2); font-weight:600; }
+.article h2{ font:700 19px/1.5 var(--song); margin:30px 0 10px; color:var(--blue-d);
+    border-left:4px solid var(--accent); padding-left:12px; }
+.article p{ margin:13px 0; text-align:justify; }
+.article p .hl{ color:var(--blue-d); font-weight:700; }
+.article p b{ color:var(--ink); font-weight:700; }
+.article .lead{ font-size:15px; color:var(--ink2); background:#f0f5fb; border:1px solid var(--bd);
+    border-radius:4px; padding:14px 16px; margin:18px 0; }
+.article blockquote{ margin:18px 0; padding:12px 18px; background:#fbfaf4; border-left:3px solid var(--accent);
+    color:var(--ink2); font:15px/1.9 var(--song); }
+.article .who{ background:#fbfaf4; border:1px solid var(--bd); border-left:3px solid var(--accent);
+    border-radius:4px; padding:14px 18px; margin:18px 0; }
+.article .who .nm{ font:700 15px var(--song); color:var(--blue-d); }
+.readmore{ margin:32px 0 8px; padding:16px 18px; background:#f0f5fb; border:1px solid var(--bd); border-radius:4px; }
+.readmore .t{ font-size:13px; color:var(--ink3); letter-spacing:1px; margin-bottom:6px; }
+.readmore a{ font:700 15px/1.6 var(--song); color:var(--blue-d); }
+.readmore.demo{ background:#fbfaf4; border-left:3px solid var(--accent); }
+.readmore.demo .t{ color:#a8862a; font-weight:700; letter-spacing:2px; }
+.readmore.demo a{ font-size:16px; }
+.readmore.demo p{ margin:8px 0 0; font-size:13px; color:var(--ink2); line-height:1.9; }
+.tags{ margin-top:22px; font-size:12.5px; color:var(--ink3); }
+.tags a{ display:inline-block; background:#eef3f9; border:1px solid var(--bd); border-radius:3px;
+    padding:2px 10px; margin:0 6px 6px 0; color:var(--ink2); }
+.tags a:hover{ background:#e2ebf5; text-decoration:none; }
+.foot{ background:#1f2c3e; color:#8ea2ba; text-align:center; font-size:12px; padding:18px 0; line-height:1.9; }
+.foot a{ color:#aebfd2; }
+</style>
+</head>
+<body>
+
+<div class="top"><div class="wrap">
+    <a href="index.html">墨痕写作</a><a href="index.html">创作学院</a><a href="index.html">投稿平台</a><a href="index.html">写作社区</a>
+    <span class="r">登录　|　注册　|　写作者中心</span>
+</div></div>
+
+<div class="head"><div class="wrap">
+    <span class="logo">墨痕写作<i>MO HEN · 创作学院</i></span>
+    <nav class="nav">
+        <a href="index.html">首页</a><a href="index.html">教程</a><a href="index.html">素材</a><a href="index.html">社区</a>
+    </nav>
+</div></div>
+
+<div class="wrap">
+    <div class="crumb"><a href="index.html">创作学院</a>　›　<a href="index.html">叙事理论</a>　›　正文</div>
+    <div class="main">
+        <div class="left">
+            <article class="article">
+                <h1>Meta 小说是什么？</h1>
+                <div class="byline">专栏 · 叙事理论　|　作者：墨痕编辑部　|　阅读 2.7 万　|　收藏 612</div>
+
+                <p class="lead">Meta 不是"高级"的代名词，它只是一个古老的姿态：一个故事，开始谈论自己作为故事这件事。下面我们把范围拉开——先说小说里的 meta，再说游戏里的 meta，最后聊一个最近才被正式命名的新东西。</p>
+
+                <h2>一、传统的 Meta 小说（metafiction）</h2>
+                <p>"Meta" 来自古希腊语 μέτα（之后、之上）。在叙事研究里，它指"关于叙事本身的叙事"。<span class="hl">Meta 小说</span>（也称"元小说"）就是：小说不再假装自己是一扇透明的窗，而是主动把"我是一本被写出来的书、你正在读一个被构造出来的文本"这件事，推到台前。</p>
+                <p>常见手法有几种：打破第四面墙，让角色转头对读者说话；<span class="hl">不可靠叙述者</span>——你读到的未必是真相；作者跳出来讨论自己的写作过程；故事里嵌套故事，一个角色在写另一个故事。它玩的是"文本知道自己是一本书"这件事。</p>
+                <p>经典例子不少：劳伦斯·斯特恩的《项狄传》早在 18 世纪就用排版和旁白戏弄读者；伊塔洛·卡尔维诺的《如果在冬夜，一个旅人》开篇就在和你谈"你正在读一本小说"；博尔赫斯用迷宫式故事讨论故事的边界；约翰·巴斯、托马斯·品钦把它推向了游戏化。</p>
+                <blockquote>传统 Meta 小说的核心张力在于：读者一边清楚地"知道这是假的"，一边仍被吸进去。它玩的就是"明知假而信"那条缝。</blockquote>
+                <p>但请留意——传统 Meta 小说无论怎么拆墙，最后通常都会回到那句话："不过，这是小说嘛。"这不是怯懦，而是小说一种成熟的自我保护：它承认虚构，也安于虚构——正因如此，读者才敢放心投入。这层收束本身，是有用的。</p>
+
+                <h2>二、广义的 Meta：当"你"也进了故事</h2>
+                <p>到了电子游戏和互动叙事里，"meta"的意味变了。小说读者只是"知道自己在读"，而玩家是"知道自己在玩"——后者更彻底，因为游戏真的运行在你的设备上。</p>
+                <p>于是 meta 不再只是文本自指，而是把<span class="hl">玩家这个真实存在的人</span>，直接变成叙事资源：</p>
+                <p>· 《史丹利的寓言》里，旁白和你对峙，你越不听它越失控；· 《Undertale（传说之下）》记得你杀过谁、放过谁；· 《Pony Island》让你怀疑游戏里的"恶魔"在和你这台机器说话；· 《Doki Doki Literature Club》会真的去动你的存档文件。</p>
+                <p>它们的共同点：叙事承认"屏幕之外、文本之外，有一层真实存在的东西——你、你的设备、你的选择"，并把它写进故事里。这就是<span class="hl">广义 meta</span>——它把"你在玩"这个事实，变成了剧情本身。</p>
+
+                <h2>三、一个还在摸索中的提法：全暴露式 Meta</h2>
+                <p>顺着上面两节往下想，有两位写作者——<b>斐可悉</b>与<b>吻梦Wen</b>——试着给一类越来越常见的做法起了个名字，叫「<b>全暴露式 Meta</b>」（Wholly-Exposed Meta）。它无意取代前面两节，只是一个还不太成熟的想法，可以拆成四句话来读：</p>
+                <div class="who">
+                    <div class="nm">全暴露式 Meta　·　斐可悉 / 吻梦Wen 提出</div>
+                    <p style="margin:10px 0 0">一个系统，<b>既不假装自己不在电脑内部</b>——它坦然承认自己运行在计算机里、在程序里、在屏幕里，不额外维持一层"我是故事"的包装；</p>
+                    <p style="margin:10px 0 0"><b>也不假装自己有可能是纯粹的虚构内容</b>——不把"这只是小说"或"这只是游戏"当作最后的收束；</p>
+                    <p style="margin:10px 0 0"><b>甚至一步一步地，展示自己是因为什么原因、什么逻辑，才被构造出来的</b>——它的取材、它的结构、它为什么这么写，都摊开给你看；</p>
+                    <p style="margin:10px 0 0"><b>可是在这个基础之上，即便它反复强调自己是虚构的，你也无法不相信，它就是真的。</b></p>
+                </div>
+                <p>这里得先替常规 meta 说一句话：无论小说还是游戏，为了演出效果和叙事效果，<b>或多或少都要"演"一点</b>——留一层悬念、藏一个反转、把某个真相压到最后一刻才揭开。这完全正常，也是叙事得以成立的必要手段，绝大多数作品正因如此才动人。<span class="hl">全暴露式 Meta 并不比它们更好，只是站在同一条路的尽头，试着再往前挪一小步</span>：把"演"的那一层也一并摊开，看看会剩下什么。它更大的可能，是常规 meta 的一个补充角落，而不是某种更进一步的替代品。</p>
+                <p>它最反直觉的一点大概是：越是坦白"我是构造物"，那种真实感有时反而越深——当一件东西不再留一条"这是编的"的退路，你一时竟找不到怀疑它的把手。当然，这也只是两位写作者的一点猜测，未必成立。让人相信的，未必是"看起来真"，也未必就是"坦然承认自己不真"，答案可能还要更复杂一些。</p>
+
+                <div class="readmore demo">
+                    <div class="t">▶ 示例演示</div>
+                    <a href="demo.html" target="_blank" rel="noopener">打开一个「全暴露式 Meta」舞台的实例 »</a>
+                    <p>上面这个链接可以实际点开：一个用文字 AVG 界面搭起来的舞台——背景、立绘、镜头、CRT 滤镜、像素文字，全都在运行，也全都可以被一层层拆开来看。</p>
+                </div>
+
+                <div class="readmore">
+                    <div class="t">相关阅读 · 角色塑造的另一面</div>
+                    <a href="index.html">怎样写出一个让人过目不忘的「神」：四条被反复验证的法则 »</a>
+                    <p>上面这个"全暴露式"的思路，其实和"如何塑造一个让人无法不信的神性角色"暗暗相通——推荐搭配阅读。</p>
+                </div>
+
+                <div class="tags">
+                    标签：
+                    <a href="index.html">叙事理论</a><a href="index.html">Meta</a>
+                    <a href="index.html">元小说</a><a href="index.html">互动叙事</a>
+                </div>
+            </article>
+        </div>
+
+        <div class="side">
+            <div class="box promo"><h3>推广 · 科幻设定考</h3><div class="c">
+                <p style="margin:0 0 8px;font-size:13px;line-height:1.85;color:var(--ink2)">宇宙，拥有自己的<b>意识、记忆与既视感</b>吗？——其中"宇宙有自己的既视感"由斐可悉 / 吻梦Wen 提出：一种像 DNA 般编码"自身如何形成"的底层结构，让宇宙无论怎样毁灭，总以同一种骨架重生。一篇讲清来路、写法与边界。</p>
+                <a href="cosmic.html" target="_blank" rel="noopener">进入「宇宙拥有意识、记忆与既视感吗？」　→</a>
+            </div></div>
+            <div class="box"><h3>站内导航</h3><div class="c"><ul>
+                <li><a href="index.html">怎样写出一个让人过目不忘的「神」</a><span class="meta">角色塑造 · 编辑部精选</span></li>
+                <li><a href="index.html">不可靠叙述者入门指南</a><span class="meta">叙事理论</span></li>
+                <li><a href="index.html">第四面墙：什么时候该拆、什么时候别拆</a><span class="meta">叙事理论</span></li>
+            </ul></div></div>
+            <div class="box"><h3>关于本栏</h3><div class="c">
+                <p style="margin:0;font-size:13px;line-height:1.9;color:var(--ink2)">「叙事理论」专栏由墨痕写作编辑部维护，专注拆解叙事的元层面。投稿请至写作者中心。</p>
+            </div></div>
+        </div>
+    </div>
+</div>
+
+<div class="foot">
+    墨痕写作 · 创作学院　|　本页为写作经验分享，所有观点仅代表编辑部　|　© 墨痕写作（演示页面）<br>
+    <a href="index.html">关于我们</a>　<a href="index.html">投稿须知</a>　<a href="index.html">联系编辑部</a>
+</div>
+
+</body>
+</html>

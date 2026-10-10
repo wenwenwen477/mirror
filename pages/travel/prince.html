@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>《小王子与智慧仙子》节目专区｜本市电视台 KLTV 少儿频道</title>
+<style>
+:root{
+    --kltv:#d23838; --kltvd:#a31e1e; --kltvl:#f15c5c;
+    --sun:#f5a623; --sunw:#fff6e6;
+    --sky:#2a7db5; --skyw:#eaf6ff;
+    --ink:#332a2a; --tx:#4a4040; --tx2:#6d6262; --tx3:#978888;
+    --line:#e8ded8; --bg:#fffbf8; --bg2:#f7f2ee;
+    --font:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",SimSun,sans-serif;
+}
+*{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
+@media (prefers-reduced-motion: reduce){ html{ scroll-behavior:auto; } }
+body{ margin:0; background:var(--bg); color:var(--tx); font:15px/1.9 var(--font); }
+a{ color:#1a4a8a; text-decoration:none; }
+a:hover{ color:var(--kltv); text-decoration:underline; }
+.wrap{ width:1000px; max-width:96%; margin:0 auto; }
+
+/* 电视台题头 */
+.ihd{ background:var(--kltvd); color:#f6d4d4; font-size:12px; }
+.ihd .wrap{ display:flex; justify-content:space-between; align-items:center; min-height:34px; }
+.ihd a{ color:#f6d4d4; margin-left:14px; }
+.ihd a:hover{ color:#fff; }
+
+.brand{ background:#fff; border-bottom:3px solid var(--kltv); }
+.brand .wrap{ display:flex; align-items:center; gap:18px; padding:20px 0 16px; }
+.brand .mark{ flex:0 0 auto; width:54px; height:54px; }
+.brand b{ font-size:24px; letter-spacing:2px; color:var(--kltv); display:block; }
+.brand i{ display:block; font-style:normal; font-size:11.5px; color:var(--tx3); letter-spacing:1.5px; }
+.brand .onair{ margin-left:auto; text-align:right; font-size:13px; color:var(--tx2); line-height:1.75; }
+.brand .onair b{ display:block; font-size:15px; color:var(--sun); letter-spacing:.5px; }
+
+.nav{ background:var(--kltv); position:sticky; top:0; z-index:90; box-shadow:0 2px 0 rgba(0,0,0,.06); }
+.nav .wrap{ display:flex; flex-wrap:wrap; }
+.nav a{ color:#fff; font-size:14.5px; padding:11px 22px; letter-spacing:1px; }
+.nav a:hover{ background:var(--kltvl); text-decoration:none; }
+.nav a.on{ background:#fff; color:var(--kltv); font-weight:700; box-shadow:inset 0 -3px 0 var(--sun); }
+.nav a.off{ color:#f6c3c3; cursor:default; }
+.nav a.off:hover{ background:transparent; }
+
+/* 主视觉 */
+.hero{ position:relative; border-radius:0 0 8px 8px; overflow:hidden; background:#1a1a2e; }
+.hero img{ display:block; width:100%; height:auto; }
+.hero .cap{ position:absolute; left:0; right:0; bottom:0; padding:38px 34px 28px;
+    background:linear-gradient(transparent, rgba(20,10,10,.78)); color:#fff; }
+.hero .cap h1{ margin:0; font-size:34px; letter-spacing:2px; text-shadow:0 2px 6px rgba(0,0,0,.45); }
+.hero .cap p{ margin:10px 0 0; font-size:15px; opacity:.95; max-width:560px; }
+.hero .tag{ display:inline-block; margin-bottom:10px; padding:4px 12px; font-size:12px;
+    background:var(--sun); color:#3d2a05; border-radius:2px; letter-spacing:1px; }
+
+.main{ display:flex; gap:22px; padding:22px 0 10px; align-items:flex-start; }
+.left{ flex:1 1 auto; min-width:0; }
+.right{ flex:0 0 260px; }
+
+.box{ background:#fff; border:1px solid var(--line); padding:22px 28px 26px; margin-bottom:20px; border-radius:4px; }
+.box h2{ margin:0 0 14px; font-size:20px; color:var(--kltv); letter-spacing:1px; padding-bottom:10px; border-bottom:1px solid var(--line); }
+.box h2 .sub{ float:right; font-size:12px; color:var(--tx3); font-weight:400; letter-spacing:0; }
+.box p{ margin:10px 0; font-size:14.5px; line-height:2.05; color:var(--tx); }
+.box .lead{ font-size:15.5px; color:var(--tx2); line-height:2.1; }
+
+/* 角色卡 */
+.chars{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-top:6px; }
+.char{ background:var(--bg2); border:1px solid var(--line); border-radius:4px; padding:14px 16px; }
+.char .icon{ width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:20px; font-weight:700; color:#fff; margin-bottom:10px; }
+.char h4{ margin:0 0 6px; font-size:15px; color:var(--ink); }
+.char p{ margin:0; font-size:13px; line-height:1.85; color:var(--tx2); }
+
+/* 剧照 */
+.still{ margin-top:6px; }
+.still img{ display:block; width:100%; border-radius:4px; border:1px solid var(--line); }
+.still .note{ margin-top:10px; font-size:13px; color:var(--tx3); text-align:center; }
+
+/* 播出信息 */
+.air{ background:var(--sunw); border-left:3px solid var(--sun); padding:16px 18px; margin-top:8px; }
+.air b{ color:var(--kltvd); }
+.air p{ margin:6px 0; font-size:14px; color:var(--tx2); line-height:1.95; }
+
+/* 侧边栏 */
+.sbox{ background:#fff; border:1px solid var(--line); padding:16px 18px 18px; margin-bottom:18px; border-radius:4px; }
+.sbox h4{ margin:0 0 12px; font-size:15px; letter-spacing:1px; color:var(--kltv); padding-bottom:9px; border-bottom:1px solid var(--line); }
+.sbox p{ margin:6px 0; font-size:13px; color:var(--tx2); line-height:1.95; }
+.sbox ul{ margin:6px 0; padding-left:18px; font-size:13px; color:var(--tx2); line-height:2; }
+.sbox .btn{ display:block; text-align:center; margin-top:10px; padding:9px 0; font-size:14px;
+            color:#fff; background:var(--kltv); border-radius:2px; letter-spacing:2px; }
+.sbox .btn:hover{ background:var(--kltvl); text-decoration:none; }
+.sbox .btn.off{ background:var(--tx3); cursor:default; }
+.sbox .btn.off:hover{ background:var(--tx3); }
+
+.foot{ background:var(--kltvd); color:#f0d0d0; font-size:12px; padding:24px 0; text-align:center; line-height:2.1; margin-top:10px; }
+.foot a{ color:#f6d4d4; margin:0 8px; }
+.foot .ad{ color:#c79f9f; }
+
+@media (max-width:900px){
+    .main{ flex-direction:column; }
+    .right{ flex:1 1 auto; width:100%; }
+    .hero .cap h1{ font-size:24px; }
+    .hero .cap p{ font-size:13px; }
+    .chars{ grid-template-columns:1fr; }
+}
+
+/* 频道其他优秀国内外动漫推荐 */
+.anime{ background:var(--bg2); border-top:3px solid var(--kltv); padding:26px 0 30px; margin-top:14px; }
+.anime h2{ width:1000px; max-width:96%; margin:0 auto 4px; font-size:19px; color:var(--kltv); letter-spacing:1px; }
+.anime .sub2{ display:block; font-size:12px; color:var(--tx3); font-weight:400; letter-spacing:0; margin-top:5px; line-height:1.7; }
+.anime .row{ width:1000px; max-width:96%; margin:16px auto 0; display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+.acard{ background:#fff; border:1px solid var(--line); border-radius:5px; overflow:hidden; display:flex; flex-direction:column;
+        transition:box-shadow .15s, transform .15s; text-decoration:none; }
+.acard:hover{ box-shadow:0 6px 18px rgba(0,0,0,.12); transform:translateY(-2px); text-decoration:none; }
+.acard .poster{ position:relative; height:140px; display:flex; align-items:flex-end; padding:12px 13px; color:#fff; overflow:hidden; }
+.acard .poster img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+.acard .poster::after{ content:""; position:absolute; inset:0; background:linear-gradient(transparent 35%,rgba(0,0,0,.6)); }
+.acard .poster span{ position:relative; z-index:1; }
+.acard .body{ padding:12px 13px 14px; flex:1 1 auto; display:flex; flex-direction:column; }
+.acard .tag{ align-self:flex-start; font-size:11px; padding:2px 8px; border-radius:2px; background:var(--bg2); color:var(--tx2); margin-bottom:8px; letter-spacing:.5px; }
+.acard h4{ margin:0 0 6px; font-size:14.5px; color:var(--ink); }
+.acard p{ margin:0 0 10px; font-size:12.5px; line-height:1.8; color:var(--tx2); flex:1 1 auto; }
+.acard .more{ font-size:12.5px; color:#1a4a8a; font-weight:700; }
+.acard .more:hover{ color:var(--kltv); }
+.p-lain{ background:linear-gradient(135deg,#0d1b2a,#26303a 58%,#3b2d4a); }
+.p-digi{ background:linear-gradient(135deg,#0b6e4f,#1aa179 58%,#7bd0a8); }
+.p-shell{ background:linear-gradient(135deg,#0e2a33,#1f6f7a 58%,#7fd6d0); }
+.p-dora{ background:linear-gradient(135deg,#1f6fb2,#3aa0e0 58%,#a9d8f5); }
+.acard.featured{ border-color:var(--kltv); box-shadow:0 0 0 2px rgba(210,56,56,.22); }
+.acard.featured .tag{ background:var(--kltvd); color:#fff; }
+@media (max-width:900px){ .anime .row{ grid-template-columns:repeat(2,1fr); } }
+@media (max-width:520px){ .anime .row{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="ihd"><div class="wrap">
+    <div>本市电视台 KLTV　|　少儿频道　|　2013 暑期动画档</div>
+    <div><a href="index.html">青麓旅行社</a><a href="childsafe.html">儿童安全公益页</a></div>
+</div></div>
+
+<div class="brand"><div class="wrap">
+    <svg class="mark" viewBox="0 0 58 58" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <polygon points="29,6 30.18,9.38 33.76,9.46 30.90,11.62 31.94,15.05 29,13 26.06,15.05 27.10,11.62 24.24,9.46 27.82,9.38" fill="#ffd23f"/>
+        <line x1="24" y1="20" x2="15" y2="6" stroke="var(--kltvd)" stroke-width="3" stroke-linecap="round"/>
+        <line x1="34" y1="20" x2="43" y2="6" stroke="var(--kltvd)" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="15" cy="6" r="3" fill="var(--kltv)" stroke="var(--kltvd)" stroke-width="1.4"/>
+        <circle cx="43" cy="6" r="3" fill="var(--kltv)" stroke="var(--kltvd)" stroke-width="1.4"/>
+        <rect x="8" y="18" width="42" height="34" rx="10" fill="var(--kltv)" stroke="var(--kltvd)" stroke-width="2.6"/>
+        <rect x="13" y="23" width="32" height="24" rx="6" fill="#fff"/>
+        <circle cx="23" cy="33" r="2.6" fill="var(--kltv)"/>
+        <circle cx="35" cy="33" r="2.6" fill="var(--kltv)"/>
+        <path d="M22 39 Q29 44 36 39" fill="none" stroke="var(--kltv)" stroke-width="2.6" stroke-linecap="round"/>
+    </svg>
+    <div><b>本市电视台 KLTV</b><i>KID · TELEVISION · 少儿频道官方网页</i></div>
+    <div class="onair">正在热播　<b>《小王子与智慧仙子》</b><br>每周六 17:30 少儿频道</div>
+</div></div>
+
+<div class="nav"><div class="wrap">
+    <a href="#intro" class="on" data-nav="intro">剧情简介</a>
+    <a href="#chars" data-nav="chars">主要角色</a>
+    <a href="#still" data-nav="still">精彩剧照</a>
+    <a href="#air" data-nav="air">播出时间</a>
+    <a class="off">节目回放</a>
+    <a class="off">观众留言</a>
+</div></div>
+
+<div class="wrap">
+
+<div class="hero">
+    <img src="img/prince-hero.png" alt="小王子与智慧仙子主视觉">
+    <div class="cap">
+        <span class="tag">KLTV 少儿频道 暑期巨献</span>
+        <h1>小王子与智慧仙子</h1>
+        <p>一段关于勇气、智慧与伙伴的奇幻旅程。当小王子误入巫婆的迷途森林，一位发光的仙子牵起了他的手——前方不是坦途，却一定有光。</p>
+    </div>
+</div>
+
+<div class="main">
+<div class="left">
+
+<div class="box" id="intro">
+    <h2>剧情简介<span class="sub">大型少儿奇幻动画　|　全 26 集</span></h2>
+    <p class="lead">小王子生活在一个没有魔法的王国。一天，他的姐姐在森林边失踪了，只留下几片会发光的羽毛。循着微光，小王子独自走进森林深处，却在第三道弯口迷了路。</p>
+    <p>就在这时，<b>智慧仙子</b>出现了。她不会替小王子走路，却会在他停下脚步时给出一句提醒；她不会直接打败巫婆，却能让小王子看见那些别人看不见的线索。</p>
+    <p>一路上，小王子结识了性格各异的伙伴：胆小却机灵的小狐狸、热心肠的木头机器人、还有总爱唱反调的乡村女孩小葵。他们一起穿过荆棘沼泽、解开石门谜题、在镜之谷里找回迷失的方向。每个人都不完美，但每个人都有自己的光。</p>
+    <p>最终，他们在森林尽头的黑塔里找到了被巫婆抓走的姐姐。然而真正的难关不是巫婆，而是小王子必须独自做出一个选择——是接受仙子的捷径离开，还是相信伙伴们的力量，一起把姐姐带回家。</p>
+    <div class="air">
+        <p><b>动画主题</b>：智慧不是知道所有答案，而是在看不清的时候，仍然愿意迈下一步。</p>
+        <p><b>适合年龄</b>：4 岁及以上亲子共赏。</p>
+    </div>
+</div>
+
+<div class="box" id="chars">
+    <h2>主要角色<span class="sub">人物设定</span></h2>
+    <div class="chars">
+        <div class="char">
+            <div class="icon" style="background:var(--sky)">王</div>
+            <h4>小王子</h4>
+            <p>王国的幼子，有点倔，认定的事会一直做下去。姐姐的失踪让他第一次走出城堡，也是第一次发现"勇敢"不是不害怕，而是害怕时还往前走。</p>
+        </div>
+        <div class="char">
+            <div class="icon" style="background:var(--sun)">仙</div>
+            <h4>智慧仙子</h4>
+            <p>住在微光里的精灵，体型很小，声音很轻。她从不直接给答案，只会指向下一步该留意的方向。她说："路要你自己走，但你可以问路。"</p>
+        </div>
+        <div class="char">
+            <div class="icon" style="background:var(--kltvl)">姐</div>
+            <h4>小公主 / 姐姐</h4>
+            <p>比小王子大三岁，喜欢画画和读故事。被抓走后，她在塔里用石头摆地图、在窗台上留记号——她也在想办法让弟弟找到自己。</p>
+        </div>
+        <div class="char">
+            <div class="icon" style="background:#7a5c8c">巫</div>
+            <h4>迷途巫婆</h4>
+            <p>不是纯粹的反派，而是"总想让事情按她记忆里的样子重来"的老妇人。她设下重重阻碍，却总在关键处留下一线生机。</p>
+        </div>
+        <div class="char">
+            <div class="icon" style="background:#d97a48">狸</div>
+            <h4>小狐狸</h4>
+            <p>自称森林里最聪明的向导，其实最怕黑。遇到危险时腿会发抖，但耳朵永远竖着，能听见风里的脚步声。</p>
+        </div>
+        <div class="char">
+            <div class="icon" style="background:#5a9c6a">机</div>
+            <h4>木头机器人</h4>
+            <p>被巫婆遗弃在老树洞里的旧玩具，身体里装着八音盒。只要上紧发条，他就会说鼓励的话；只是发条越来越短了。</p>
+        </div>
+        <div class="char">
+            <div class="icon" style="background:#c24f7a">葵</div>
+            <h4>乡村女孩小葵</h4>
+            <p>熟悉森林每一条"地图上不存在"的小路。她不信仙子，只信自己的脚。和小王子吵过三次架，但每次都回来找他。</p>
+        </div>
+    </div>
+</div>
+
+<div class="box" id="still">
+    <h2>精彩剧照<span class="sub">来自第 18 集《黑塔前的最后一夜》</span></h2>
+    <div class="still">
+        <img src="img/prince-scene.png" alt="小王子与伙伴们在巫婆的黑塔前">
+        <p class="note">黑塔前，智慧仙子以光为桥，为小王子一行人指引姐姐所在的方向。</p>
+    </div>
+</div>
+
+<div class="box" id="air">
+    <h2>播出时间<span class="sub">少儿频道</span></h2>
+    <div class="air">
+        <p><b>首播</b>：每周六 17:30，本市电视台少儿频道（KLTV-5）</p>
+        <p><b>重播</b>：每周日 09:00、每周三 16:00</p>
+        <p><b>网络平台</b>：本周六首播后次日上午上线（节目回放功能建设中）</p>
+    </div>
+    <p style="margin-top:12px;font-size:13px;color:var(--tx3)">以上播出时间如有调整，请以 KLTV 少儿频道当日预告为准。</p>
+</div>
+
+</div>
+
+<div class="right">
+    <div class="sbox">
+        <h4>本周节目单</h4>
+        <p><b>周六 17:30</b><br>第 18 集　黑塔前的最后一夜</p>
+        <p><b>周日 09:00</b><br>第 17 集　镜之谷</p>
+        <p><b>周三 16:00</b><br>第 16 集　会说话的石头</p>
+    </div>
+    <div class="sbox">
+        <h4>互动参与</h4>
+        <p>小朋友，如果你是走在森林里的小王子，你会选择一直跑、还是停下来问路？</p>
+        <p style="font-size:12px;color:var(--tx3)">欢迎在家长陪同下给 KLTV 少儿频道写信，优秀来信将在《动画小屋》节目中朗读。</p>
+        <a class="btn off">观众留言（暂未开放）</a>
+    </div>
+    <div class="sbox">
+        <h4>相关信息</h4>
+        <ul>
+            <li>出品：本市电视台 KLTV</li>
+            <li>制作：青麓动画工作室</li>
+            <li>集数：26 集</li>
+            <li>单集时长：约 13 分钟</li>
+        </ul>
+    </div>
+</div>
+</div>
+
+</div>
+
+<div class="anime">
+    <h2>其他优秀国内外动漫 · 频道延伸推荐<span class="sub2">以下为频道友情推荐，简介与资料均来自百度百科；点击卡片可跳转至对应词条。本页不对推荐内容作任何评价。</span></h2>
+    <div class="row">
+        <a class="acard featured" href="https://baike.baidu.com/item/%E7%8E%B2%E9%9F%B3/751714" target="_blank" rel="noopener">
+            <div class="poster p-lain"><img src="img/lain.jpg" alt="铃音 LAIN"><span>铃音 LAIN</span></div>
+            <div class="body">
+                <span class="tag">深夜经典回顾 · 海外</span>
+                <h4>Serial Experiments Lain</h4>
+                <p>初中生玲音收到一封"不该存在"的邮件，自此闯入名为"网络(Wired)"的世界——在那里，或许一直都有"她"。</p>
+                <span class="more">了解作品　→</span>
+            </div>
+        </a>
+        <a class="acard" href="https://baike.baidu.com/item/数码宝贝" target="_blank" rel="noopener">
+            <div class="poster p-digi"><img src="img/digimon.jpg" alt="数码宝贝"><span>数码宝贝</span></div>
+            <div class="body">
+                <span class="tag">海外引进 · 合家欢</span>
+                <h4>數碼寶貝</h4>
+                <p>一群孩子误入"数码世界"，与数码兽结伴冒险，在关卡里学会勇气、友情与责任。</p>
+                <span class="more">了解作品　→</span>
+            </div>
+        </a>
+        <a class="acard" href="https://baike.baidu.com/item/%E6%94%BB%E5%A3%B3%E6%9C%BA%E5%8A%A8%E9%98%9F/15900750" target="_blank" rel="noopener">
+            <div class="poster p-shell"><img src="img/gits.jpg" alt="攻壳机动队"><span>攻壳机动队</span></div>
+            <div class="body">
+                <span class="tag">海外经典 · 科幻</span>
+                <h4>攻壳机动队</h4>
+                <p>在近未来，全身义体化的少佐草薙素子率领公安九课，追查能入侵他人意识的"笑面男"，也不断追问：何为"灵魂"？</p>
+                <span class="more">了解作品　→</span>
+            </div>
+        </a>
+        <a class="acard" href="https://baike.baidu.com/item/哆啦A梦" target="_blank" rel="noopener">
+            <div class="poster p-dora"><img src="img/doraemon.jpg" alt="哆啦A梦"><span>哆啦A梦</span></div>
+            <div class="body">
+                <span class="tag">海外经典 · 合家欢</span>
+                <h4>哆啦A夢</h4>
+                <p>来自未来的猫型机器人，用口袋里的道具陪大雄度过一个个日常小危机。</p>
+                <span class="more">了解作品　→</span>
+            </div>
+        </a>
+    </div>
+</div>
+
+<div class="foot">
+    本市电视台 KLTV　|　少儿频道　|　《小王子与智慧仙子》节目专区<br>
+    <span class="ad">本页面仅供节目信息展示　|　不提供在线点播服务　|　广告合作请洽 KLTV 广告部</span>
+</div>
+
+<script>
+/* 导航高亮：与全站其他页同一套路 */
+(function(){
+'use strict';
+var links = Array.prototype.slice.call(document.querySelectorAll('.nav a[data-nav]'));
+var boxes = Array.prototype.slice.call(document.querySelectorAll('.box[id]'));
+var intent='', intentAt=0, INTENT_MS=1200;
+var h0=(location.hash||'').replace(/^#/,'');
+if(h0&&document.getElementById(h0)){ intent=h0; intentAt=Date.now(); }
+function visibleBox(){
+    if(!boxes.length) return '';
+    var line = (window.scrollY||0) + (window.innerHeight||0)*0.32;
+    var cur='';
+    for(var i=0;i<boxes.length;i++){ if(boxes[i].offsetTop<=line) cur=boxes[i].id; }
+    return cur;
+}
+function paint(){
+    if(intent&&(Date.now()-intentAt)>INTENT_MS) intent='';
+    var cur=(intent&&document.getElementById(intent))?intent:visibleBox();
+    var picked=null;
+    links.forEach(function(a){
+        var key=a.getAttribute('data-nav')||'';
+        var on=(!!cur&&key===cur);
+        if(on){ a.classList.add('on'); picked=a; }
+        else a.classList.remove('on');
+    });
+    if(!picked&&links.length) links[0].classList.add('on');
+}
+links.forEach(function(a){
+    a.addEventListener('click',function(){
+        var key=a.getAttribute('data-nav')||'';
+        if(key&&document.getElementById(key)){ intent=key; intentAt=Date.now(); }
+        paint();
+    });
+});
+window.addEventListener('scroll',paint,{passive:true});
+window.addEventListener('resize',paint);
+window.addEventListener('hashchange',function(){
+    var h=(location.hash||'').replace(/^#/,'');
+    if(h&&document.getElementById(h)){ intent=h; intentAt=Date.now(); }
+    paint();
+});
+window.addEventListener('load',paint);
+paint();
+})();
+</script>
+
+</body>
+</html>

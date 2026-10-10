@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CUT7 · 第一段　火灾是下午发生的</title>
+<link rel="stylesheet" href="cut7.css">
+</head>
+<body>
+<div id="ptag">C U T 7 ／ 第 一 段</div>
+
+<div id="stage">
+    <div id="dbox">
+        <div id="dname"></div>
+        <div id="dtext"></div>
+        <div id="dnext">▶</div>
+    </div>
+</div>
+
+<div id="hint"><b>Z</b> 继续　　<b>X</b> 返回选关　　<b>M</b> 音效</div>
+<div id="veil"><div class="vm"></div></div>
+
+<script src="levels.js" charset="utf-8"></script>
+<script src="sfx.js" charset="utf-8"></script>
+<script src="big.js" charset="utf-8"></script>
+<script src="dialog.js" charset="utf-8"></script>
+<script src="p1.js" charset="utf-8"></script>
+<script>
+/* ==================================================================
+   CUT7 · 第一段「引」—— 页面只干三件事
+   ------------------------------------------------------------------
+   1) 把 p1.js 那份台词交给 dialog.js 去播（打字、Z 翻页、说完框往下挪）；
+      ★ 打字音在 sfx.js：每个说话人一条嗓子（narr 闷 / ji 脆 / lq 亮），
+        dialog.js 只在"打出一个字"和"开口"时喊一声，不认具体音色，
+        所以加角色只改 sfx.js 里的 VOICES，这里不用动；M 键开关音效。
+   2) 说完 → 压黑 → 写 mp_unlock_v1.cut7a → 选关页上第二段就亮了；
+   3) X / Esc 中途退出 → 直接回选关（不写标记，这一段不算走完）。
+   ★ 台词一个字都不写在这里，改词只动 p1.js。
+   ★ 框往下挪那一手已经在 dialog.js 里（.sink），这里只负责挪完之后的压黑。
+   ================================================================== */
+(function(){
+'use strict';
+
+var veil = document.getElementById('veil');
+var vm   = veil.querySelector('.vm');
+var going = false;
+
+function writeUnlock(){
+    try {
+        var u = JSON.parse(localStorage.getItem(LAB_UNLOCK_KEY) || '{}') || {};
+        if (!u.cut7a){ u.cut7a = 1; localStorage.setItem(LAB_UNLOCK_KEY, JSON.stringify(u)); }
+    } catch (e){}
+}
+function back(){
+    if (going) return;
+    going = true;
+    location.href = 'index.html';
+}
+function veilTo(text, then, wait){
+    vm.textContent = text || '';
+    veil.classList.add('on');
+    setTimeout(function(){ if (then) then(); }, wait || 1500);
+}
+
+CUT7Dialog.play(P1_SCRIPT, {
+    who: P1_WHO,
+    onEnd: function(){
+        writeUnlock();
+        veilTo('第 一 段 · 完', back, 2600);
+        /* 压黑之后也可以直接按 Z 早走一步 */
+        document.addEventListener('keydown', function(e){
+            if (e.key === 'z' || e.key === 'Z' || e.key === 'Enter') back();
+        });
+    },
+    onExit: back
+});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>万卷小说网 - 免费小说在线阅读</title>
+<style>
+/* ==================================================================
+   万卷小说网
+   ------------------------------------------------------------------
+   学校官网右侧那枚广告的落地页。**不属于学校**，是外面一个 2013 年
+   样子的免费小说站：底色偏黄橙、字密、到处是"永久免费""无弹窗"的横幅。
+
+   玩家在这儿要做的只有一件事：**自己搜**。
+   搜索框在每一页的最上面，谁都得从那儿进去。
+   想找的那本在这里是搜得到的 —— 但要你自己打出来。
+
+   路由（hash）：
+     #/                首页（书库 + 榜 + 横幅）
+     #/s?k=关键词       搜索结果
+     #/b/书号          书籍详情（简介 + 目录）
+     #/c/书号/章号     正文
+   ================================================================== */
+:root{
+    --or:#e8802a;          /* 主橙 */
+    --or-d:#c9631a;
+    --rd:#c0271c;          /* 促销红 */
+    --yl:#fff6d8;          /* 浅黄底 */
+    --tx:#3a332c;
+    --tx2:#6f655a;
+    --tx3:#9c9184;
+    --bd:#e2d9c6;
+    --ln:#eee6d4;
+    --font:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",SimSun,sans-serif;
+    --song:SimSun,"Songti SC",serif;
+}
+*{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+body{
+    background:#f7f2e6; color:var(--tx);
+    font:13px/1.85 var(--font); -webkit-font-smoothing:antialiased;
+}
+a{ color:#a8571a; text-decoration:none; }
+a:hover{ color:var(--rd); text-decoration:underline; }
+ul,ol{ margin:0; padding:0; list-style:none; }
+p{ margin:8px 0; }
+img{ display:block; border:0; }
+h1,h2,h3,h4{ margin:0; font-weight:700; }
+table{ border-collapse:collapse; }
+.wrap{ width:1080px; margin:0 auto; }
+@media (max-width:1140px){ .wrap{ width:96%; } }
+
+/* ---------- 顶栏 ---------- */
+.top{ background:#fdf3d8; border-bottom:1px solid var(--bd); font-size:12px; color:var(--tx2); }
+.top .wrap{ display:flex; align-items:center; justify-content:space-between; height:28px; }
+.top a{ color:var(--tx2); }
+.top .sep{ color:#c9bda3; padding:0 6px; }
+
+/* ---------- 站头 + 搜索 ---------- */
+.head{ background:linear-gradient(180deg,#ffe9b8 0%,#fdd98f 100%); border-bottom:3px solid var(--or); }
+.head .wrap{ display:flex; align-items:center; gap:20px; padding:16px 0 18px; }
+.logo{ display:flex; align-items:baseline; gap:8px; }
+.logo b{ font-size:30px; font-weight:700; color:var(--or-d); letter-spacing:2px; }
+.logo i{ font-style:normal; font-size:12px; color:#a98b4e; letter-spacing:1px; }
+.sbox{ flex:1; max-width:520px; }
+.sbox .f{ display:flex; }
+.sbox input{
+    flex:1; height:34px; padding:0 12px; font:14px var(--font); color:var(--tx);
+    background:#fff; border:2px solid var(--or); border-right:0; outline:none;
+}
+.sbox input:focus{ border-color:var(--rd); }
+.sbox button{
+    height:34px; padding:0 26px; font:14px var(--font); font-weight:700; color:#fff;
+    letter-spacing:2px; cursor:pointer; background:linear-gradient(180deg,#f09440,#e07a20);
+    border:2px solid var(--or);
+}
+.sbox button:hover{ background:linear-gradient(180deg,#f6a355,#e8842c); }
+.sbox .hot{ margin-top:5px; font-size:12px; color:#9a7a3c; }
+.sbox .hot a{ color:#9a7a3c; margin-right:9px; }
+.sbox .hot a:hover{ color:var(--rd); }
+.headright{ margin-left:auto; text-align:right; font-size:12px; color:#8f7233; line-height:1.9; }
+.headright b{ color:var(--rd); font-size:15px; font-family:Arial,Helvetica,sans-serif; }
+
+/* ---------- 导航 ---------- */
+.nav{ background:linear-gradient(180deg,#e8802a 0%,#c9631a 100%); }
+.nav ul{ display:flex; }
+.nav a{
+    display:block; padding:0 26px; line-height:40px; color:#fff; font-size:14.5px;
+    border-right:1px solid rgba(255,255,255,.22);
+}
+.nav a:first-child{ border-left:1px solid rgba(255,255,255,.22); }
+.nav a:hover{ background:rgba(0,0,0,.14); color:#fff; text-decoration:none; }
+.nav a.on{ background:#a8510f; }
+
+/* ---------- 横幅广告（站内自己的推广位，跟外面那枚小广告一个性质） ---------- */
+.abn{ margin:12px 0; padding:7px 16px; font-size:13px; color:#8a5a12;
+    background:repeating-linear-gradient(45deg,#fff3c8 0 14px,#ffe9ac 14px 28px);
+    border:1px solid #e8cf90; }
+.abn b{ color:var(--rd); }
+.abn .x{ float:right; color:#b39a63; font-size:11.5px; }
+
+/* ---------- 主体两栏 ---------- */
+.main{ display:flex; gap:14px; padding:12px 0 26px; }
+.left{ flex:1; min-width:0; }
+.side{ width:300px; flex:0 0 auto; }
+
+.box{ background:#fffdf7; border:1px solid var(--bd); margin-bottom:12px; }
+.box > h3{
+    margin:0; height:36px; display:flex; align-items:center; justify-content:space-between;
+    padding:0 12px; font-size:15px; color:#fff;
+    background:linear-gradient(90deg,#e8802a,#f0a355); border-bottom:1px solid var(--bd);
+}
+.box > h3 em{ font-style:normal; font-size:12px; font-weight:400; color:#ffeccb; }
+.box .c{ padding:12px 14px; }
+
+/* 书库网格 */
+.bkgrid{ display:flex; flex-wrap:wrap; gap:12px; }
+.bk{ width:calc(25% - 9px); }
+.bk .cv{ height:112px; border:1px solid var(--bd); overflow:hidden; position:relative; }
+.bk .cv svg{ display:block; width:100%; height:100%; }
+.bk .cv .tag{ position:absolute; left:0; top:6px; padding:1px 6px; font-size:10.5px;
+    color:#fff; background:rgba(0,0,0,.5); }
+.bk .cv .tag.hot{ background:var(--rd); }
+.bk .cv .tag.ok{ background:#2f7a3f; }
+.bk .nm{ margin-top:6px; font-size:13px; font-weight:700; line-height:1.5;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bk .au{ font-size:11.5px; color:var(--tx3); }
+.bk .st{ font-size:11.5px; color:var(--tx3); }
+.bk .st b{ color:#2f7a3f; font-weight:400; }
+.bk:hover .nm{ color:var(--rd); }
+
+/* 榜单 */
+.rk li{ display:flex; gap:8px; padding:7px 2px; border-bottom:1px dashed var(--ln); font-size:13px; }
+.rk li:last-child{ border-bottom:0; }
+.rk .no{ flex:0 0 auto; width:17px; height:17px; line-height:17px; text-align:center;
+    font-size:11px; color:#fff; background:#b3a68c; border-radius:2px; }
+.rk li:nth-child(1) .no{ background:var(--rd); }
+.rk li:nth-child(2) .no{ background:#e8802a; }
+.rk li:nth-child(3) .no{ background:#e0a33c; }
+.rk .ti{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rk .au{ color:var(--tx3); font-size:11.5px; flex:0 0 auto; }
+
+/* 搜索结果 */
+.res{ padding:12px 16px; }
+.res .cnt{ font-size:12.5px; color:var(--tx3); padding-bottom:8px; border-bottom:1px solid var(--ln); }
+.res .it{ display:flex; gap:12px; padding:14px 0; border-bottom:1px dashed var(--ln); }
+.res .it:last-child{ border-bottom:0; }
+.res .cv{ width:88px; height:118px; flex:0 0 auto; border:1px solid var(--bd); overflow:hidden; }
+.res .cv svg{ display:block; width:100%; height:100%; }
+.res .bd{ min-width:0; }
+.res .nm{ font-size:16px; font-weight:700; }
+.res .au{ font-size:12px; color:var(--tx3); margin:2px 0 5px; }
+.res .au b{ color:#2f7a3f; font-weight:400; }
+.res .ds{ font-size:12.5px; line-height:1.8; color:var(--tx2); }
+.res .go{ display:inline-block; margin-top:7px; padding:3px 14px; font-size:12px; color:#fff;
+    background:#e8802a; border-radius:2px; }
+.res .go:hover{ background:var(--rd); color:#fff; text-decoration:none; }
+.empty{ padding:40px 0; text-align:center; color:var(--tx3); font-size:13px; }
+.empty b{ color:var(--rd); }
+.hint{ margin:0 16px 12px; padding:9px 12px; font-size:12.5px; line-height:1.9; color:#8a6a20;
+    background:var(--yl); border:1px dashed #e0c88a; }
+
+/* 书籍详情 */
+.bhead{ display:flex; gap:18px; padding:18px 18px 14px; border-bottom:1px solid var(--ln); }
+.bhead .cv{ width:120px; height:162px; flex:0 0 auto; border:1px solid var(--bd); overflow:hidden; }
+.bhead .cv svg{ display:block; width:100%; height:100%; }
+.bhead .bd{ min-width:0; flex:1; }
+.bhead h1{ font-size:22px; color:#7d3f10; }
+.bhead .au{ font-size:13px; color:var(--tx2); margin:6px 0 10px; }
+.bhead .au a{ font-weight:700; }
+.bhead .meta{ font-size:12.5px; color:var(--tx2); line-height:2; }
+.bhead .meta span{ margin-right:16px; }
+.bhead .meta b{ color:var(--tx); font-weight:400; }
+.bhead .act{ margin-top:12px; }
+.bhead .act a,.bhead .act button{
+    display:inline-block; padding:6px 22px; margin-right:8px; font:13px var(--font); cursor:pointer;
+    color:#fff; background:linear-gradient(180deg,#f09440,#e07a20); border:1px solid var(--or);
+}
+.bhead .act .gray{ color:var(--tx2); background:#fff; border-color:var(--bd); }
+.bhead .act .gray:hover{ background:#f4ecdb; }
+.bhead .ds{ margin:0 18px 14px; padding:12px 14px; font-size:13px; line-height:2; color:var(--tx2);
+    background:#fffaf0; border:1px solid var(--ln); }
+.bhead .ds .lb{ color:#7d3f10; font-weight:700; }
+.cat{ margin:0 18px 16px; }
+.cat li{ display:flex; gap:10px; padding:10px 4px; border-bottom:1px dashed var(--ln); font-size:13.5px; }
+.cat li:last-child{ border-bottom:0; }
+.cat .no{ flex:0 0 auto; width:30px; height:22px; line-height:22px; text-align:center;
+    font-size:11.5px; color:#fff; background:#b3a68c; border-radius:2px; }
+.cat li:nth-child(-n+3) .no{ background:#e8802a; }
+.cat .ti{ flex:1; min-width:0; }
+.cat .ti u{ display:block; text-decoration:none; color:var(--tx3); font-size:11.5px; }
+.cat .ti u b{ color:#2f7a3f; font-weight:400; }
+.cat .ti u i{ font-style:normal; color:#b09668; }
+.cat a:hover{ color:var(--rd); }
+
+/* 书评区：挂在 .cat 底下借用它的外框，条目自己排（.cat li 是 flex，这里改回 block） */
+.rv li{ display:block; padding:11px 4px; border-bottom:1px dashed var(--ln); font-size:12.5px; }
+.rv li:last-child{ border-bottom:0; }
+.rv .hd{ display:flex; align-items:baseline; gap:8px; }
+.rv .who{ color:#7d3f10; font-weight:700; }
+.rv .st{ color:#e0a33c; font-size:11.5px; letter-spacing:1px; }
+.rv .dt{ margin-left:auto; color:var(--tx3); font-size:11.5px; }
+.rv .tx{ margin-top:3px; color:var(--tx2); line-height:1.95; }
+/* 详情页那一行评分 */
+.bhead .meta .sc{ color:#c0271c; font-weight:700; font-size:15px; }
+.bhead .meta .rn{ font-style:normal; color:var(--tx3); font-size:11.5px; }
+
+/* 正文页的章节头。
+   ⚠ 这里原来写成 `.chead .nav`，被全站那条橙色 .nav 的样式撞上了
+   （选择器同为 .nav，橙色底 + 白字），一条返回链接被拉成整条横幅。
+   改成 .cnav，只借 .nav 的排版习惯（横向小链接），不碰颜色。 */
+.chead{ padding:14px 0 10px; border-bottom:1px solid var(--ln); }
+.chead h2{ font-size:19px; color:#7d3f10; }
+.chead .cnav{ margin-top:8px; font-size:12.5px; }
+.chead .cnav a{ margin-right:14px; }
+.cbody{ padding:20px 4px 30px; font:15px/2.5 var(--song); color:#3d3830; }
+.cbody p{ margin:0 0 18px; text-indent:2em; }
+.cbody p.q{ text-indent:0; padding-left:2em; border-left:2px solid #e0c88a; color:#5a5248;
+    font-size:14px; line-height:2.3; }
+.cbot{ padding:16px 0 30px; border-top:1px solid var(--ln); font-size:13px; }
+.cbot a{ margin:0 8px; }
+
+/* 侧栏小卡 */
+.tipc{ font-size:12.5px; line-height:1.9; color:var(--tx2); }
+.tipc li{ padding:2px 0; }
+.tipc b{ color:#7d3f10; }
+.promo{ display:block; margin-bottom:12px; border:1px solid #e8cf90; background:#fffaf0; overflow:hidden; }
+.promo .t{ padding:6px 10px; font-size:12px; color:#fff; background:#d9a13c; }
+.promo .b{ padding:10px 12px; font-size:12.5px; line-height:1.9; color:var(--tx2); }
+.promo .b em{ font-style:normal; color:var(--rd); font-weight:700; }
+.promo .b a{ display:inline-block; margin-top:6px; padding:3px 12px; font-size:12px; color:#fff;
+    background:#e8802a; border-radius:2px; }
+.promo .b a:hover{ background:var(--rd); text-decoration:none; }
+
+/* 页脚 */
+.foot{ background:#3f3527; color:#c9bda3; padding:18px 0 24px; text-align:center; font-size:12px; line-height:2; }
+.foot a{ color:#c9bda3; }
+.foot a:hover{ color:#ffd88a; }
+.foot .b{ color:#9c8e74; font-size:11.5px; }
+
+/* 底部提示 */
+#toast{
+    position:fixed; left:50%; bottom:26px; z-index:70; padding:9px 20px; font-size:13px; color:#fff;
+    background:rgba(90,50,10,.94); border-radius:2px; box-shadow:0 4px 18px rgba(60,30,0,.3);
+    opacity:0; pointer-events:none; transition:opacity .25s ease, transform .25s ease;
+    transform:translateX(-50%) translateY(8px);
+}
+#toast.on{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ==================================================================
+   右上角那枚小眼球
+   ------------------------------------------------------------------
+   它不属于这个站 —— 是主页面那只眼睛渗进来的。
+   ★ 这一块（含下面的脚本）是**照着食堂页 pages/school/canteen.html 抄的**：
+     出场时机、台词条的排布与抽走、点眼球重听，全用同一套，只换台词。
+
+   出场：进站约一秒后浮出，**自己开口**说那两句（不用点它）——
+     那本书不在任何推荐位上，这两句就是给玩家的那点提示：自己打出来。
+   CUT4：玩家**自己搜到《华灯初上》、点进某一章**之后，眼球才亮起来、
+     长出「走进这一段 →」。没走到这一步就没有那个入口。
+   点眼球 = 重听一遍。
+   ================================================================== */
+#seye{ position:fixed; right:22px; top:150px; z-index:80;
+    padding:8px 12px 6px; border-radius:3px;
+    background:rgba(8,12,10,.9); box-shadow:0 0 0 1px rgba(120,180,150,.22), 0 6px 26px rgba(0,0,0,.45);
+    opacity:0; transform:translateY(-8px); pointer-events:none; cursor:pointer;
+    transition:opacity .9s ease, transform .9s ease, box-shadow .6s ease; }
+#seye.on{ opacity:1; transform:translateY(0); pointer-events:auto; }
+#seye.hot{ box-shadow:0 0 0 1px rgba(150,220,180,.55), 0 6px 30px rgba(0,60,30,.55); }
+#seye:hover{ box-shadow:0 0 0 1px rgba(150,220,180,.4), 0 6px 30px rgba(0,60,30,.5); }
+#seye .eyeb{ margin:0; font:15px/1.02 "Sarasa Mono SC","Sarasa Term SC","Noto Sans Mono CJK SC",Consolas,"Courier New",monospace;
+    color:#cfe6d6; text-shadow:0 0 7px rgba(160,220,180,.55), 0 0 16px rgba(120,200,150,.28);
+    white-space:pre; user-select:none; }
+/* 台词条：一句一小盒，贴着眼球往下排；上面那条收回去时下面的自动往上补位。
+   位置不用 CSS 排（行高、换行都会变），由脚本按每条真实高度算好写进 transform。
+   .tl 必须绝对定位，否则天然高度 + translateY 会叠加 → 两条之间凭空多出一条的高度。 */
+#eye-tip{ position:absolute; right:0; top:100%; margin-top:8px; white-space:nowrap; pointer-events:none; }
+#eye-tip .tl{ position:absolute; right:0; top:0; white-space:nowrap; transition:transform .6s ease; }
+#eye-tip .tl.in{ transition:transform .2s ease; }      /* 新条落位：快 */
+#eye-tip .tl.gone{ display:none; }                     /* 收完了：彻底不占位 */
+#eye-tip .tl span{ display:block; padding:6px 12px; font-size:12px; line-height:1.75;
+    color:#dff0e4; background:rgba(8,12,10,.94); border-left:2px solid #6fbf8f;
+    box-shadow:0 4px 16px rgba(0,0,0,.4);
+    opacity:0; transform:translateX(10px);
+    transition:opacity .75s ease, transform .75s ease; }
+#eye-tip .tl.on span{ opacity:1; transform:translateX(0); }
+#eye-tip .tl.in span{ transition:opacity .2s ease, transform .2s ease; }
+/* 「走进这一段 →」也是一条台词（第三条），位置照样由脚本排。
+   整条 tip 是 pointer-events:none 的（不吃鼠标，免得挡住正文），
+   唯独这条要点得到 → 单独开回来。 */
+#eye-tip .tl.go span{ pointer-events:auto; padding:4px 12px;
+    color:#ffd9a8; background:rgba(40,22,6,.94); border-left:2px solid #c8903c; }
+#eye-tip .tl.go span a{ color:#ffd9a8; }
+#eye-tip .tl.go span a:hover{ color:#fff0d0; text-decoration:none; }
+@media (max-width:1230px){
+    #seye{ right:6px; top:126px; padding:6px 9px 4px; }
+    #seye .eyeb{ font-size:12px; }
+    /* 窄屏放不下整行不换行的台词盒 → 定宽换行，跟食堂页一致 */
+    #eye-tip .tl{ white-space:normal; width:176px; }
+    #eye-tip .tl span{ font-size:11px; }
+}
+</style>
+</head>
+<body>
+
+<div class="top"><div class="wrap">
+    <div>万卷小说网　|　永久免费　·　无弹窗　·　不设阅读上限</div>
+    <div class="r"><a href="#/">首页</a><span class="sep">|</span><a href="#/s?k=%E5%B7%B2%E5%AE%8C%E6%9C%AC">书架</a><span class="sep">|</span>
+        <a href="javascript:;" id="fk">收藏本站</a></div>
+</div></div>
+
+<div class="head"><div class="wrap">
+    <a href="#/" class="logo" style="text-decoration:none"><b>万卷小说网</b><i>WANJUAN.EXAMPLE</i></a>
+    <div class="sbox">
+        <div class="f">
+            <input id="q" type="text" placeholder="输入书名、作者或分类…" autocomplete="off">
+            <button id="go">搜 索</button>
+        </div>
+        <div class="hot">热门搜索：
+            <a href="#/s?k=%E6%A0%A1%E5%9B%AD">校园</a>
+            <a href="#/s?k=%E9%83%BD%E5%B8%82%E8%A8%80%E6%83%85">都市言情</a>
+            <a href="#/s?k=%E7%8E%84%E5%B9%BB%E9%AD%94%E6%B3%95">玄幻魔法</a>
+            <a href="#/s?k=%E5%B7%B2%E5%AE%8C%E6%9C%AC">已完本</a>
+        </div>
+    </div>
+    <div class="headright">今日更新 <b>412</b> 本<br>全站在架 <b>86,340</b> 部</div>
+</div></div>
+
+<div class="nav"><div class="wrap"><ul id="nav">
+    <li><a href="#/" data-nav="/">首页</a></li>
+    <li><a href="#/s?k=%E7%8E%84%E5%B9%BB%E9%AD%94%E6%B3%95" data-nav="cat">玄幻魔法</a></li>
+    <li><a href="#/s?k=%E9%83%BD%E5%B8%82%E8%A8%80%E6%83%85" data-nav="cat">都市言情</a></li>
+    <li><a href="#/s?k=%E6%82%89%E6%81%8B%E6%8E%A8%E7%90%86" data-nav="cat">悬疑推理</a></li>
+    <li><a href="#/s?k=%E5%8E%86%E5%8F%B2%E5%86%9B%E4%BA%8B" data-nav="cat">历史军事</a></li>
+    <li><a href="#/s?k=%E6%B8%B8%E6%88%8F%E7%AB%9E%E6%8A%80" data-nav="cat">游戏竞技</a></li>
+    <li><a href="#/s?k=%E5%B7%B2%E5%AE%8C%E6%9C%AC" data-nav="rank">完本书库</a></li>
+    <li><a href="#/s?k=%E8%BF%9E%E8%BD%BD%E4%B8%AD" data-nav="full">连载中</a></li>
+</ul></div></div>
+
+<div class="wrap">
+    <div class="abn">
+        <span class="x">广告</span>
+        <b>新用户注册即送 200 书币</b>　本站所有小说<b>永久免费</b>，无弹窗、不限速、不强制安装客户端；搜索即可阅读，txt / epub / 手机版同步更新。
+    </div>
+</div>
+
+<div class="wrap"><div class="main">
+    <div class="left" id="left"></div>
+    <div class="side">
+        <div class="promo">
+            <div class="t">推广 · 客户端下载</div>
+            <div class="b">万卷阅读器，<em>书架云端同步</em>，手机电脑一起看。<a href="javascript:;" data-promo="下载">立即下载</a></div>
+        </div>
+        <div class="promo">
+            <div class="t">推广 · 写作指南</div>
+            <div class="b">写不出让人信服的「神」？一份《怎样写出一个让人过目不忘的神性角色》角色塑造指南，免费读。<a href="../write/index.html">开始阅读 »</a></div>
+        </div>
+        <div class="box"><h3>新书入库</h3><div class="c">
+            <ul class="rk" id="newbk"></ul>
+        </div></div>
+        <div class="box"><h3>阅读须知</h3><div class="c">
+            <ul class="tipc">
+                <li>本站仅收录用户上传与作者授权作品，<b>不收取任何费用</b>。</li>
+                <li>若发现内容有误或涉及侵权，请在页面下方「举报」入口提交，我们会尽快处理。</li>
+                <li>搜索：书名、作者、分类、连载状态都可以直接搜；<b>输入关键词后回车即可</b>。</li>
+                <li>手机浏览：直接访问本站同一地址，无需额外设置。</li>
+            </ul>
+        </div></div>
+        <div class="box"><h3>关于本站</h3><div class="c">
+            <ul class="tipc">
+                <li>本站不设VIP、不设付费章节，<b>所有章节均可免费阅读</b>。</li>
+                <li>部分章节显示「因涉嫌违规已被暂时隐藏」，属审核流程，<b>恢复时间以审核结果为准</b>。</li>
+                <li>页面内广告为第三方投放，与内容无关。</li>
+                <li>发现错误请 <a href="javascript:;" data-promo="反馈">点此反馈</a>。</li>
+            </ul>
+        </div></div>
+    </div>
+</div></div>
+
+<div class="foot"><div class="wrap">
+    万卷小说网　|　本站所有内容均来自网络，版权归原作者所有，仅供学习交流，不作商业用途<br>
+    <span class="b">本站不设付费、不设VIP、不弹窗；页面内推广内容由第三方投放。<br>
+    <a href="#/">首页</a>　|　<a href="javascript:;" data-promo="意见反馈">意见反馈</a>　|　<a href="javascript:;" data-promo="侵权举报">侵权举报</a>　|　<a href="#/s?k=%E5%B7%B2%E5%AE%8C%E6%9C%AC">书库</a></span>
+</div></div>
+
+<div id="toast"></div>
+
+<!-- 右上角那枚小眼球：不属于这个站 -->
+<div id="seye" aria-hidden="true" title="……">
+    <pre class="eyeb"></pre>
+    <div id="eye-tip"></div>   <!-- 台词由脚本挂进来（词儿在末尾 LINES 里改） -->
+</div>
+
+<!-- ==================================================================
+     青禾的短篇集 · 密码门（#qgate）+ 残稿阅读器（#rd）
+     ------------------------------------------------------------------
+     玩家翻到短篇集任意一章 → 书本说「已被作者删除」 → 右上角小眼球开口：
+       「这个作者有点眼熟」
+       「我可以试着把小说内容调出来……」
+     说完后弹密码门，三问：
+       ① 我实际的名字？        → 梁晚青
+       ② 我父亲的工号是多少？  → EMP-2011-0473
+       ③ 你叫什么名字？        → 填什么都过；过关前说「谢谢你，（名字）」
+                                 「谢谢你……愿意了解他。」
+     过了才进阅读器：一张纸 + 翻页，没有立绘、没有特效、没有黑屏。
+     ================================================================== -->
+<style>
+/* ★ 这一块的所有 class 都带前缀（gq- / rp-）：
+   本页头部那套样式里有 .nav / .q / .msg 这些通用名，
+   直接用会被全局规则接管（.nav 就带橙色渐变 + a{display:block;line-height:40px}）。 */
+
+/* ---------- 密码门 ---------- */
+#qgate{ position:fixed; inset:0; z-index:200; display:none;
+    align-items:center; justify-content:center; padding:24px; }
+#qgate.on{ display:flex; }
+#qgate .gq-veil{ position:absolute; inset:0; background:rgba(3,8,6,.86);
+    box-shadow:inset 0 0 120px rgba(0,0,0,.9); }
+#qgate .gq-win{ position:relative; z-index:1; width:min(520px, 92vw);
+    border:1px solid #2f6b4a; border-radius:5px; background:#0b1310;
+    box-shadow:0 24px 70px rgba(0,0,0,.7), 0 0 0 1px rgba(90,220,150,.08);
+    overflow:hidden; }
+#qgate .gq-win > h3{ margin:0; padding:14px 18px; font-size:15px; font-weight:700;
+    letter-spacing:2px; color:#d8ffe9;
+    background:linear-gradient(90deg,#12472e,#1d6b45); }
+#qgate .gq-win > h3 i{ font-style:normal; float:right; font-size:11.5px;
+    letter-spacing:0; color:#7fa894; font-weight:400; }
+#qgate .gq-body{ padding:20px 18px 18px; }
+#qgate .gq-steps{ display:flex; gap:6px; margin-bottom:16px; }
+#qgate .gq-steps u{ flex:1; height:3px; border-radius:2px; background:#1d3a2d; text-decoration:none; }
+#qgate .gq-steps u.on{ background:linear-gradient(90deg,#3ddc84,#9df0b4); }
+#qgate .gq-q{ font-size:14.5px; font-weight:700; line-height:1.9; color:#eafff2;
+    letter-spacing:.5px; margin:0 0 4px; }
+#qgate .gq-hint{ font-size:11.5px; color:#6d8a7c; line-height:1.8; margin:0 0 12px; }
+#qgate .gq-inp{ width:100%; padding:11px 13px; font:15px/1.5 inherit;
+    color:#eafff2; background:#08110d; border:1px solid #2c5c45; border-radius:3px;
+    outline:none; transition:border-color .2s ease, box-shadow .2s ease; }
+#qgate .gq-inp:focus{ border-color:#3ddc84; box-shadow:0 0 0 3px rgba(61,220,132,.13); }
+#qgate .gq-inp::placeholder{ color:#4e6b5c; }
+#qgate .gq-msg{ min-height:20px; margin:10px 0 0; font-size:12.5px; line-height:1.7; color:#6d8a7c; }
+#qgate .gq-msg.bad{ color:#ff7a8c; }
+#qgate .gq-msg.good{ color:#7ef0ac; }
+#qgate .gq-acts{ display:flex; gap:10px; margin-top:14px; }
+#qgate .gq-acts button{ flex:1; padding:11px 0; font:14px/1 inherit; font-weight:700;
+    letter-spacing:2px; border:1px solid #2f6b4a; border-radius:3px; cursor:pointer;
+    background:transparent; color:#9ad4b6; transition:background .2s ease, color .2s ease; }
+#qgate .gq-acts button.go{ background:linear-gradient(90deg,#3ddc84,#9df0b4);
+    border-color:transparent; color:#06120c; }
+#qgate .gq-acts button:hover{ background:rgba(61,220,132,.14); color:#eafff2; }
+#qgate .gq-acts button.go:hover{ filter:brightness(1.08); }
+#qgate .gq-acts button[disabled]{ opacity:.4; cursor:default; }
+#qgate .gq-acts button[disabled]:hover{ background:transparent; color:#9ad4b6; }
+
+/* ---------- 残稿阅读器：一张纸 + 翻页，别的都没有 ----------
+   ★ 纸是**固定高度**的（不是跟着字长）：一页纸就该是一页纸的样子。
+     每页装多少行由脚本按纸张可用高度算（linesPerPage），
+     所以小窗口自动少装几行，不会溢出、也不会被下面的翻页条压住。 */
+#rd{ position:fixed; inset:0; z-index:210; display:none; }
+#rd.on{ display:block; }
+#rd .rp-veil{ position:absolute; inset:0; background:#191410; }
+#rd .rp{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:min(760px, 92vw); height:clamp(300px, calc(100vh - 104px), 700px);
+    padding:26px 46px 30px; overflow:hidden;
+    background:linear-gradient(180deg,#f4e9cf 0%,#ece0c2 100%);
+    box-shadow:0 20px 60px rgba(0,0,0,.62);
+    font-family:SimSun,"Songti SC",serif; font-size:16.5px; line-height:2.05;
+    color:#2b2013; }
+#rd .rp-run{ font-size:11px; letter-spacing:2px; color:#9c8b66; text-align:center;
+    margin-bottom:16px; }
+#rd .rp-h{ text-align:center; margin:2px 0 16px; }
+#rd .rp-h b{ display:block; font-size:16px; letter-spacing:3px; font-weight:700; }
+#rd .rp-h i{ display:block; font-style:normal; font-size:11px; letter-spacing:1px;
+    color:#9c8b66; margin-top:2px; }
+#rd .rp-h.cont{ text-align:left; font-size:12px; letter-spacing:1px; color:#9c8b66;
+    margin-bottom:10px; }
+#rd .rp p{ margin:0 0 6px; text-indent:2em; opacity:0; transform:translateY(4px);
+    transition:opacity .5s ease, transform .5s ease; }
+#rd .rp.in p{ opacity:1; transform:none; }
+#rd .rp-tail{ height:100%; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+    color:#7a6a4c; font-size:14px; letter-spacing:2px; line-height:2.4; }
+#rd .rp-bar{ position:absolute; left:0; right:0; bottom:14px; text-align:center;
+    font-size:11.5px; color:#9c8b66; letter-spacing:1px; }
+#rd .rp-bar a{ color:#8a6a3c; margin:0 8px; cursor:pointer; }
+#rd .rp-bar a:hover{ color:#a8571a; }
+#rd .rp-bar a.off{ color:#c3b491; cursor:default; }
+#rd .rp-bar a.off:hover{ color:#c3b491; }
+#rd .rp-bar em{ font-style:normal; margin-left:10px; }
+</style>
+
+<div id="qgate" role="dialog" aria-modal="true">
+    <div class="gq-veil"></div>
+    <div class="gq-win">
+        <h3>残稿调取<i>三问</i></h3>
+        <div class="gq-body">
+            <div class="gq-steps"><u id="qg1"></u><u id="qg2"></u><u id="qg3"></u></div>
+            <p class="gq-q" id="qgq"></p>
+            <p class="gq-hint" id="qgh"></p>
+            <input class="gq-inp" id="qgi" type="text" autocomplete="off" spellcheck="false" placeholder="在这里输入…">
+            <p class="gq-msg" id="qgm"></p>
+            <div class="gq-acts">
+                <button type="button" id="qgno">算了</button>
+                <button type="button" id="qgok" class="go" disabled>确定</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="rd" aria-hidden="true">
+    <div class="rp-veil"></div>
+    <div class="rp" id="rdsheet"></div>
+    <div class="rp-bar">
+        <a href="javascript:;" id="rdprev">← 上一页</a>
+        <span id="rdnum"></span>
+        <a href="javascript:;" id="rdnext">下一页 →</a>
+        <em><a href="javascript:;" id="rdclose">合上</a></em>
+    </div>
+</div>
+
+<script>
+/* ==================================================================
+   书库数据
+   ------------------------------------------------------------------
+   ★ 《华灯初上》（青禾）是**她自己正在读的那本** —— 就在书库里，
+     但没有任何一处把它摆在推荐位上：得玩家自己在搜索框里打出来。
+     封面和其余书一样是 SVG 画的线稿，占位用。
+   ================================================================== */
+var BOOKS = [
+    /* ★ 简介**故意写得含糊**：只摆出"青春恋爱故事"这个壳，什么都不点破。
+       剧情（窗口、跳楼、那个「神」）一个字都不提 ——
+       真正的内容就是 CUT4 和后面那些镜头，简介一旦说穿，玩家就不用去看了。 */
+    { id:1, t:'华灯初上', a:'青　禾', c:'校园 / 魔幻现实主义', s:'已完本', w:'19.4 万字', u:'2013-08-30',
+      hot:0, ok:1, score:'8.2', rnum:1284,
+      d:'高二那年她摔断了一条腿，也把一段还没开始的关系一起摔断了。' +
+        '同桌是个爱管闲事的人，每天陪她走夜路，一句一句给她讲一本谁都没读完的小说。' +
+        '她们聊输赢，聊值不值得，聊一个人要怎样才算没有白活。' +
+        '（就是个青春恋爱故事。分类挂的魔幻现实主义，别太当真。）',
+      cats:['第一章　窗口','第二章　开门','第三章　故事需要有人牺牲','第四章　忽——',
+            '第五章　病房','第六章　地心引力','第七章　我们分手吧',
+            '第八章　我好像是神','第九章　三、二、一'] },
+    { id:2, t:'剑起南山', a:'青衫不改', c:'玄幻魔法', s:'连载中', w:'118.4 万字', u:'2013-09-25', hot:1,
+      d:'少年提剑下山，只为问一句「我师父是谁」。山门里的人都在笑，只有守碑人不笑。' },
+    { id:3, t:'重回高三', a:'一只小碗', c:'都市言情', s:'连载中', w:'46.2 万字', u:'2013-09-26', hot:1,
+      d:'她回到十七岁那年，教室的窗还是那样开着，风还是从那个方向来。这次她不打算再问为什么。' },
+    { id:4, t:'夜航船', a:'沈木舟', c:'悬疑推理', s:'已完本', w:'21.9 万字', u:'2013-07-11', hot:1,
+      d:'一艘只在没有月亮的时候靠岸的船。船上有位老人说：上了这条船，就不要再问岸上的人是谁。' },
+    { id:5, t:'错生', a:'温故', c:'都市言情', s:'连载中', w:'9.7 万字', u:'2013-09-24',
+      d:'她每天早上醒来都会忘记一件事，于是把重要的事都写在手背上。第四十一天，手背写不下了。' },
+    { id:6, t:'三国志·注', a:'（整理本）', c:'历史军事', s:'已完本', w:'88.1 万字', u:'2013-03-02',
+      d:'裴松之注本，繁简体对照，适合慢读。整理者按卷次上传，共十二卷。' },
+    { id:7, t:'峡谷之巅', a:'打游戏的阿蛮', c:'游戏竞技', s:'连载中', w:'73.5 万字', u:'2013-09-26', hot:1,
+      d:'rank 段位打到第五天，他发现对面那个 ID 从他开播第一天起就在，而且从不说话。' },
+    /* ★ 短篇集：十二个短篇，头两篇写「不敢开灯的人」和「只会开门的人」。
+       完本之后作者又补传了两篇（十一、十二），补完第二天，整本被她自己删空了 ——
+       删掉的那部分才是真的东西（残稿在文件末尾的 RECOVER 里）。
+       del:1 → 每一章都走 renderChap 的「已被作者删除」分支，
+               分支里会叫右上角那枚小眼球开口 → 弹出三问的密码门。 */
+    { id:8, t:'青禾的短篇集', a:'青　禾', c:'校园 / 魔幻现实主义', s:'已完本', w:'7.2 万字', u:'2013-05-19',
+      del:1,
+      cats:['一　不敢开灯的人','二　只会开门的人','三　一个每天写信的人','四　空着的那把椅子',
+            '五　雨天不打伞的人','六　第三十七个插座','七　总务处的灯','八　有人从楼上下来',
+            '九　我找到她了','十　楼梯间','十一　安全员','十二　钠'],
+      d:'十二个短篇。第一个讲一个不敢开灯的人，第二个讲一个只会开门的人。' +
+        '作者说这些是「练笔」，但读过《华灯初上》的人大概会在其中认出点什么。' +
+        '完本后作者曾于 08-31、09-14 两次补传，09-15 全部删除。' },
+    { id:9, t:'旧校舍', a:'无名氏', c:'悬疑推理', s:'已完本', w:'15.0 万字', u:'2013-02-14',
+      d:'这栋楼拆了十年，但她还记得第 37 个插座的位置。' },
+    { id:10, t:'竹马太用力', a:'一只小碗', c:'都市言情', s:'已完本', w:'28.8 万字', u:'2013-06-30',
+      d:'他替她值了三年自行车，她到毕业才知道。' }
+];
+
+/* 《华灯初上》在站内能翻到的只有第一章（原文照录）。
+   第二章往后一律「因涉嫌违规已被暂时隐藏」 —— 那些内容不在站里，
+   它们本身就是后面的镜头（见 renderChap 的注释）。 */
+var TEXT = {
+'1-1':['“你干什么傻事！！——打开门！！——▓▓！！——”',
+       '夜景是如此的美丽。清风徐徐，吹起她的短发。',
+       '“开门！！——开门！！——你知道这么做会让你的家人有多难受吗？！——▓▓！！——”',
+       '“好好想想！！——好好想想！！——不就是一场比赛而已吗？！！——”',
+       '“这对于你来说值得吗？！！——▓▓！！——”',
+       '俯瞰大地。双脚高高悬在窗口。无法探查双脚之下的实感……厕所里的味道不太好闻。']
+};
+
+/* 《华灯初上》的书评区：别人是怎么看这本书的。
+   放在详情页目录下面，纯展示 —— 点不了、不跳转，就是一堆别人的话。
+   ★ 其中几条是玩家后面会认出来的东西（窗口、掉下去那个、她害死了谁），
+     这是这一页和后面那些镜头之间唯一的一根线。 */
+var REVIEWS = [
+    { u:'灯火阑珊', s:5, t:'别看简介。简介写得像另一本书。直接从第一章开始，别问。', d:'2013-09-25' },
+    { u:'半　糖',   s:5, t:'我冲着分类点进来的，结果前八十章就是俩人走路聊天。但是真的停不下来，不知道为啥。', d:'2013-08-05' },
+    { u:'匿名书友', s:5, t:'窗口那段……我们学校四楼西侧就是那种窗台。看完当天晚上我特意绕远路走的，不骗你。', d:'2013-08-11' },
+    { u:'不吃香菜', s:4, t:'“我找到她了”——找到的是谁？？作者一个字都不解释，我翻回去看了三遍。你赢了。', d:'2013-07-30' },
+    { u:'momo',     s:4, t:'结尾那句“这样子，把别人害死了怎么办”，我到现在没想明白她害死的是谁。有人懂吗，在线等，挺急的。', d:'2013-09-14' },
+    { u:'不想上班', s:4, t:'前半本我以为是校园日常，后半本完全不是一回事。作者你是有多敢写。', d:'2013-09-08' },
+    { u:'咸鱼翻身', s:5, t:'作者的口气很怪，写什么都是一副“就这么回事”的样子，反而看得人心里堵。很难形容，反正我看了两遍。', d:'2013-09-20' },
+    { u:'阿　七',   s:4, t:'看到分手那段我气得半夜坐起来骂人，第二天还是接着看了。就这样。', d:'2013-08-30' },
+    { u:'城南旧事', s:3, t:'“我好像是神”这句我出戏了。前面写得太实，突然来这么一下，作者收一收会更好。', d:'2013-08-21' },
+    { u:'路过的',   s:2, t:'更新太慢，作者半年没动静，别追。内容本身还行。', d:'2013-06-02' }
+];
+
+/* ==================================================================
+   渲染
+   ================================================================== */
+var left = document.getElementById('left');
+var toast = document.getElementById('toast'), toastT = null;
+function say(s){
+    toast.textContent = s;
+    toast.classList.add('on');
+    if (toastT) clearTimeout(toastT);
+    toastT = setTimeout(function(){ toast.classList.remove('on'); }, 2200);
+}
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+/* 搜索用的归一化：**把所有空白（含全角空格）都去掉**再比。
+   道理很实际：作者名在页面上印成「青　禾」（全角空格，为对齐好看），
+   玩家在搜索框里打的多半是「青禾」。不归一化就搜不到 —— 键一搜不到就想跑。
+   另外把「（整理本）」「（无）」这类括号备注也剥掉。 */
+function norm(s){
+    return String(s).replace(/[\s　 ]/g, '').toLowerCase();
+}
+
+/* 封面：纯 SVG 画的线稿，按 id 上色，省得去找图 */
+var CV = [
+    ['#5a6f8c','#2f3f56'], ['#7d5a3a','#4a3320'], ['#8c5a72','#553040'],
+    ['#3f6b5a','#254036'], ['#6b5a8c','#3d3155'], ['#7a6b4a','#463c28'],
+    ['#4a6b8c','#2a3f55'], ['#6b4a4a','#402a2a'], ['#556b7a','#33424c'],
+    ['#8a6b3a','#523d1f']
+];
+function cover(id, t){
+    var c = CV[((id - 1) % CV.length + CV.length) % CV.length];
+    var ini = esc(String(t).slice(0, 4));
+    return '<svg viewBox="0 0 120 162" xmlns="http://www.w3.org/2000/svg">'
+      +   '<rect width="120" height="162" fill="' + c[0] + '"/>'
+      +   '<rect x="5" y="5" width="110" height="152" fill="none" stroke="rgba(255,255,255,.34)" stroke-width="1.4"/>'
+      +   '<rect x="0" y="120" width="120" height="42" fill="' + c[1] + '"/>'
+      +   '<text x="60" y="52" text-anchor="middle" font-family="SimSun,serif" font-size="26"'
+      +     ' fill="rgba(255,255,255,.94)">' + ini + '</text>'
+      +   '<text x="60" y="80" text-anchor="middle" font-family="SimSun,serif" font-size="12"'
+      +     ' fill="rgba(255,255,255,.6)">全文免费</text>'
+      +   '<text x="60" y="141" text-anchor="middle" font-family="SimSun,serif" font-size="11"'
+      +     ' fill="rgba(255,255,255,.7)">万卷书库</text>'
+      + '</svg>';
+}
+function bookOf(id){ return BOOKS.filter(function(b){ return b.id === id; })[0]; }
+/* 目录：只有《华灯初上》写死了章节（正文就写在这儿），其余的书给一个
+   「正在上传」的占位目录。**所有书都必须有 cats** —— 搜索和目录页都要 join 它，
+   少一个字段就会在页面上抛错。 */
+function catsOf(b){
+    if (b.cats && b.cats.length) return b.cats;
+    var n = 6, r = [];
+    for (var i = 1; i <= n; i++) r.push('第 ' + i + ' 章');
+    return r;
+}
+
+function boxS(title, more, inner){
+    return '<div class="box"><h3>' + title + (more ? '<em>' + more + '</em>' : '') + '</h3>'
+         + '<div class="c">' + inner + '</div></div>';
+}
+function bkCard(b){
+    var tag = b.hot ? '<span class="tag hot">热门</span>' : (b.ok ? '<span class="tag ok">完本</span>' : '');
+    return '<div class="bk"><a href="#/b/' + b.id + '" style="text-decoration:none;color:inherit">'
+      +   '<div class="cv">' + cover(b.id, b.t) + tag + '</div>'
+      +   '<div class="nm">' + esc(b.t) + '</div>'
+      +   '</a><div class="au">' + esc(b.a) + '</div>'
+      +   '<div class="st">' + esc(b.c) + '　<b>' + esc(b.s) + '</b></div></div>';
+}
+function rankList(list){
+    return '<ul class="rk">' + list.map(function(b, i){
+        return '<li><span class="no">' + (i + 1) + '</span>'
+          +   '<a class="ti" href="#/b/' + b.id + '">' + esc(b.t) + '</a>'
+          +   '<span class="au">' + esc(b.a) + '</span></li>';
+    }).join('') + '</ul>';
+}
+
+/* ---- 首页 ---- */
+/* ★ 关键：**那本书不在任何推荐位里**。
+   随机推荐、周点击榜、新书入库、侧栏推广 —— 全都不摆它。
+   玩家只能自己想到去搜索框里打字。这是这一页唯一要做的事，
+   推荐位一旦把它露出来，这个页面就白做了。
+   （书库里它当然在，翻分类/翻书库时也可能撞见；只是首页不推。） */
+var FEATURED = 1;                       /* 《华灯初上》的 id */
+function shelf(){ return BOOKS.filter(function(b){ return b.id !== FEATURED; }); }
+
+function renderHome(){
+    var list = shelf().slice(0, 8);
+    left.innerHTML =
+        boxS('书库 · 随机推荐', '共 86,340 部', '<div class="bkgrid">' + list.map(bkCard).join('') + '</div>')
+      + boxS('周点击榜', '每小时更新', rankList(shelf().slice(0, 8)))
+      + '<div class="box"><h3>找书</h3><div class="c">'
+      +   '<div class="hint" style="margin:0">没有找到想看的书？在上方搜索框里输入<b>书名</b>或<b>作者</b>，'
+      +   '回车即可。本站的书都能搜到，不需要知道在哪个分类里，也不需要它正在被推荐。</div>'
+      + '</div></div>';
+}
+
+/* ---- 搜索结果 ---- */
+function renderSearch(kw){
+    kw = (kw || '').replace(/^\s+|\s+$/g, '');
+    if (!kw){
+        left.innerHTML = '<div class="box"><h3>搜索</h3><div class="empty">'
+            + '请在上方搜索框输入书名、作者或分类。</div></div>';
+        return;
+    }
+    var hits = BOOKS.filter(function(b){
+        return norm(b.t + b.a + b.c + b.s + b.d + catsOf(b).join('')).indexOf(norm(kw)) >= 0;
+    });
+    var inner;
+    if (!hits.length){
+        inner = '<div class="empty">没有找到与「<b>' + esc(kw) + '</b>」相关的作品。<br>'
+              + '换个关键词试试，比如书名或者作者名。</div>';
+    } else {
+        inner = '<div class="res"><div class="cnt">找到 ' + hits.length + ' 条结果（关键词：' + esc(kw) + '）</div>'
+          + hits.map(function(b){
+              return '<div class="it"><div class="cv">' + cover(b.id, b.t) + '</div>'
+                +   '<div class="bd"><div class="nm"><a href="#/b/' + b.id + '">' + esc(b.t) + '</a></div>'
+                +   '<div class="au">' + esc(b.a) + '　|　' + esc(b.c) + '　|　' + esc(b.w) + '　<b>' + esc(b.s) + '</b></div>'
+                +   '<div class="ds">' + esc(b.d.slice(0, 96)) + '…</div>'
+                +   '<a class="go" href="#/b/' + b.id + '">开始阅读</a></div></div>';
+          }).join('') + '</div>';
+    }
+    left.innerHTML = '<div class="box"><h3>搜索结果<em>关键词：' + esc(kw) + '</em></h3>'
+        + (hits.length ? inner : '<div class="c">' + inner + '</div>') + '</div>';
+}
+
+/* ---- 书籍详情 ---- */
+function renderBook(id){
+    var b = bookOf(id);
+    if (!b){ location.hash = '#/'; return; }
+    left.innerHTML =
+        '<div class="box">'
+      +   '<div class="bhead"><div class="cv">' + cover(b.id, b.t) + '</div>'
+      +     '<div class="bd"><h1>' + esc(b.t) + '</h1>'
+      +       '<div class="au">作者：<a href="#/s?k=' + encodeURIComponent(norm(b.a)) + '">' + esc(b.a) + '</a></div>'
+      +       '<div class="meta">'
+      +         '<span>分类：<b>' + esc(b.c) + '</b></span>'
+      +         '<span>状态：<b>' + esc(b.s) + '</b></span>'
+      +         '<span>字数：<b>' + esc(b.w) + '</b></span>'
+      +         '<span>更新：<b>' + esc(b.u) + '</b></span>'
+      +         (b.score ? '<span>评分：<b class="sc">' + esc(b.score) + '</b>'
+      +           '<i class="rn">（' + esc(b.rnum) + ' 条评价）</i></span>' : '')
+      +       '</div>'
+      +       '<div class="act">'
+      +         '<a href="#/c/' + b.id + '/1">从第一章开始读</a>'
+      +         '<button type="button" class="gray" data-act="shelf">加入书架</button>'
+      +         '<button type="button" class="gray" data-act="top">置顶</button>'
+      +       '</div>'
+      +     '</div></div>'
+      +   '<div class="ds"><span class="lb">内容简介：</span>' + esc(b.d) + '<br>'
+      +     '<span style="color:#9c9184;font-size:12px">本书由作者' + esc(b.a)
+      +     '授权转载至本站，免费阅读，转载请注明出处。</span></div>'
+      +   '<div class="cat"><h3 style="padding:12px 18px 6px;font-size:14px;color:#7d3f10;border-bottom:1px solid #eee6d4">目　录（' + catsOf(b).length + ' 章）</h3>'
+      +     '<ul>' + catsOf(b).map(function(c, i){
+            /* 「已更新 / 已隐藏」只对**真写了正文的那本**成立（现在只有《华灯初上》）。
+               其余的书统一显示"连载中"，别让占位书也冒出一排"违规隐藏"。
+
+               ★ 往后这里的每一章都不该是"显示一段文字" —— 章节内容本身就是
+                 CUT4 和它后面那些镜头。计划是：点章节 → 弹密码框 → 对了才给看
+                 （密码从别处拿到，不是在这一页）。密码那段还没做到，先把口子留好：
+                 每个章节的 <a> 上挂了 data-chap，届时在跳转之前拦一下就行，
+                 渲染的部分（下面这块）不用动。 */
+            var hasText = !!TEXT[b.id + '-' + (i + 1)];
+            return '<li><span class="no">' + (i + 1) + '</span>'
+              +   '<span class="ti"><a href="#/c/' + b.id + '/' + (i + 1) + '" data-chap="' + (i + 1) + '">' + esc(c) + '</a>'
+              +   '<u>' + (hasText ? '已更新　<i>免费</i>'
+                                  : (b.cats ? '本章内容因涉嫌违规已被暂时隐藏' : '连载中　<i>免费</i>'))
+              +   '</u></span></li>';
+          }).join('') + '</ul></div>'
+      +   /* 书评区：只有那本书有。别人是怎么看它的 —— 有人夸，有人出戏，
+             还有人认出了自己学校那个窗台。这堆话是这一页和后面镜头之间的线。 */
+          (REVIEWS && b.id === FEATURED
+            ? '<div class="cat rvbox"><h3 style="padding:12px 18px 6px;font-size:14px;color:#7d3f10;border-bottom:1px solid #eee6d4">'
+              + '书评区<em style="font-style:normal;font-size:12px;color:#9c9184;font-weight:400">　精选 ' + REVIEWS.length
+              + ' 条 / 全部 ' + esc(b.rnum) + ' 条　综合 ' + esc(b.score) + '</em></h3>'
+              + '<ul class="rv">' + REVIEWS.map(function(r){
+                    return '<li><div class="hd"><span class="who">' + esc(r.u) + '</span>'
+                      +   '<span class="st">' + '★★★★★'.slice(0, r.s) + '☆☆☆☆☆'.slice(0, 5 - r.s) + '</span>'
+                      +   '<span class="dt">' + esc(r.d) + '</span></div>'
+                      +   '<div class="tx">' + esc(r.t) + '</div></li>';
+                }).join('') + '</ul></div>'
+            : '')
+      + '</div>';
+
+    /* ★ 自己搜到那本书、点进它的详情页 —— 那枚小眼球**只先亮一下**。
+       「走进这一段 →」要等玩家真的翻进第一章才长出来（见文件末尾的眼球脚本）。 */
+    if (window.MP_EYE && b.id === FEATURED) window.MP_EYE.see(false);
+}
+
+/* ---- 正文 ---- */
+function renderChap(id, no){
+    var b = bookOf(id);
+    if (!b){ location.hash = '#/'; return; }
+    no = parseInt(no, 10) || 1;
+    var title = catsOf(b)[no - 1] || ('第 ' + no + ' 章');
+    var body, foot;
+    /* 有没有这一章的正文，直接查 TEXT —— 别用「no > 5」这种硬编码：
+       章节数会随书变，判据只有一个：这段文字写没写。 */
+    var ps = TEXT[b.id + '-' + no];
+    if (!ps && b.del){
+        /* 作者自己删的 —— 不是违规下架，也不是没上传。
+           这一句说完，右上角那枚小眼球接话（见文件末尾 MP_EYE.del）。 */
+        body = '<p class="q">本章内容已被作者删除。<br>'
+             + '本书共十二篇，于 2013-09-15 由作者本人全部下架。</p>'
+             + '<p style="margin-top:14px;color:#9c9184;font-size:12.5px">'
+             + '本站不保留已删除章节的副本。</p>';
+        foot = '本章已删除，暂不可读。';      /* 模板里 foot 会被 esc()，别塞标签 */
+        if (window.MP_EYE) window.MP_EYE.del();
+    } else if (!ps){
+        body = '<p class="q">' + (b.cats
+            ? '本章内容因涉嫌违规已被暂时隐藏。<br>如需阅读完整内容，请前往原始站点。'
+            : '本章内容正在上传，请稍后再来。') + '</p>';
+        foot = '<span style="color:#9c9184">本章暂不可读。</span>';
+    } else {
+        body = ps.map(function(p){ return '<p>' + esc(p) + '</p>'; }).join('');
+        foot = '本章共 ' + ps.length + ' 段　|　'
+             + (TEXT[b.id + '-' + (no + 1)] ? '下一章可读' : '下一章暂不可读');
+    }
+    var prev = no > 1 ? '<a href="#/c/' + id + '/' + (no - 1) + '">上一章</a>' : '<span style="color:#b3a68c">已经是第一章</span>';
+    var next = no < catsOf(b).length ? '<a href="#/c/' + id + '/' + (no + 1) + '">下一章</a>' : '<span style="color:#b3a68c">已经是最后一章</span>';
+    left.innerHTML =
+        '<div class="box">'
+      +   '<div class="chead"><h2>' + esc(b.t) + '　' + esc(title) + '</h2>'
+      +     '<div class="cnav"><a href="#/b/' + b.id + '">← 回到目录</a>'
+      +       '<a href="#/">首页</a><a href="#/s?k=' + encodeURIComponent(norm(b.a)) + '">本书作者</a></div></div>'
+      +   '<div class="cbody">' + body + '</div>'
+      +   '<div class="cbot">' + prev + next
+      +     '<div style="margin-top:10px;color:#9c9184;font-size:12px">' + esc(foot)
+      +     '　·　<a href="javascript:;" data-promo="举报本章">举报本章</a></div></div>'
+      + '</div>';
+    /* ★ CUT4 的唯一入口在这：玩家**自己搜到《华灯初上》、点进来、翻到第一章**
+       （no === 1）—— 右上角那枚小眼球才换词说「这本小说似乎绝版了……」，
+       说完长出「走进这一段 →」（见文件末尾的眼球脚本）。
+       翻到别的章 / 只停在详情页，都只是"有东西在看着"，没有入口。 */
+    if (window.MP_EYE && id === FEATURED) window.MP_EYE.see(no === 1);
+}
+
+/* ==================================================================
+   路由
+   ================================================================== */
+function route(){
+    var h = location.hash || '#/';
+    var m;
+    if ((m = h.match(/^#\/s\?k=(.*)$/))){
+        renderSearch(decodeURIComponent(m[1] || ''));
+    } else if ((m = h.match(/^#\/b\/(\d+)/))){
+        renderBook(parseInt(m[1], 10));
+    } else if ((m = h.match(/^#\/c\/(\d+)\/(\d+)/))){
+        renderChap(parseInt(m[1], 10), parseInt(m[2], 10));
+    } else {
+        renderHome();
+    }
+    window.scrollTo(0, 0);
+    var key = h.split('?')[0];
+    Array.prototype.forEach.call(document.querySelectorAll('#nav a'), function(a){
+        a.className = (a.getAttribute('data-nav') === (key === '#/' ? '' : key)) ? 'on' : '';
+    });
+}
+window.addEventListener('hashchange', route);
+
+/* ---- 搜索：回车也行，点按钮也行 ---- */
+function doSearch(){
+    var v = document.getElementById('q').value;
+    v = (v || '').replace(/^\s+|\s+$/g, '');
+    if (!v){ say('请输入书名或作者。'); return; }
+    location.hash = '#/s?k=' + encodeURIComponent(v);
+}
+document.getElementById('go').addEventListener('click', doSearch);
+document.getElementById('q').addEventListener('keydown', function(e){
+    if (e.key === 'Enter') doSearch();
+});
+/* 站内跳转会带着 ?k=，顺手续上搜索框，看得见自己搜的是啥 */
+function syncBox(){
+    var m = (location.hash || '').match(/^#\/s\?k=(.*)$/);
+    if (m) document.getElementById('q').value = decodeURIComponent(m[1] || '');
+}
+window.addEventListener('hashchange', syncBox);
+
+/* ---- 侧栏新书 + 各种假按钮：都是"点了给个说法"，不做真跳转 ---- */
+(function(){
+    var ul = document.getElementById('newbk');
+    ul.innerHTML = shelf().slice(4, 10).map(function(b){
+        return '<li><span class="no">新</span><a class="ti" href="#/b/' + b.id + '">' + esc(b.t) + '</a>'
+          +   '<span class="au">' + esc(b.a) + '</span></li>';
+    }).join('');
+    document.addEventListener('click', function(e){
+        var t = e.target;
+        if (t.getAttribute && t.getAttribute('data-act') === 'shelf'){ say('已加入书架（本地演示，未登录）。'); return; }
+        if (t.getAttribute && t.getAttribute('data-act') === 'top'){ say('已置顶。'); return; }
+        var p = t.getAttribute && t.getAttribute('data-promo');
+        if (p){ say('「' + p + '」：本站为演示页面，该功能未开放。'); }
+        if (t.id === 'fk'){ say('请按 Ctrl+D 将本站加入收藏夹。'); }
+    });
+})();
+
+syncBox();
+route();
+</script>
+
+<script>
+/* ==================================================================
+   "捡到"这个站 → 写 mp_unlock_v1.novel，主页面接住并飘出「小说网」入口
+   ================================================================== */
+(function(){
+'use strict';
+try {
+    var u = JSON.parse(localStorage.getItem('mp_unlock_v1') || '{}') || {};
+    if (!u.novel){ u.novel = 1; localStorage.setItem('mp_unlock_v1', JSON.stringify(u)); }
+} catch (e){}
+})();
+</script>
+
+<script>
+/* ==================================================================
+   青禾的短篇集 · 残稿 + 她的日记
+   ------------------------------------------------------------------
+   被作者自己删掉的那本集子，能调出来的只有四篇：一、二，和完本后补传的
+   十一、十二。其余八篇没有留下副本。
+   集子后面还附着她自己那几页日记 —— 短篇是她改着写的，日记是实情。
+
+   ★ 写法：以她（梁晚青）的口吻，短句、平铺、不解释。
+     该交代的东西都交代了 ——
+       他的名字和生年（梁禾生，一九六五）
+       他干过的活（水上乐园质检员十一年 → 旅行社安全员）
+       能力的残酷处：掉一次什么都好，可**不掉就好不了**，只能一直疼着
+       —— 能力是五年前那次才发现的：夫妻俩一起从阳台掉下来，他坐起来了，
+       她没有。他跑去叫人，回来她已经不疼了
+       他想被收编：给航天口写信、被回「先去看医生」；警察上门问话、
+       他说「我跳」，人家说「你别跳」；后来他去学校干活，就没人再来问了
+       安全员那一段他**一次都没掉下来**，八月末还是被辞了（理由写岗位调整）；
+       单位叫他女儿去签撤案书 —— 她签了，可没人告诉她出了什么事
+       那份保险受益人是她；他最后用的不是掉下去（钠、火）
+       日记交代去向：火那晚之后他失踪了几天（派出所也在找他，不在任何医院），
+       九月十八**他自己走回来的**，没说从哪儿回来；保险不赔
+       最后：他要投案，说这本事也许能派上用场；他说以后多陪陪她
+     但从头到尾没有一句是在「说明」，全是一个人在讲她爸。
+   ================================================================== */
+var RECOVER = [
+    { n:'一', t:'不敢开灯的人', d:'2013-05-19', ps:[
+        '我妈是摔死的。',
+        '五六年前……他们出去旅游，我那个时候在上学。',
+        '他们出去玩了高空项目。',
+        '因为质检问题，绳子断了。',
+        '两个人都重重地摔到了地上。',
+        '我爸先落的地……但他自己坐起来了。',
+        '我妈落在他旁边……一开始还能说话。',
+        '那年他四十三，第一次发现自己摔不死。',
+        '我爸着急忙慌去喊人，结果已经来不及了。',
+        '这叫我怎么接受？……',
+        '后悔根本就没有任何道理……可我妈没了啊。',
+        '我根本就不想体会这种难受……根本就不知道该怎么面对这种生活。',
+        '我爸他也是……',
+        '后来他去应聘了质检员，就是为了避免这样的悲剧再次发生。',
+        '我听他说自己不会死的时候……我以为是我活着他哪一个精神崩溃到胡言乱语了。',
+        '那特别荒谬啊。',
+        '我还以为他也要寻死，当时跟他吵了好久，还哭着说要带他检查。',
+        '可能是那个时候，我越来越能理解他们为人父母了吧。',
+        '当时他突然冲出去从窗户口一跃而下的时候……我感觉我这辈子都完了。',
+        '如果不是我看见他动了两下，又好端端地站了起来……',
+        '我估计我都得当场跳下去陪他们了。',
+        '没有什么因祸得福……我只觉得心疼。',
+        '我爸一九六五年生。今年四十八。名字是爷爷随手取的，禾生。',
+        '他最一开始在水上乐园做质检员。因为他的这个能力，检修的时候，就直接从最高的那条滑道上自己滑一次，看看有没有哪里会刮伤人。',
+        '他工作有一段时间了。有一年滑道中段裂了，他是第一个知道的。',
+        '他也摔下来过。检修，从架子上，七米。',
+        '我赶到医院，他已经坐在走廊的椅子上了。医生说检查不出任何问题。',
+        '觉得徒劳，可我又不敢全然放心……所以总会赶过来看他。',
+        '他说有个东西和他认识……他叫那个东西“神仙”。',
+        '那个东西都劝他不要再跳了……可是他还是做那些危险的工作。',
+        '如果不是那个东西一直愿意救他……我都不知道该怎么去面对这一切。',
+        '这一切就像梦一样……',
+        '特别恐怖，可是又醒不过来。',
+        '他不敢再开灯了。',
+		'一开灯就想起我妈。',
+        '他说他觉得自己对不起我妈。',
+        '他说那个时候就一直该死死抱着我妈的。',
+        '如果不是后来脱手了……她就不会死了。',
+		'……',
+        '可我只有他了啊。'
+    ]},
+    { n:'二', t:'只会开门的人', d:'2013-05-19', ps:[
+        '那个神仙一直教他怎么正常生活。',
+		'他也有试着去适应……只是效果都不怎么好。',
+        '有的时候……他在楼道里站着，手放在把手上，但是不拧。',
+        '有人经过问他干什么，他就说：开不开门。',
+        '人家说不开。他就把手放下来，站一会儿，走了。',
+        '我回家看见他这样，吓个半死。',
+		'我以为阿兹海默也来了。',
+        '他说不是。是说，他是在练习开门，有好开的，有不好开的。',
+        '他觉得自己死不掉，就该去干点别人干不了的活。',
+        '他给有关部门写过信。他说他想去航天那边。他说他不会死。',
+		'他说他要开那扇门。',
+        '人家回了他一封，让他先去看医生。',
+        '而且还让派出所过来两个人，到家里询问具体情况。',
+		'他们听他说话，同样忧心忡忡，生怕他做什么傻事。',
+        '他一起身他们就拉他，然后多劝劝他。',
+        '看我爸情况稳定了才寒暄几句离开……还叮嘱我尽量不要刺激他……',
+        '可是……我也没办法告诉你们这是真的。',
+		'如果不是亲眼所见，又有谁敢相信呢？',
+        '后来看他好了一点，去学校干活了，人家就不再派人来问了。',
+        '医院给过一张纸，上面写着「应激相关障碍」。',
+        '他把那张纸压在桌子玻璃底下，压了很多年。',
+        '有人问他纸上写的什么，他说：写着我没病。',
+		'有的时候……他在楼道里站着，手放在把手上，但是不拧。',
+		'有人经过问他干什么，他就说：开不开门。'
+    ]},
+    { n:'十一', t:'安全员', d:'2013-08-13 补传', ps:[
+        '他后来去了旅行社，做安全员。',
+        '就是那个站在队伍最后面、数人头、确保设备安全的人。',
+        '他说需要有人来做这件事，确保一切的安全。',
+        '他在那儿一次都没有掉下来。',
+		'这种事……还是第一次。',
+        '不知是不是那个神仙故意的……',
+		'工作保险是单位给他买的。受益人那一栏他填了我。',
+		'他说万一他真没了，我能拿一笔钱，好好念书。',
+		'我说你别跟我讲这个。',
+		'他说我不是在讲，我是在安排，他说他也不知道自己还能活多久。',
+		'我跟他又吵了一架。',
+		'好景不长，他又被辞退了。',
+        '有个女孩……当时因为安全绳顶端的悬挂点损坏而摔了下去。',
+		'他眼疾手快地就去抓了。',
+		'从头到尾，没有松手。',
+		'他不想再松手了。',
+		'可还是没把她拉上来，只能告诉她护住自己的脸。',
+		'本来有安全网应该能接住她的……',
+		'可是她从边缘翻了出去……再有安全网也没用。',
+		'早知道会这样……为什么还要当那个安全员呢？',
+        '……',
+		'那天以后，他都不怎么和我说话了。',
+		'也不怎么和我聊那个神仙的事了。',
+        '梁禾生。一九六五年生。我爸。',
+		'我打算写一本和他有关的书。'
+    ]},
+    { n:'十二', t:'钠', d:'2013-09-14 补传', ps:[
+        '他问过我钠块碰到水是会烧着吗？',
+		'我问他为什么要说这个。',
+        '他说学校有，他看见，想起来以前学的东西了。',
+        '我就告诉他对，钠很危险，所以一般存放在煤油里。',
+        '他说跟他想的一样。',
+        '九月十三号那天，他进了那栋楼。',
+        '那天风很大。',
+		'火也很大。',
+    ]},
+    { n:'日记', t:'九月十四日', d:'2013-09-14', ps:[
+        '今天风很大。',
+        '楼下围了人。我没有挤进去。',
+        '他前天晚上跟我说：我要去办一件事。',
+        '我说什么事。',
+        '他说办完就回来。',
+        '他没回来。',
+        '我在楼下站到中午。',
+        '有人问我找谁。',
+		'我说不找谁，单纯看看。'
+    ]},
+    { n:'日记', t:'九月十六日', d:'2013-09-16', ps:[
+        '派出所打来电话，问我他在哪儿。',
+        '我说我以为在你们那儿。',
+        '他们说没有。',
+        '他们说医院也没有，一家都没有。',
+        '他们说他哪都找不着他。',
+        '我感觉一切都完蛋了。',
+        '我把家里每一盏灯都开着，等了两天。',
+		'一直等，一直找。',
+        '谁都等不到。',
+		'哪都找不着。'
+    ]},
+    { n:'日记', t:'九月十八日', d:'2013-09-18', ps:[
+        '他回来了。',
+		'那个时候家里还没开灯。',
+		'我还以为进贼了。',
+		'他跟个乞丐似的。',
+		'就像刚从战场逃回来一样。',
+        '站在门口，头发烧掉了一半，脸是黑的，手上缠着布。',
+        '那身衣服不是他的。',
+        '他说：回来了。',
+        '我骂他，跟他吵，一直哭。',
+		'可还是忍不住抱他。',
+        '他没有说他是从哪儿回来的。我也没有问。',
+        '他进门第一件事是把灯打开。',
+        '在灯底下站了很久。',
+        '第三天保险公司的人来了。',
+        '他们说人还在，所以不赔。',
+        '撤案书上的字是我签的。',
+        '那笔钱本来是给我的……现在也已经不重要了。',
+		'抱着他的时候我骂出了这辈子最难听的话。',
+        '心里高兴。却一直在哭。',
+        '他一晚上没关灯。'
+    ]},
+    { n:'日记', t:'九月二十一日', d:'2013-09-21', ps:[
+        '我爸有很多事没告诉我。',
+        '学校跳楼那次就没告诉我。',
+		'他觉得那么做一定能把事情搞得大一点。',
+		'这样就能让更多的人知道他这个能力了。',
+		'也就能用在更有价值的地方。',
+		'可是什么用都没有……',
+		'不仅没用，校长还给他开钱让他接着干。',
+		'他有很多事都不告诉我。',
+		'以前只跟我讲过那个神仙。',
+		'他说她跟他讲了好多东西，他有的能听懂，有的听不懂。',
+		'那个神仙还是意外跟他联系上的。',
+		'当初他说的玄而又玄，我什么都不懂。',
+		'虽然不懂，但是看着他绘声绘色……',
+		'我就觉得听听也值得。'
+    ]},
+    { n:'日记', t:'九月二十四日', d:'2013-09-24', ps:[
+        '他说明天去投案。',
+        '楼是他烧的。他说只能认，不认人家也会找过来的。',
+        '我说你会被关起来。他说那就关吧。',
+		'他说他想过了，事是他干的，死又没死成，总要认罪的……',
+		'只是好在没有出什么太大的事，他去认罪还来得及。',
+        '他说这也是一种办法，能让他们知道知道自己会什么。',
+		'可我只想让他平安无事……',
+		'他说自己不会有事的。',
+		'有我还在，有神仙陪着。'
+    ]}
+];
+
+/* ==================================================================
+   密码门（#qgate）：三问
+   ------------------------------------------------------------------
+   ① 我实际的名字？        → 梁晚青
+   ② 我父亲的工号是多少？  → EMP-2011-0473
+   ③ 你叫什么名字？        → 填什么都过
+   第三问过关**以前**，框里先说两句：
+     「谢谢你，（名字）。」
+     「谢谢你……愿意了解他。」
+   判错只说「不对」，不说是哪一问错、也不给正确答案（跟 class.html 那扇门一致）。
+   ================================================================== */
+(function(){
+'use strict';
+var gate = document.getElementById('qgate');
+var rd   = document.getElementById('rd');
+if (!gate || !rd) return;
+
+function esc(s){
+    return String(s).replace(/[&<>"]/g, function(c){
+        return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c];
+    });
+}
+/* 只留字母数字汉字：空格、横线、标点全不算 ——
+   于是 EMP-2011-0473 / emp20110473 / emp 2011 0473 都一样。 */
+function loose(s){ return String(s).toLowerCase().replace(/[^0-9a-z一-鿿]/g, ''); }
+function flag(k){
+    try { return !!(JSON.parse(localStorage.getItem('mp_unlock_v1') || '{}') || {})[k]; } catch (e){ return false; }
+}
+function mark(k){
+    try {
+        var u = JSON.parse(localStorage.getItem('mp_unlock_v1') || '{}') || {};
+        u[k] = 1; localStorage.setItem('mp_unlock_v1', JSON.stringify(u));
+    } catch (e){}
+}
+
+/* ---------------- 残稿阅读器 ---------------- */
+var sheetEl = document.getElementById('rdsheet');
+var numEl   = document.getElementById('rdnum');
+var prevEl  = document.getElementById('rdprev');
+var nextEl  = document.getElementById('rdnext');
+var closeEl = document.getElementById('rdclose');
+var LINEH = 34;                 /* 一行占多高：16.5px × 2.05 ≈ 33.8 */
+var pages = [], idx = 0;
+
+/* 分页：纸是**固定高度**（CSS 写死），按它算一页装几行 ——
+   小窗口自动少装几行，字不会溢出纸面、也不会被下面的翻页条压住。
+   每行几个字也按纸的实际内宽算，窄屏（手机）同样不会撑破。 */
+function buildPages(){
+    var cpl = Math.max(8, Math.floor((sheetEl.clientWidth - 92) / 16.5));
+    function lines(s){ return Math.max(1, Math.ceil(String(s).replace(/\s/g, '').length / cpl)); }
+    var lp = Math.max(3, Math.floor((sheetEl.clientHeight - 26 - 30 - 34 - 60) / LINEH));
+    var lp2 = lp + 2;                                /* 续页没有篇名块，多装两行 */
+    var out = [];
+    RECOVER.forEach(function(p){
+        var cur = null, budget = 0;
+        p.ps.forEach(function(t){
+            var l = lines(t) + 0.4;                  /* 段间距约合 0.4 行 */
+            if (!cur){ cur = { n:p.n, t:p.t, d:p.d, ps:[] }; budget = lp; }
+            else if (budget - l < 0){ out.push(cur); cur = { cont:p.t, ps:[] }; budget = lp2; }
+            cur.ps.push(t);
+            budget -= l;
+        });
+        if (cur) out.push(cur);
+    });
+    out.push({ tail:1 });
+    return out;
+}
+function paint(){
+    var pg = pages[idx], h;
+    if (pg.tail){
+        mark('novel_rd');   // 翻到残稿收尾页 → 通知主页面：可解锁小说网「剧情」按钮（见 UNLOCKS.novel_rd）
+        /* 收尾这一页不排书眉，让那两行落在纸的正中间 */
+        h = '<div class="rp-tail">残稿到此为止。<br>其余八篇没能调出来。</div>';
+    } else {
+        h = '<div class="rp-run">青禾的短篇集　·　残稿与日记</div>';
+        if (pg.n)    h += '<div class="rp-h"><b>' + esc(pg.n) + '　' + esc(pg.t) + '</b><i>' + esc(pg.d) + '</i></div>';
+        if (pg.cont) h += '<div class="rp-h cont">（续）' + esc(pg.cont) + '</div>';
+        h += pg.ps.map(function(t, i){
+            return '<p style="transition-delay:' + (i * 75) + 'ms">' + esc(t) + '</p>';
+        }).join('');
+    }
+    sheetEl.classList.remove('in');
+    sheetEl.innerHTML = h;
+    void sheetEl.offsetWidth;                   /* 逼一次重排，不然淡入不会重跑 */
+    sheetEl.classList.add('in');
+    numEl.textContent = (idx + 1) + ' / ' + pages.length;
+    prevEl.className = idx === 0 ? 'off' : '';
+    nextEl.className = idx >= pages.length - 1 ? 'off' : '';
+}
+function nextPage(){ if (idx < pages.length - 1){ idx++; paint(); } }
+function prevPage(){ if (idx > 0){ idx--; paint(); } }
+function openRd(){
+    rd.classList.add('on');                     /* 先显示出来，才量得到纸的高度 */
+    document.body.style.overflow = 'hidden';
+    pages = buildPages();
+    idx = 0;
+    paint();
+}
+function closeRd(){
+    rd.classList.remove('on');
+    document.body.style.overflow = '';
+}
+prevEl.addEventListener('click', function(e){ e.stopPropagation(); prevPage(); });
+nextEl.addEventListener('click', function(e){ e.stopPropagation(); nextPage(); });
+closeEl.addEventListener('click', function(e){ e.stopPropagation(); closeRd(); });
+sheetEl.addEventListener('click', function(e){ e.stopPropagation(); nextPage(); });
+rd.addEventListener('click', function(){ nextPage(); });          /* 点纸外面也是翻页 */
+rd.querySelector('.rp-veil').addEventListener('click', function(){ nextPage(); });
+document.addEventListener('keydown', function(e){
+    if (!rd.classList.contains('on')) return;
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown' || e.key === 'ArrowDown'){
+        e.preventDefault(); nextPage();
+    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp' || e.key === 'ArrowUp'){
+        e.preventDefault(); prevPage();
+    } else if (e.key === 'Escape'){ closeRd(); }
+});
+window.MP_READER = { open: openRd, close: closeRd };
+
+/* ---------------- 三问 ---------------- */
+var QS = [
+    { q:'我实际的名字？',       hint:'她实际的名字。',
+      must:['梁晚青', '晚青'] },
+    { q:'我父亲的工号是多少？', hint:'他的工号。',
+      must:['emp20110473'] },
+    { q:'你叫什么名字？',       hint:'您自己的名字，或者您希望我知道的名字。' }
+];
+var qgq = document.getElementById('qgq');
+var qgh = document.getElementById('qgh');
+var qgi = document.getElementById('qgi');
+var qgm = document.getElementById('qgm');
+var qgok = document.getElementById('qgok');
+var qgno = document.getElementById('qgno');
+var qgbar = [document.getElementById('qg1'), document.getElementById('qg2'), document.getElementById('qg3')];
+var step = 0, lastBad = '';
+
+function paintQ(){
+    qgq.textContent = QS[step].q;
+    qgh.textContent = QS[step].hint;
+    qgi.value = '';
+    qgi.placeholder = step === 0 ? '在这里输入…' : '再答一题…';
+    qgok.disabled = true;
+    qgm.textContent = lastBad;
+    qgm.className = lastBad ? 'msg bad' : 'msg';
+    qgbar.forEach(function(u, i){ u.classList.toggle('on', i < step); });
+    setTimeout(function(){ try { qgi.focus(); } catch (e){} }, 60);
+}
+function openGate(){
+    step = 0; lastBad = '';
+    gate.classList.add('on');
+    document.body.style.overflow = 'hidden';
+    paintQ();
+}
+function closeGate(){
+    gate.classList.remove('on');
+    document.body.style.overflow = '';
+    qgi.blur();
+}
+function submit(){
+    var v = qgi.value;
+    if (step < 2){
+        if (!loose(v)){ qgm.textContent = '还没输入。'; qgm.className = 'msg bad'; return; }
+        var must = QS[step].must, hit = false;
+        for (var i = 0; i < must.length; i++) if (loose(v).indexOf(loose(must[i])) >= 0) hit = true;
+        if (!hit){
+            lastBad = '不对。';
+            qgm.textContent = lastBad; qgm.className = 'msg bad';
+            qgi.select();
+            return;
+        }
+        /* 这一问过了 —— 停一下再进下一问，别一锅端跳过去 */
+        qgbar[step].classList.add('on');
+        step++;
+        setTimeout(function(){ lastBad = ''; paintQ(); }, 460);
+        return;
+    }
+    /* 第三问：填什么都过。过关以前先把两句话说了。 */
+    var nm = String(v || '').replace(/^\s+|\s+$/g, '') || '……';
+    /* 把玩家名字存进 localStorage —— 主页面「我猜您有些话想要和我说说」终句要借用这个名字 */
+    try { if (nm !== '……') localStorage.setItem('mp_player_name', nm); } catch (e) {}
+    qgbar[2].classList.add('on');
+    qgm.innerHTML = '谢谢你，' + esc(nm) + '。';
+    qgm.className = 'msg good';
+    qgi.disabled = true; qgok.disabled = true; qgno.disabled = true;
+    setTimeout(function(){
+        qgm.innerHTML = '谢谢你，' + esc(nm) + '。<br>谢谢你……愿意了解他。';
+    }, 1300);
+    setTimeout(function(){
+        mark('novel_qh');                      /* 调出来过 → 之后再翻这本就直接给看 */
+        closeGate();
+        qgi.disabled = false; qgok.disabled = false; qgno.disabled = false;
+        openRd();
+    }, 3100);
+}
+qgi.addEventListener('input', function(){
+    if (!qgi.value.replace(/^\s+|\s+$/g, '')){ qgok.disabled = true; return; }
+    qgok.disabled = false;
+    if (lastBad){ lastBad = ''; qgm.textContent = ''; qgm.className = 'msg'; }
+});
+qgi.addEventListener('keydown', function(e){
+    if (e.key === 'Enter'){ e.preventDefault(); if (!qgok.disabled) submit(); }
+});
+qgok.addEventListener('click', function(){ if (!qgok.disabled) submit(); });
+qgno.addEventListener('click', closeGate);
+gate.querySelector('.gq-veil').addEventListener('click', closeGate);
+document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && gate.classList.contains('on')) closeGate();
+});
+window.MP_GATE = { open: openGate, close: closeGate, seen: function(){ return flag('novel_qh'); } };
+})();
+</script>
+
+<script>
+/* ==================================================================
+   右上角那枚小眼球
+   ------------------------------------------------------------------
+   ★ 台词分两组，改词儿只动下面这两个数组：
+
+     LINES_ENTER（**刚进站**就说）——
+       「不如搜一搜那本书吧」
+       「我想说不定会很有趣呢。」
+       那本书不在任何推荐位上，这两句就是给玩家的那点提示：
+       自己打出来，别等人喂。说完了自己抽走。
+
+     LINES_CHAP（**玩家自己翻到《华灯初上》第一章**才说）——
+       「这本小说似乎绝版了……」
+       「我来找找她们两个当时是怎么看的。」
+       说完才长出「走进这一段 →」。
+
+   ★ 出场/台词/重听整套逻辑**照抄食堂页**（pages/school/canteen.html）：
+     · 进站约一秒后浮出，自己开口（不用点它）
+     · 一句接一句往下续 → 叠成一整条 → 读完再逐条抽走
+     · 点眼球 = 重听一遍（会把正在放的打断掉）
+     · 眼球是字符画的：外框固定，瞳孔按鼠标方向挪，偶尔眨一次
+
+   ★ CUT4 只走一条路：**玩家自己搜到《华灯初上》→ 点进去 → 翻到第一章**。
+       只点进详情页：眼球亮一下（hot），不出入口，也不换词。
+       翻到第一章：说那两句 → 说完长出「走进这一段 →」。
+     没走到最后那一步，就没有那个入口。
+   ================================================================== */
+(function(){
+'use strict';
+var LINES_ENTER = ['不如搜一搜那本书吧', '我想说不定会很有趣呢。'];
+var LINES_CHAP  = ['这本小说似乎绝版了……', '我来找找她们两个当时是怎么看的。'];
+/* 翻到《青禾的短篇集》任意一章 → 整本都被作者删了。说完这两句才弹三问的密码门。 */
+var LINES_DEL   = ['这个作者有点眼熟', '我可以试着把小说内容调出来……'];
+var LINES = LINES_ENTER;        /* 当前在说的一组（点眼球重听用） */
+
+var wrap = document.getElementById('seye');
+var pre  = wrap && wrap.querySelector('.eyeb');
+var tip  = document.getElementById('eye-tip');
+if (!wrap || !pre) return;
+
+/* ---- 字符画的眼睛 ---- */
+function eyeFrame(col, row, closed){
+    var a = [' .-"""""-. ',
+             '/         \\',
+             '|         |',
+             '|         |',
+             '\\         /',
+             ' `-.....-` '];
+    if (closed){ a[3] = '|  ─────  |'; }
+    else {
+        var line = '         '.split('');
+        line[col] = '●';
+        a[2 + row] = '|' + line.join('') + '|';
+    }
+    return a.join('\n');
+}
+var col = 4, row = 0, closed = false;
+function draw(){ pre.textContent = eyeFrame(col, row, closed); }
+draw();
+
+window.addEventListener('mousemove', function(e){
+    var w = window.innerWidth || 1, h = window.innerHeight || 1;
+    var dx = (e.clientX / w - 0.75) * 2, dy = (e.clientY / h - 0.18) * 2;
+    var nc = Math.max(1, Math.min(7, 4 + Math.round(dx * 3)));
+    var nr = (dy > 0.22) ? 1 : 0;
+    if (nc !== col || nr !== row){ col = nc; row = nr; if (!closed) draw(); }
+}, { passive:true });
+(function blink(){
+    setTimeout(function(){
+        closed = true; draw();
+        setTimeout(function(){ closed = false; draw(); blink(); }, 150);
+    }, 3500 + Math.random() * 4500);
+})();
+
+/* ---- 台词条（食堂页同一节奏） ---- */
+var STEP = 750, HOLD = 3000, REC = 170, GAP = 4, OUT_MS = 780;
+var lineEls = [], goEl = null, timers = [], playing = false, goShown = false;
+
+function buildLines(arr){
+    if (!tip) return;
+    tip.innerHTML = '';
+    lineEls = (arr || LINES).map(function(s){
+        var d = document.createElement('div');
+        d.className = 'tl gone';
+        var b = document.createElement('span');
+        b.textContent = s;
+        d.appendChild(b);
+        tip.appendChild(d);
+        return d;
+    });
+    /* 「走进这一段 →」也做成一条台词，位置照样交给 layout() 算。
+       平时带 gone（不占位），玩家**翻进第一章**之后才放出来 ——
+       那时上面两句已经抽走，它自然补到最上面。 */
+    goEl = document.createElement('div');
+    goEl.className = 'tl go' + (goShown ? ' on' : ' gone');
+    var g = document.createElement('span');
+    g.innerHTML = '<a href="cut4.html">走进这一段 →</a>';
+    goEl.appendChild(g);
+    goEl.addEventListener('click', function(e){ e.stopPropagation(); });
+    tip.appendChild(goEl);
+}
+function clearTimers(){ timers.forEach(function(t){ clearTimeout(t); }); timers = []; }
+function layout(){
+    var y = 0, all = goEl ? lineEls.concat([goEl]) : lineEls;
+    all.forEach(function(el){
+        if (el.classList.contains('gone')) return;
+        el.style.transform = 'translateY(' + y + 'px)';
+        var box = el.firstChild;
+        y += (box ? box.offsetHeight : 0) + GAP;
+    });
+}
+/* say(台词数组, 说完后要做的事)
+   —— 换一组词就重建一遍。正在放的直接打断（进站那两句还没说完就翻到第一章，
+     那就该说新词了，别让两组词叠在一起）。 */
+function say(arr, after){
+    if (!tip) return;
+    if (arr) LINES = arr;
+    playing = true;
+    clearTimers();
+    buildLines(LINES);
+    lineEls.forEach(function(el){ el.classList.remove('on', 'in', 'gone'); });
+    layout();
+    var n = lineEls.length;
+    lineEls.forEach(function(el, i){
+        timers.push(setTimeout(function(){
+            el.classList.add('in', 'on');
+            timers.push(setTimeout(function(){ el.classList.remove('in'); }, 220));
+            layout();
+        }, i * STEP));
+        var off = (n - 1) * STEP + HOLD + i * REC;
+        timers.push(setTimeout(function(){
+            el.classList.remove('on');
+            timers.push(setTimeout(function(){
+                el.classList.add('gone');
+                layout();
+            }, OUT_MS));
+        }, off));
+    });
+    var end = (n - 1) * STEP + HOLD + (n - 1) * REC + OUT_MS;
+    timers.push(setTimeout(function(){
+        playing = false;
+        if (after) after();
+    }, end + 300));
+}
+
+/* ---- 进站约一秒后浮出，自己开口说「不如搜一搜那本书吧」那两句 ----
+   ★ 但如果玩家是**直接带 #/c/1/1 打开**的（刷新 / 书签），文件末尾那段兜底
+     已经把第一章那两句开演了。这里就不能再抢着说进站那两句 ——
+     一 say 就会 clearTimers，把"说完出入口"的定时器一起清掉，
+     结果就是：话换成了不该说的、入口永远不出来。所以要先看 chapSaid。 */
+setTimeout(function(){
+    wrap.classList.add('on');
+    if (!chapSaid && !delSaid) say(LINES_ENTER);
+}, 1100);
+
+/* ---- 玩家真的翻到《华灯初上》第一章 → 换词 + 说完长出「走进这一段」 ---- */
+var chapSaid = false;
+function reveal(){
+    if (!goEl || goShown) return;
+    goShown = true;
+    goEl.classList.remove('gone');
+    layout();
+    requestAnimationFrame(function(){ goEl.classList.add('on'); });
+}
+function see(isChap1){
+    wrap.classList.add('on');
+    if (isChap1){
+        wrap.classList.add('hot');
+        if (chapSaid) return;
+        chapSaid = true;
+        say(LINES_CHAP, reveal);
+    } else if (!chapSaid){
+        /* 只点进详情页：先只亮一下。话留到翻进第一章再说。 */
+        wrap.classList.add('hot');
+    }
+}
+/* ---- 翻到《青禾的短篇集》任意一章 → 整本都被作者自己删了 ----
+   说两句（「这个作者有点眼熟」/「我可以试着把小说内容调出来……」）→ 弹三问的密码门。
+   已经调出来过（novel_qh 写过了）就不再问，直接把残稿摊开。 */
+var delBusy = false, delSaid = false;
+function del(){
+    delSaid = true;
+    wrap.classList.add('on', 'hot');
+    if (window.MP_GATE && window.MP_GATE.seen()){ if (window.MP_READER) window.MP_READER.open(); return; }
+    if (delBusy) return;                        /* 正在说那两句，别重开 */
+    delBusy = true;
+    say(LINES_DEL, function(){
+        delBusy = false;
+        if (window.MP_GATE) window.MP_GATE.open();
+    });
+}
+window.MP_EYE = { see: see, say: say, del: del };
+
+/* 点眼球 = 重听一遍（当前这一组） */
+wrap.addEventListener('click', function(){
+    closed = true; draw();
+    setTimeout(function(){ closed = false; draw(); }, 200);
+    wrap.classList.add('on');
+    say();
+});
+
+/* ★ 直接带 hash 打开时（刷新 / 书签 / 从别处跳进来），路由在**本脚本之前**
+   就跑完了 —— 那会儿 window.MP_EYE 还不存在，renderBook/renderChap 里的
+   see() 是空调用。这里按当前地址补一次，不然"刷新一下入口就没了"。
+   （之后在站内点来点去都走 hashchange，那时 MP_EYE 已经在，不用管。） */
+(function(){
+    var mc = (location.hash || '').match(/^#\/c\/(\d+)\/(\d+)/);
+    if (mc){
+        var cid = parseInt(mc[1], 10);
+        if (cid === FEATURED){ see(parseInt(mc[2], 10) === 1); return; }
+        var bk = (typeof bookOf === 'function') ? bookOf(cid) : null;
+        if (bk && bk.del){ del(); return; }      /* 带 #/c/8/n 直接打开 → 补一次「被删了」 */
+    }
+    var mb = (location.hash || '').match(/^#\/b\/(\d+)/);
+    if (mb && parseInt(mb[1], 10) === FEATURED) see(false);
+})();
+})();
+</script>
+</body>
+</html>

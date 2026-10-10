@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CUT7 · 第五段　老师开不开门</title>
+<link rel="stylesheet" href="cut7.css">
+</head>
+<body>
+<div id="ptag">C U T 7 ／ 第 五 段 ／ 铁 门</div>
+<div id="hint"><b>Z</b> 继续　　<b>X</b> 返回选关　　<b>M</b> 音效</div>
+
+<!-- 整段都是演出：黑屏 + 居中对对话框，背后是反锁的教室 -->
+<div id="scene"><canvas id="sc"></canvas></div>
+
+<div id="stage">
+    <div id="dbox">
+        <div id="dname"></div>
+        <div id="dtext"></div>
+        <div id="dnext">▶</div>
+    </div>
+</div>
+
+<div id="veil"><div class="vm"></div></div>
+
+<script src="levels.js" charset="utf-8"></script>
+<script src="sfx.js" charset="utf-8"></script>
+<script src="big.js" charset="utf-8"></script>
+<script src="dialog.js" charset="utf-8"></script>
+<script src="scene4.js" charset="utf-8"></script>
+<script src="p5.js" charset="utf-8"></script>
+<script>
+/* ==================================================================
+   CUT7 · 第五段「铁门」—— 页面只干三件事
+   ------------------------------------------------------------------
+   这一段参考 CUT1 / CUT4 的路子：**整页都是演出**，没有 RPG。
+   反锁好的教室在画布上，那个男人隔着门来 —— 压迫感靠三样东西：
+   巡视窗被挡死的光、一路压暗的灯、缓慢收紧的镜头（详见 scene4.js）。
+   《华灯初上》的句子走 big.js 的黑屏卡（CUT4「翻页吧。」那张卡的形制），
+   一卡一答，是她一个人的拉锯。
+   1) 黑屏 + 居中对对话框，scene4.js 开画；每条台词带 cue，dialog.js
+      每翻一条回调 onLine 把 cue 转给演出；
+   2) 说完 → 写 mp_unlock_v1.cut7e → 压黑「第 五 段 · 完」→ 回选关；
+   3) X / Esc 中途退出 → 直接回选关（不写标记，这一段不算走完）。
+   ★ 台词一个字都不写在这里 —— 改词只动 p5.js。
+   ================================================================== */
+(function(){
+'use strict';
+
+var veil = document.getElementById('veil');
+var vm   = veil.querySelector('.vm');
+var going = false;
+
+function writeUnlock(){
+    try {
+        var u = JSON.parse(localStorage.getItem(LAB_UNLOCK_KEY) || '{}') || {};
+        if (!u.cut7e){ u.cut7e = 1; localStorage.setItem(LAB_UNLOCK_KEY, JSON.stringify(u)); }
+    } catch (e){}
+}
+function back(){
+    if (going) return;
+    going = true;
+    location.href = 'index.html';
+}
+function veilTo(text, then, wait){
+    vm.textContent = text || '';
+    veil.classList.add('on');
+    setTimeout(function(){ if (then) then(); }, wait || 1500);
+}
+
+var scene = window.CUT7Scene4.open(document.getElementById('sc'));
+document.getElementById('scene').classList.add('on');
+
+window.CUT7Dialog.play(P5_SCENE, {
+    who:  P5_WHO,
+    sink: false,
+    onLine: function(i, it){ if (it.cue) scene.cue(it.cue); },
+    onEnd: function(){
+        writeUnlock();
+        veilTo('第 五 段 · 完', back, 2600);
+        /* 压黑之后也可以直接按 Z 早走一步 */
+        document.addEventListener('keydown', function(e){
+            if (e.key === 'z' || e.key === 'Z' || e.key === 'Enter') back();
+        });
+    },
+    onExit: back
+});
+})();
+</script>
+</body>
+</html>

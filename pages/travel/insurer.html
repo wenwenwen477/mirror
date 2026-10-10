@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>户外项目承保须知 · 高危岗位特别核保办法｜明泰保险</title>
+<style>
+/* ==================================================================
+   明泰保险 —— 旅行社侧栏那枚广告的落地页。
+   ------------------------------------------------------------------
+   这页是广告，不是旅行社自己办的事：抬头、页脚、口径全是保险公司的。
+   真正埋的东西只有一处 —— 右栏「承保记录查询」：输对工号才吐记录。
+   页面上不写"他叫什么"，官方档案里也查不到真名。
+   ================================================================== */
+:root{
+    --ink:#16323f; --tx:#2a2a2a; --tx2:#5a5f62; --tx3:#8b9094;
+    --bl:#1c4f7c; --bll:#2d6ea6; --blw:#eef3f8;
+    --or:#e07a3f; --red:#c0392b; --line:#dfe4e8; --bd:#ccd4da;
+    --bg:#fff; --bgf:#f4f6f8;
+    --font:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",SimSun,sans-serif;
+}
+*{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
+@media (prefers-reduced-motion: reduce){ html{ scroll-behavior:auto; } }
+body{ margin:0; background:var(--bgf); color:var(--tx); font:15px/1.9 var(--font); }
+a{ color:#1a4a8a; text-decoration:none; }
+a:hover{ color:var(--or); text-decoration:underline; }
+.wrap{ width:1000px; max-width:96%; margin:0 auto; }
+
+/* ── 保险公司的头，跟旅行社那套完全是两个样子 ── */
+.ihd{ background:var(--ink); color:#c6d3dc; font-size:12px; }
+.ihd .wrap{ display:flex; justify-content:space-between; align-items:center; min-height:32px; }
+.ihd a{ color:#c6d3dc; margin-left:14px; }
+.ihd a:hover{ color:#fff; }
+
+.brand{ background:#fff; border-bottom:3px solid var(--bl); }
+.brand .wrap{ display:flex; align-items:center; gap:18px; padding:20px 0 18px; }
+.brand .mark{ flex:0 0 auto; width:58px; height:58px; }
+.brand b{ font-size:27px; letter-spacing:4px; color:var(--bl); display:block; }
+.brand i{ display:block; font-style:normal; font-size:11.5px; color:var(--tx3); letter-spacing:1.6px; }
+.brand .tel{ margin-left:auto; text-align:right; font-size:12.5px; color:var(--tx2); line-height:1.75; }
+.brand .tel b{ display:block; font-size:19px; color:var(--or); letter-spacing:.5px; }
+
+/* 面包屑里那一粒灰：提醒你这是从旅行社点过来的 */
+.from{ background:var(--blw); border-bottom:1px solid var(--line); font-size:12.5px; color:var(--tx2); }
+.from .wrap{ padding:9px 0; }
+.from a{ color:var(--bl); }
+
+.nav{ background:var(--bl); position:sticky; top:0; z-index:90; box-shadow:0 2px 0 rgba(0,0,0,.06); }
+.nav .wrap{ display:flex; flex-wrap:wrap; }
+.nav a{ color:#e6eef5; font-size:14.5px; padding:11px 20px; letter-spacing:1px; }
+.nav a:hover{ background:var(--bll); text-decoration:none; }
+.nav a.on{ background:#fff; color:var(--bl); font-weight:700; box-shadow:inset 0 -3px 0 var(--or); }
+.nav a.on:hover{ background:#fff; color:var(--bl); text-decoration:none; }
+.nav a.off{ color:#93aec4; cursor:default; }
+.nav a.off:hover{ background:transparent; }
+
+.main{ display:flex; gap:20px; padding:18px 0 10px; align-items:flex-start; }
+.left{ flex:1 1 auto; min-width:0; }
+.right{ flex:0 0 268px; }
+.box{ background:#fff; border:1px solid var(--line); padding:20px 26px 24px; margin-bottom:18px; }
+.box[id]{ scroll-margin-top:64px; }   /* 够开 sticky 题头，不然点完标题被压住 */
+.box h3{ margin:0 0 14px; font-size:17px; letter-spacing:2px; color:var(--bl);
+         padding-bottom:10px; border-bottom:1px solid var(--line); display:flex; align-items:baseline; }
+.box h3 .sub{ margin-left:auto; font-size:12px; font-weight:normal; letter-spacing:0; color:var(--tx3); }
+.box h4{ margin:20px 0 8px; font-size:15.5px; letter-spacing:1px; color:var(--ink); }
+
+.doc{ border:1px solid var(--bd); background:#fcfdfe; padding:18px 22px 20px; }
+.doc .dt{ text-align:center; font-size:16.5px; letter-spacing:1px; color:var(--ink); }
+.doc .dno{ text-align:center; font-size:12.5px; color:var(--tx3);
+           padding-bottom:12px; border-bottom:1px solid var(--line); }
+.doc p{ margin:12px 0; font-size:14px; line-height:2.1; text-indent:2em; }
+.doc ol{ margin:10px 0; padding-left:26px; font-size:14px; line-height:2.05; }
+.doc .sign{ text-align:right; text-indent:0; color:var(--tx2); font-size:13px; }
+
+.terms{ width:100%; border-collapse:collapse; font-size:13.5px; margin-top:6px; }
+.terms th{ background:var(--blw); color:var(--bl); font-weight:700; text-align:left;
+           padding:9px 10px; border:1px solid var(--line); font-size:13px; letter-spacing:1px; }
+.terms td{ padding:9px 10px; border:1px solid var(--line); vertical-align:top; line-height:1.8; }
+.terms td.c{ font-family:Consolas,"Courier New",monospace; white-space:nowrap; }
+
+/* ★ 承保记录：默认空的，输对工号才吐东西 */
+.qbox{ background:var(--blw); border:1px solid var(--bd); padding:14px 16px 16px; }
+.qbox .hint{ font-size:12.5px; color:var(--tx2); line-height:1.9; margin:0 0 10px; }
+.qrow{ display:flex; gap:0; }
+.qrow input{ flex:1 1 auto; height:36px; padding:0 12px; font:14px var(--font); color:var(--tx);
+             border:2px solid var(--bl); border-right:0; border-radius:2px 0 0 2px; outline:none; }
+.qrow input:focus{ border-color:var(--bll); }
+.qrow button{ flex:0 0 auto; height:36px; padding:0 20px; font:14px var(--font); letter-spacing:2px;
+              cursor:pointer; color:#fff; background:var(--bl); border:2px solid var(--bl); border-radius:0 2px 2px 0; }
+.qrow button:hover{ background:var(--bll); border-color:var(--bll); }
+.qmsg{ margin:10px 0 0; font-size:12.5px; color:var(--red); letter-spacing:.5px; }
+.qmsg.ok{ color:var(--bl); }
+
+/* 承保记录卡片 */
+.pol{ border:1px solid var(--bd); background:#fcfdfe; padding:0; margin-top:12px; }
+.pol .ph{ background:#e9eff5; color:var(--bl); font-size:13px; letter-spacing:1px;
+          padding:8px 12px; border-bottom:1px solid var(--bd);
+          display:flex; align-items:baseline; gap:10px; }
+.pol .ph .st{ margin-left:auto; font-size:12px; color:var(--tx2); }
+.pol dl{ margin:0; padding:12px 14px 14px; }
+.pol dt{ float:left; clear:left; width:82px; font-size:12.5px; color:var(--tx3);
+         line-height:2.1; }
+.pol dd{ margin:0 0 0 82px; font-size:13.5px; line-height:2.1; }
+.pol dd b{ color:var(--ink); }
+/* 核保批注：这一栏是整页最该被看见的东西 */
+.pol .cm{ margin:0 14px 14px; padding:9px 12px; background:#fffdf5; border-left:3px solid var(--or);
+          font-size:13px; line-height:1.95; color:var(--tx2); }
+.pol .cm b{ color:#8a4a12; }
+.pol .cm.no{ background:#fdf6f5; border-left-color:var(--red); }
+.pol .cm.no b{ color:var(--red); }
+/* 名字那一栏：从来就没填过 */
+.blank{ display:inline-block; min-width:96px; padding:1px 10px; background:#232323; color:#232323;
+        border-radius:2px; letter-spacing:2px; user-select:none; cursor:not-allowed; }
+.blank::selection{ background:#232323; color:#232323; }
+
+.tip{ margin-top:12px; font-size:12.5px; color:var(--tx3); line-height:1.9; }
+.tip b{ color:var(--tx2); }
+
+.sbox{ background:#fff; border:1px solid var(--line); padding:16px 18px 18px; margin-bottom:18px; }
+.sbox h4{ margin:0 0 12px; font-size:15px; letter-spacing:1px; color:var(--bl);
+          padding-bottom:9px; border-bottom:1px solid var(--line); }
+.sbox p{ margin:6px 0; font-size:13px; color:var(--tx2); line-height:1.95; }
+.sbox .big{ font-size:17px; color:var(--or); font-weight:700; letter-spacing:.5px; }
+.sbox ul{ margin:6px 0; padding-left:18px; font-size:13px; color:var(--tx2); line-height:2; }
+.sbox .btn{ display:block; text-align:center; margin-top:10px; padding:8px 0; font-size:14px;
+            color:#fff; background:var(--bl); border-radius:2px; letter-spacing:2px; }
+.sbox .btn:hover{ background:var(--bll); text-decoration:none; }
+
+.foot{ background:var(--ink); color:#a3b2bd; font-size:12px; padding:22px 0; text-align:center; line-height:2.1; }
+.foot a{ color:#c3d0d9; margin:0 6px; }
+/* 页脚那行小字：这页是被谁放进来的，写得清清楚楚 */
+.foot .ad{ color:#7d8f9c; }
+/* 号码挖眼：全站统一写法，一只眼顶一位，谁也拨不通 */
+.eye{ font-family:"Segoe UI Historic","Noto Sans Egyptian Hieroglyphs",var(--font); }
+.brand .tel b .eye{ color:var(--or); }
+
+/* ---- 右上角那枚小眼球（与全站同一套字符眼，逐字照抄） ---- */
+#seye{ position:fixed; right:22px; top:104px; z-index:95;   /* 95 > 题头的 90，眼球压在题头上层，位置不动 */
+    padding:8px 12px 6px; border-radius:3px;
+    background:rgba(8,12,10,.9); box-shadow:0 0 0 1px rgba(120,180,150,.22), 0 6px 26px rgba(0,0,0,.45);
+    opacity:0; transform:translateY(-8px); pointer-events:none; cursor:pointer;
+    transition:opacity .9s ease, transform .9s ease; }
+#seye.on{ opacity:1; transform:translateY(0); pointer-events:auto; }
+#seye:hover{ box-shadow:0 0 0 1px rgba(150,220,180,.4), 0 6px 30px rgba(0,60,30,.5); }
+#seye .eyeb{ margin:0; font:15px/1.02 "Sarasa Mono SC","Sarasa Term SC","Noto Sans Mono CJK SC",Consolas,"Courier New",monospace;
+    color:#cfe6d6; text-shadow:0 0 7px rgba(160,220,180,.55), 0 0 16px rgba(120,200,150,.28);
+    white-space:pre; user-select:none; }
+#eye-tip{ position:absolute; right:0; top:100%; margin-top:8px; white-space:nowrap; }
+/* .tl 必须绝对定位：脚本按每条真实高度算好 translateY 从上往下排，
+   若让它留在普通文档流里，天然高度 + translateY 会**叠加** → 两条之间凭空多出一整条的高度。 */
+#eye-tip .tl{ position:absolute; right:0; top:0; white-space:nowrap; transition:transform .6s ease; }
+#eye-tip .tl.in{ transition:transform .2s ease; }   /* 新条落位：快 */
+#eye-tip .tl.gone{ display:none; }                  /* 收完了：彻底不占位 */
+/* 时长与首页 / 保安页逐字对齐：出得快（.2s）、收得慢（.75s），全站同一个节奏。 */
+#eye-tip .tl span{ display:block; padding:6px 12px; font-size:12px; line-height:1.75; color:#dff0e4;
+    background:rgba(8,12,10,.94); border-left:2px solid #6fbf8f; box-shadow:0 4px 16px rgba(0,0,0,.4);
+    opacity:0; transform:translateX(10px); transition:opacity .75s ease, transform .75s ease; }
+#eye-tip .tl.on span{ opacity:1; transform:translateX(0); }
+#eye-tip .tl.in span{ transition:opacity .2s ease, transform .2s ease; }
+
+@media (max-width:900px){
+    .main{ flex-direction:column; }
+    .right{ flex:1 1 auto; width:100%; }
+    .terms{ font-size:12.5px; }
+    #seye{ top:88px; }
+    /* 窄屏放不下整行不换行的台词盒 → 跟保安页一样改成定宽换行 */
+    #eye-tip .tl{ white-space:normal; width:176px; }
+}
+</style>
+</head>
+<body>
+
+<div class="ihd"><div class="wrap">
+    <div>明泰保险股份有限公司　|　客服专线 <span class="eye">𓂀</span>5<span class="eye">𓂀</span>11 转 3　|　本页面为投保人自助查询区</div>
+    <div><a href="safe.html">返回投保渠道</a><a href="#cl">理赔须知</a><a href="#q">记录查询</a></div>
+</div></div>
+
+<div class="brand"><div class="wrap">
+    <svg class="mark" viewBox="0 0 58 58" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="1" y="1" width="56" height="56" rx="8" fill="#1c4f7c"/>
+        <path d="M29 13 L41 22 L37 22 L37 43 L21 43 L21 22 L17 22 Z" fill="#eef3f8"/>
+        <rect x="25" y="28" width="8" height="15" fill="#1c4f7c"/>
+    </svg>
+    <div><b>明泰保险</b><i>MINGTAI INSURANCE · 高危岗位特别承保</i></div>
+    <div class="tel">理赔专线　<b><span class="eye">𓂀</span>5<span class="eye">𓂀</span>11 转 3</b>　|　工作日 08:30 – 18:00</div>
+</div></div>
+
+<!-- 这一条别删：玩家是从旅行社侧栏那枚广告点进来的，得让他记得自己是从哪儿来的 -->
+<div class="from"><div class="wrap">
+    您正在浏览明泰保险自助服务区　|　本页内容由 <a href="index.html">青麓旅行社</a> 投保渠道跳转，不代表旅行社立场
+</div></div>
+
+<div class="nav"><div class="wrap">
+    <a href="#cover" class="on" data-nav="cover">投保须知</a>
+    <a href="#cl" data-nav="cl">高危岗位特别核保办法</a>
+    <a href="#q" data-nav="q">承保记录查询</a>
+    <a class="off">理赔进度</a>
+    <a class="off">网点查询</a>
+    <a href="safe.html" data-nav="back">返回旅行社</a>
+</div></div>
+
+<div class="wrap">
+    <div class="main">
+        <div class="left">
+
+<!-- ==================================================================
+     一、投保须知：正常得不能再正常。
+     这段存在的意义是让玩家相信"这家公司真在卖保险"，
+     真正反常的东西在下面第三节。
+     ================================================================== -->
+<div class="box" id="cover">
+    <h3>户外项目保险　投保须知<span class="sub">明泰财险〔2013〕户外字第 4 号　|　2013 年 3 月修订</span></h3>
+    <div class="doc">
+        <div class="dt">户外项目保险　投保须知</div>
+        <div class="dno">适用于高空速降、攀岩、水上项目、拓展训练等户外体验项目</div>
+
+        <p>本产品承保被保险人在投保有效期内因参与上述户外项目而遭受的意外伤害，
+           含意外身故、意外伤残、意外医疗三项责任。其中意外医疗以实际支出为限，
+           单次最高赔付不超过保单载明额度。</p>
+
+        <ol>
+            <li>投保时须如实告知被保险人职业类别、岗位内容与既往伤病史；</li>
+            <li>高空、水上等**高危岗位**从业人员投保，须另行提交单位出具的岗位说明，
+                并按本保险《高危岗位特别核保办法》接受核保；</li>
+            <li>被保险人职业类别变更的，应自变更之日起 <b>5 日内</b> 通知本公司办理变更手续；
+                逾期未通知而发生事故的，本公司不承担赔付责任；</li>
+            <li>同一被保险人不得在本公司及本公司关联方重复投保同类责任。重复投保的，
+                以最早一份保单为准。</li>
+        </ol>
+
+        <p>特别提示：<b>被保险人在事故后短期内伤情即行好转、身体状况明显异于事故前状态的</b>，
+           本公司保留对相关案件进行再次核定的权利，必要时可要求补充体检材料。</p>
+
+        <p class="sign">明泰保险股份有限公司　个人业务部<br>2013 年 3 月</p>
+    </div>
+</div>
+
+<!-- ==================================================================
+     二、高危岗位特别核保办法：条款里唯一露出的破绽。
+     "伤后短期好转即恢复"这条被写进了正式条款 —— 但没人知道它会真的用上。
+     ================================================================== -->
+<div class="box" id="cl">
+    <h3>高危岗位特别核保办法<span class="sub">明泰核〔2013〕第 9 号　|　2013 年 3 月修订</span></h3>
+
+    <table class="terms">
+        <tr><th>岗位类别</th><th>示例工种</th><th>核保材料</th><th>承保处理</th></tr>
+        <tr>
+            <td>一般户外作业</td>
+            <td>领队、随团安全员、器材管理员</td>
+            <td>单位岗位说明</td>
+            <td>标准承保</td>
+        </tr>
+        <tr>
+            <td>高危户外岗位</td>
+            <td>高空速降主操作、索道检修、水上救生</td>
+            <td>岗位说明 + 近期体检</td>
+            <td>加费承保（加费比例 20% – 60%）</td>
+        </tr>
+        <tr>
+            <!-- ★ 这两行是给那个男人留的位置 -->
+            <td><b>游乐设施 / 水上乐园质检</b></td>
+            <td>设施年检、器材复检、驻场安全巡查</td>
+            <td>岗位说明 + 单位资质</td>
+            <td>按<b>统保挂名</b>处理，见第五节</td>
+        </tr>
+        <tr>
+            <td>非常规体质</td>
+            <td>—</td>
+            <td>投保人书面声明 + 现场查体</td>
+            <td>逐单核定，可能加费、限额或拒保</td>
+        </tr>
+    </table>
+
+    <h4>关于"统保挂名"</h4>
+    <p style="font-size:14px;line-height:2.1;color:var(--tx2);margin:8px 0 0">
+        部分用人单位为减少投保事务，以单位名义统一为驻场人员投保，
+        被保险人仅登记工号、姓名栏留空。此类保单**不单独核查被保险人资金状况与任职经历**，
+        以简化手续；但事故发生后，本公司将逐一核验被保险人身份与实际岗位，
+        核验不实的不予赔付，责任由投保单位承担。
+    </p>
+
+    <div class="tip">
+        <b>关于"非常规体质"</b>：本条指投保人经医疗机构确诊存在可能影响作业安全的特殊体质状况。
+        因该类情况在核保中极罕见，本年度仅作<b>逐单人工核保</b>，不适用线上自助投保。
+    </div>
+</div>
+
+<!-- ==================================================================
+     三、承保记录查询 —— 全页唯一一处会"回话"的地方。
+     ------------------------------------------------------------------
+     玩家得自己想到去输一个东西才吐得出东西。输工号，输姓名都不行：
+     因为他的名字从来没被填进去过。
+     页面上只写"工号或保单号"，不给"姓名"这个选项，本身就是第一条线索。
+     ================================================================== -->
+<div class="box" id="q">
+    <h3>承保记录查询<span class="sub">仅供被保险人 / 投保单位自查　|　非保单效力证明</span></h3>
+
+    <div class="qbox">
+        <p class="hint">
+            请输入<b>被保险人工号</b>或<b>保单号</b>查询。<br>
+            依《高危岗位特别核保办法》第五条，统保挂名保单以工号为唯一检索键，
+            <b>不设姓名检索</b>；姓名栏为空的，该保单只能凭工号调出。
+        </p>
+        <div class="qrow">
+            <input type="text" id="key" placeholder="工号 / 保单号" autocomplete="off" spellcheck="false">
+            <button type="button" id="go">查询</button>
+        </div>
+        <p class="qmsg" id="msg"></p>
+    </div>
+
+    <div id="out"></div>
+
+    <div class="tip">
+        查询结果仅反映本公司系统内记录，<b>不作为理赔受理依据</b>，亦不公开被保险人身份信息。
+        调阅他人记录须先取得被保险人书面授权。
+    </div>
+</div>
+
+        </div>
+
+        <div class="right">
+            <div class="sbox">
+                <h4>理赔专线</h4>
+                <p class="big"><span class="eye">𓂀</span>5<span class="eye">𓂀</span>11 转 3</p>
+                <p>报险请准备好保单号、事故经过与就医凭证。高危岗位案件由专项理赔岗跟进。</p>
+            </div>
+            <div class="sbox">
+                <h4>核保咨询</h4>
+                <p>工作日 09:00 – 17:30</p>
+                <p>非常规体质投保须预约现场查体，<b>不接受线上提交</b>。</p>
+            </div>
+            <div class="sbox">
+                <h4>相关条款</h4>
+                <ul>
+                    <li>户外项目保险　投保须知</li>
+                    <li>高危岗位特别核保办法</li>
+                    <li>统保挂名投保附则</li>
+                    <li>意外伤情核定与再核定规则</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="foot">
+    明泰保险股份有限公司　|　客服 <span class="eye">𓂀</span>5<span class="eye">𓂀</span>11　|　本站为投保人自助服务区，页面数据以本公司业务系统为准<br>
+    <span class="ad">本页由青麓旅行社投保渠道投放　|　旅行社网址　<a href="index.html">青麓旅行社</a>　<a href="safe.html">出行安全提示</a></span>
+</div>
+
+<!-- 右上角那枚小眼球：不属于这个网站，它从别处渗进来了 -->
+<div id="seye" aria-hidden="true" title="……">
+    <pre class="eyeb"></pre>
+    <div id="eye-tip"></div>
+</div>
+
+<script>
+/* ==================================================================
+   承保记录查询
+   ------------------------------------------------------------------
+   只有工号能查到东西。姓名这条路不存在 —— 因为那个名字从来没被填进去过。
+   键值对比时去掉空格、连字符、大小写差异，所以 EMP-2011-0473 / emp20110473 / ＥＭＰ-2011-0473 都一样。
+   ================================================================== */
+(function(){
+'use strict';
+
+var out = document.getElementById('out');
+var msg = document.getElementById('msg');
+var inp = document.getElementById('key');
+var btn = document.getElementById('go');
+
+/* 他在这家公司的两张保单。
+   —— 挂名统保是水上乐园时期的老路子，签的是"单位统保、不查资金"；
+   —— 换了单位以后按高危岗位单独走核保，加费承保；
+   —— 8·12 之后有一笔理赔申请被撤了：人没事，赔不了。 */
+var RECORDS = {
+    'EMP20110473': [
+        {
+            no: 'MT-2011-挂-0431',
+            sub: '统保挂名保单　|　2011 年 7 月生效',
+            stat: '已终止',
+            f: [
+                ['投保单位', '碧波水上乐园（客丽）有限公司　设备管理部'],
+                ['被保险人', 'EMP-2011-0473　（姓名栏：<span class="blank">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>　未填）'],
+                ['工种', '水上游乐设施 / 器材质检（含驻场安全巡查）'],
+                ['保额', '意外身故 30 万　意外医疗 2 万　意外伤残 20 万'],
+                ['保费', '由投保单位统一支付，个人不缴费'],
+                ['终止日', '2013 年 4 月　投保单位变更，终止']
+            ],
+            cm: '备注：本单为统保挂名，<b>未核查被保险人任职经历与资金状况</b>。'
+              + '被保险人自行出具书面声明，称其<b>此前于同类岗位任职，无职业伤病史</b>。'
+              + '同期该单位其他挂名人员 7 名，本人均已填写真实姓名。',
+            cmNo: ''
+        },
+        {
+            no: 'MT-2013-特-0518',
+            sub: '高危岗位单独承保　|　2013 年 4 月生效',
+            stat: '已终止',
+            f: [
+                ['投保单位', '青麓旅行社　安全生产委员会办公室'],
+                ['被保险人', 'EMP-2011-0473　（姓名栏：<span class="blank">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>　未填）'],
+                ['工种', '户外拓展项目　安全员（高空、水上）'],
+                ['核保结论', '加费承保，加费比例 <b>40%</b>，意外医疗限额下调至 1 万'],
+                ['特别约定', '本单承保期间，被保险人须配合本公司不定期现场查体；'
+                            + '查体异常时本公司有权即时中止承保'],
+                ['终止日', '2013 年 8 月　投保单位解除劳动关系，终止']
+            ],
+            cm: '核保批注：投保时该岗位属高危，按规需现场查体。来查体的人<b>不是他</b> —— '
+              + '同事说他临时有事，让别人代签了字。查体记录因此存疑。'
+              + '加费与限额已按存疑从严处理。',
+            cmNo: ''
+        },
+        {
+            no: 'CL-2013-申-0093',
+            sub: '理赔申请　|　2013 年 8 月提出　|　<span style="color:#c0392b">已撤案</span>',
+            stat: '不予赔付',
+            f: [
+                ['报案单位', '青麓旅行社　安委办'],
+                ['报案事由', '被保险人在项目执行中自高处坠落，伤及头面部'],
+                ['申报金额', '医疗 1 万　伤残 20 万　合计 21 万'],
+                ['核查结论', '<b>实际伤情与报案不符，不予赔付</b>'],
+                ['撤案方', '报案单位（青麓旅行社）'],
+                ['撤案依据', '被保险人亲属到场，签署《自愿撤案声明》'],
+                ['声明签字', '<b>梁晚青</b>　（与被保险人关系：<b>女</b>）'],
+                ['声明附注', '“本人承诺不就本次事故对外主张权利，'
+                            + '亦不向任何第三方披露现场情况。”']
+            ],
+            cm: '本案已由投保单位申请撤案。经核，被保险人送医记录显示其<span class="blank">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>'
+              + '，现场急救人员亦称其<b>坠落后即刻自行站立行走</b>，未接受任何处置即离开。'
+              + '因被保险人<b>无实际医疗支出、无伤残后果</b>，本合同项下无赔款可支付。'
+              + '声明原件留存于本公司理赔档案，未经投保人确认不予调阅。',
+            cmNo: 1
+        }
+    ]
+};
+
+function norm(s){
+    return String(s == null ? '' : s)
+        .replace(/[\s\-_·．。、]/g, '')   /* 顺手把玩家爱敲的分隔符也去掉 */
+        .replace(/[Ａ-Ｚａ-ｚ０-９]/g, function(c){
+            return String.fromCharCode(c.charCodeAt(0) - 0xFEE0);
+        })
+        .toUpperCase();
+}
+
+function say(txt, ok){
+    if (!msg) return;
+    msg.className = 'qmsg' + (ok ? ' ok' : '');
+    msg.textContent = txt;
+}
+
+function esc(t){
+    return String(t).replace(/[&<>]/g, function(c){
+        return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' })[c];
+    });
+}
+
+function renderCard(r){
+    var f = r.f.map(function(kv){
+        return '<dt>' + esc(kv[0]) + '</dt><dd>' + kv[1] + '</dd>';
+    }).join('');
+    var cm = r.cm ? '<div class="cm' + (r.cmNo ? ' no' : '') + '">' + r.cm + '</div>' : '';
+    return '<div class="pol">'
+         + '<div class="ph"><span>' + esc(r.no) + '</span><span>' + esc(r.sub) + '</span>'
+         + '<span class="st">' + esc(r.stat) + '</span></div>'
+         + '<dl>' + f + '</dl>' + cm
+         + '</div>';
+}
+
+function run(){
+    if (!out) return;
+    out.innerHTML = '';
+    var k = norm(inp ? inp.value : '');
+    if (!k){
+        say('请输入工号或保单号。', false);
+        return;
+    }
+    var hit = RECORDS[k];
+    if (!hit){
+        say('未查询到对应记录。统保挂名保单请以工号检索；若确系本公司承保人员，'
+          + '请核对工号位数。', false);
+        return;
+    }
+    say('查询到 ' + hit.length + ' 条记录。', true);
+    out.innerHTML = hit.map(renderCard).join('');
+
+    /* 查到了 → 眼球补两句（SET_B）。
+       眼球脚本在本段之后才执行，所以这里等一小会儿再叫；
+       用独立计时器，不塞进查询脚本自己的 timers 队列里（那是留给查询消息的）。 */
+    if (window.MP_EYE && window.MP_EYE.say){
+        setTimeout(function(){
+            window.MP_EYE.say(['……果然查到了。', '他挂过两份保单，名字都是空的。',
+                                '可那张撤案书上，有个签名。她姓梁。']);
+        }, 900);
+    }
+}
+
+if (btn) btn.addEventListener('click', run);
+if (inp){
+    inp.addEventListener('keydown', function(e){
+        if (e.key === 'Enter'){ e.preventDefault(); run(); }
+    });
+}
+})();
+</script>
+
+<script>
+/* ==================================================================
+   导航高亮（与 lines.html / safe.html 同一套，逻辑一样）
+   ------------------------------------------------------------------
+   本页的 data-nav 都是**页内锚点**（cover / cl / q），没有 catN 那套栏目，
+   所以规则只剩两条：
+     1. 刚点过 → 亮它（不等滚动）
+     2. 没点过 → 亮视口里"我在这里"的那一块
+   「返回旅行社」是跨页链接，永远不参与高亮（它有 data-nav="back"，
+   但页内没有 id="back"，paint 时自然落空）。
+   ================================================================== */
+(function(){
+'use strict';
+
+var links = Array.prototype.slice.call(document.querySelectorAll('.nav a[data-nav]'));
+var boxes = Array.prototype.slice.call(document.querySelectorAll('.box[id]'));
+
+var intent = '';
+var intentAt = 0;
+var INTENT_MS = 1200;
+
+var h0 = (location.hash || '').replace(/^#/, '');
+if (h0 && document.getElementById(h0)){ intent = h0; intentAt = Date.now(); }
+
+function visibleBox(){
+    if (!boxes.length) return '';
+    var line = window.scrollY + window.innerHeight * 0.3;
+    var cur = '';
+    for (var i = 0; i < boxes.length; i++){
+        if (boxes[i].offsetTop <= line) cur = boxes[i].id;
+    }
+    return cur;
+}
+
+function paint(){
+    if (intent && (Date.now() - intentAt) > INTENT_MS) intent = '';
+    var cur = (intent && document.getElementById(intent)) ? intent : visibleBox();
+
+    var picked = null;
+    links.forEach(function(a){
+        var key = a.getAttribute('data-nav') || '';
+        /* 只有页内锚点参与；跨页的（如返回旅行社）永远不亮 */
+        var on = (!!cur && key === cur);
+        if (on){ a.classList.add('on'); picked = a; }
+        else a.classList.remove('on');
+    });
+
+    /* 一个都没命中（页面很矮或 hash 无效）→ 点亮第一块，题头永远有一项是亮的 */
+    if (!picked && links.length) links[0].classList.add('on');
+}
+
+links.forEach(function(a){
+    a.addEventListener('click', function(){
+        var key = a.getAttribute('data-nav') || '';
+        if (key && document.getElementById(key)){ intent = key; intentAt = Date.now(); }
+        paint();
+    });
+});
+
+window.addEventListener('scroll', paint, { passive:true });
+window.addEventListener('resize', paint);
+window.addEventListener('hashchange', function(){
+    var h = (location.hash || '').replace(/^#/, '');
+    if (h && document.getElementById(h)){ intent = h; intentAt = Date.now(); }
+    paint();
+});
+window.addEventListener('load', paint);
+paint();
+setTimeout(paint, 300);
+})();
+</script>
+
+<script>
+/* ==================================================================
+   右上角那枚眼球
+   ------------------------------------------------------------------
+   与首页（index.html）**逐字同一套**：同样的字符画、同样的节奏参数
+   （750 / 3000 / 170 / 4 / 780），所以全站眼球说话是一个调子。
+
+   本页两组台词：
+     SET_A —— 进页面先说一遍（保险这东西有用）
+     SET_B —— 在「承保记录查询」里查到了东西之后才补的两句。
+              「亡命之徒」是看着那三条记录（挂名查体、坠地自己站起来、
+              21 万赔付被撤）才说得出来的，不是随口一句。
+   ================================================================== */
+(function(){
+'use strict';
+var wrap = document.getElementById('seye');
+var pre  = wrap && wrap.querySelector('.eyeb');
+var tip  = document.getElementById('eye-tip');
+if (!wrap || !pre) return;
+
+/* 台词：改词儿只动这里 */
+var SET_A = [
+    '有些时候……',
+    '保险还是很有用的',
+    '特别是对于亡命之徒而言。'
+];
+var SET_B = [
+    '……果然查到了。',
+    '他挂过两份保单，名字都是空的。'
+];
+
+/* ---- 节奏：一句接一句往下续，叠成一整条；读完再逐条抽走 ----
+   数值与首页（index.html）、保安队专访页完全一致。 */
+var STEP = 750;         // 前后两条冒头的间隔
+var HOLD = 3000;        // 整条挂在那儿读多久才收
+var REC  = 170;         // 收场时逐条错开
+var GAP  = 4;           // 两条之间的缝
+var OUT_MS = 780;       // 收回动画走完的时刻
+var lineEls = [], timers = [], playing = false, lastSet = SET_A;
+
+function buildLines(arr){
+    if (!tip) return;
+    tip.innerHTML = '';
+    lineEls = (arr || SET_A).map(function(s){
+        var d = document.createElement('div');
+        d.className = 'tl gone';
+        var b = document.createElement('span');
+        b.textContent = s;
+        d.appendChild(b);
+        tip.appendChild(d);
+        return d;
+    });
+}
+function clearTimers(){ timers.forEach(function(t){ clearTimeout(t); }); timers = []; }
+function layout(){
+    var y = 0;
+    lineEls.forEach(function(el){
+        if (el.classList.contains('gone')) return;
+        el.style.transform = 'translateY(' + y + 'px)';
+        var box = el.firstChild;
+        y += (box ? box.offsetHeight : 0) + GAP;
+    });
+}
+function playLines(arr){
+    clearTimers();                       // 允许打断：新的一组直接顶掉旧的
+    lastSet = arr || SET_A;
+    buildLines(lastSet);
+    if (!lineEls.length) return;
+    playing = true;
+    lineEls.forEach(function(el){ el.classList.remove('on', 'in', 'gone'); });
+    layout();
+    var n = lineEls.length;
+    lineEls.forEach(function(el, i){
+        timers.push(setTimeout(function(){
+            el.classList.add('in', 'on');
+            timers.push(setTimeout(function(){ el.classList.remove('in'); }, 220));
+            layout();
+        }, i * STEP));
+        var off = (n - 1) * STEP + HOLD + i * REC;
+        timers.push(setTimeout(function(){
+            el.classList.remove('on');
+            timers.push(setTimeout(function(){
+                el.classList.add('gone');
+                layout();
+            }, OUT_MS));
+        }, off));
+    });
+    var end = (n - 1) * STEP + HOLD + (n - 1) * REC + OUT_MS;
+    timers.push(setTimeout(function(){ playing = false; }, end + 300));
+}
+/* 别的脚本要它说话就调这个：MP_EYE.say() 说第一组，MP_EYE.say(['…','…']) 说指定的 */
+window.MP_EYE = { say: playLines };
+
+function eyeFrame(col, row, closed){
+    var a = [' .-"""""-. ',
+             '/         \\',
+             '|         |',
+             '|         |',
+             '\\         /',
+             ' `-.....-` '];
+    if (closed){ a[3] = '|  ─────  |'; }
+    else {
+        var line = '         '.split('');
+        line[col] = '●';
+        a[2 + row] = '|' + line.join('') + '|';
+    }
+    return a.join('\n');
+}
+var col = 4, row = 0, closed = false;
+function draw(){ pre.textContent = eyeFrame(col, row, closed); }
+draw();
+
+/* 眼球跟着鼠标转 */
+window.addEventListener('mousemove', function(e){
+    var w = window.innerWidth || 1, h = window.innerHeight || 1;
+    var dx = (e.clientX / w - 0.72) * 2, dy = (e.clientY / h - 0.14) * 2;
+    var nc = Math.max(1, Math.min(7, 4 + Math.round(dx * 3)));
+    var nr = (dy > 0.25) ? 1 : 0;
+    if (nc !== col || nr !== row){ col = nc; row = nr; if (!closed) draw(); }
+}, { passive:true });
+
+/* 眨眼 */
+(function blink(){
+    setTimeout(function(){
+        closed = true; draw();
+        setTimeout(function(){ closed = false; draw(); blink(); }, 150);
+    }, 3500 + Math.random() * 4500);
+})();
+
+/* 眼球淡入 → 第一组从头放一遍；放完之后点它一下 → 把刚那组再放一遍 */
+setTimeout(function(){ wrap.classList.add('on'); playLines(SET_A); }, 1000);
+wrap.addEventListener('click', function(){
+    closed = true; draw();
+    setTimeout(function(){ closed = false; draw(); }, 200);
+    playLines(lastSet);
+});
+
+/* ---- 解锁标记：跟采访页 / 食堂页 / 旅行社首页完全同一套写法 ----
+   触发点＝**眼球浮出来的这一刻**，不是"查到了记录"。
+   也就是说：玩家只要点进这页，甭管看不看那份档案，回去主页面就多一枚入口。
+   这样安排是因为这页本身就是终点站 —— 剩下的档案不查也不影响"发现了这个地方"。
+
+   写入的是 mp_unlock_v1.insurer，主页面 UNLOCKS 里配了同名的一行，
+   轮询读到 → 顶部冒一句 + 相应的网页按钮飘出来。只写第一次。 */
+var UNLOCK_KEY = 'mp_unlock_v1', MY_KEY = 'insurer';
+try {
+    var u = JSON.parse(localStorage.getItem(UNLOCK_KEY) || '{}') || {};
+    if (!u[MY_KEY]){ u[MY_KEY] = 1; localStorage.setItem(UNLOCK_KEY, JSON.stringify(u)); }
+} catch (e){}
+})();
+</script>
+</body>
+</html>

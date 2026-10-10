@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>青麓旅行社 - 客丽市本地出行服务｜周边游 · 研学 · 团队拓展</title>
+<style>
+/* ==================================================================
+   青麓旅行社（真实旅行社版式，图全部用 SVG 自己画，不引用任何外部图片）
+   ------------------------------------------------------------------
+   版面照的是旅行社官网那套常见结构：
+     顶部细条(热线/门店) → 品牌区(logo+热线+资质) → 主导航 → 线路搜索条
+     → 全宽 banner + slogan → 左栏内容(热门线路 / 出行提示) → 右栏 → 页脚。
+   **整站就两个页面**，分工很清楚：
+     ① 警情通知 notice.html —— **玩家从主界面点进来的落地页**，开篇映入眼帘的就是它；
+        没搜到编号之前是 404「不予以开放」，搜到之后整篇通报 + 当事人采访在这里展开。
+     ② 网站首页（本页）—— **拿去搜文件的地方**：线路搜索条在这儿，检索链也在这儿起头。
+   本页**一打开完全正常**，所有跟 8·12 有关的东西都不存在。
+   整块「警情通知」要**凑齐案例编号**才出现：搜「安全」→ 安全提示 → 告知书里的反面案例
+   → 一条链接坏了、一条（AQ-130812-1）打得开 → 从"当日第 1 起、另有一起来自参团学生"
+   推出 AQ-130812-2 → 拿编号回来检索才搜得到。
+   —— 那一刻本页只给一句"去栏目页看"（全文在 notice.html），小眼球补两句：
+      只找到了一半原因 / 还需要更详细的过程。
+   线索藏三层：① 通报里关键处是黑块；② 站内搜索能搜出前台没列出的条目；
+   ③ 页面源码里留了内部留档（含锁扣开启、划痕、坠落高度）。
+   ================================================================== */
+:root{
+    --ink:#1f2a24; --tx:#2b2b2b; --tx2:#5c5c5c; --tx3:#8a8a8a;
+    --gr:#1f6b52; --grl:#2f8f68; --grw:#eef6f2;
+    --or:#e07a3f; --red:#c0392b; --line:#e0e6e2; --bd:#cdd8d2;
+    --bg:#fff; --bgf:#f5f7f6;
+    --font:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",SimSun,sans-serif;
+}
+*{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
+@media (prefers-reduced-motion: reduce){ html{ scroll-behavior:auto; } }
+body{ margin:0; background:var(--bgf); color:var(--tx); font:15px/1.9 var(--font); }
+a{ color:#1a4a8a; text-decoration:none; }
+a:hover{ color:var(--or); text-decoration:underline; }
+.wrap{ width:1000px; max-width:96%; margin:0 auto; }
+
+/* ---- 顶部细条 ---- */
+.topbar{ background:var(--ink); color:#cfd8d2; font-size:12px; }
+.topbar .wrap{ display:flex; justify-content:space-between; align-items:center; height:32px; }
+.topbar a{ color:#cfd8d2; margin-left:14px; }
+.topbar a:hover{ color:#fff; }
+
+/* ---- 品牌区 ---- */
+.logo{ background:#fff; border-bottom:1px solid var(--line); }
+.logo .wrap{ display:flex; align-items:center; gap:18px; padding:16px 0 14px; }
+.logo .mark{ flex:0 0 auto; width:46px; height:46px; }
+.logo b{ font-size:24px; letter-spacing:3px; color:var(--gr); }
+.logo i{ display:block; font-style:normal; font-size:11.5px; color:var(--tx3); letter-spacing:1.5px; }
+.logo .tel{ margin-left:auto; text-align:right; font-size:12.5px; color:var(--tx2); line-height:1.7; }
+.logo .tel b{ display:block; font-size:19px; color:var(--or); letter-spacing:.5px; }
+
+/* ---- 主导航 ---- */
+/* 题头常驻：点栏目往下滚时导航不会跟着滚出视口，否则高亮看不见 */
+.nav{ background:var(--gr); position:sticky; top:0; z-index:90;
+      box-shadow:0 2px 0 rgba(0,0,0,.06); }
+.nav .wrap{ display:flex; }
+.nav a{ color:#eaf3ee; font-size:14.5px; padding:11px 20px; letter-spacing:1px; }
+.nav a:hover{ background:var(--grl); text-decoration:none; }
+.nav a.on{ background:#fff; color:var(--gr); font-weight:700;
+             box-shadow:inset 0 -3px 0 var(--or); }
+.nav a.on:hover{ background:#fff; color:var(--gr); text-decoration:none; }
+.nav a.off{ color:#a9c4b6; cursor:default; }
+.nav a.off:hover{ background:transparent; }
+
+/* ---- 线路搜索条（旅行社的门面：目的地 / 关键词 / 出发日期） ---- */
+.sbar{ background:#fff; border-bottom:1px solid var(--line); padding:14px 0 12px; }
+.sbar .wrap{ display:flex; align-items:center; gap:14px; }
+.sbar form{ display:flex; flex:0 0 auto; }
+.sbar input{ width:260px; height:36px; padding:0 12px; font:14px var(--font); color:var(--tx);
+             border:2px solid var(--gr); border-right:0; border-radius:2px 0 0 2px; outline:none; }
+.sbar button{ height:36px; padding:0 22px; font:14px var(--font); letter-spacing:2px; cursor:pointer;
+              color:#fff; background:var(--gr); border:2px solid var(--gr); border-radius:0 2px 2px 0; }
+.sbar button:hover{ background:var(--grl); border-color:var(--grl); }
+.sbar .hot{ font-size:12.5px; color:var(--tx3); }
+.sbar .hot a{ margin:0 8px; }
+
+/* ---- 搜索结果：只有搜了才出现；搜到"前台没列出来"的条目会有特殊标记 ---- */
+#sres{ display:none; margin:14px auto 0; }
+#sres.on{ display:block; }
+#sres .box{ background:#fff; border:1px solid var(--bd); padding:16px 20px 18px; margin-bottom:18px; }
+#sres h3{ margin:0 0 12px; font-size:15.5px; color:var(--gr); letter-spacing:1px; }
+#sres .r{ padding:10px 0; border-bottom:1px dashed var(--line); }
+#sres .r:last-of-type{ border-bottom:0; }
+#sres .r b{ font-size:14.5px; }
+#sres .r p{ margin:3px 0 0; font-size:12.5px; color:var(--tx2); line-height:1.8; }
+#sres .r .d{ font-size:12px; color:var(--tx3); margin-right:10px; }
+#sres .r.sec{ background:#fffaf0; border-left:3px solid var(--or); padding-left:12px; }
+#sres .r.sec .flag{ font-size:11.5px; color:var(--or); font-weight:700; }
+#sres .none{ font-size:13.5px; color:var(--tx2); }
+
+/* ---- banner：全宽，山 + 湖 + 太阳，纯 SVG/CSS ---- */
+.banner{ position:relative; height:230px; overflow:hidden;
+         background:linear-gradient(#cfe4f0 0%, #e8f2f7 48%, #b9d4e2 49%, #a8c6d6 100%); }
+.banner svg{ position:absolute; inset:0; width:100%; height:100%; }
+.banner .slogan{ position:absolute; left:0; right:0; bottom:34px; text-align:center; }
+.banner .slogan b{ display:block; font-size:26px; letter-spacing:6px; color:#173a2c;
+                   text-shadow:0 1px 0 rgba(255,255,255,.65); }
+.banner .slogan span{ font-size:13px; letter-spacing:3px; color:#2d5a46; }
+
+/* ---- 版心：左内容 + 右栏 ---- */
+.main{ display:flex; gap:20px; padding:20px 0 10px; align-items:flex-start; }
+.left{ flex:1 1 auto; min-width:0; }
+.right{ flex:0 0 268px; }
+.box{ background:#fff; border:1px solid var(--line); padding:20px 26px 24px; margin-bottom:18px; }
+.box h3{ margin:0 0 14px; font-size:17px; letter-spacing:2px; color:var(--gr);
+         padding-bottom:10px; border-bottom:1px solid var(--line); display:flex; align-items:baseline; }
+.box h3 .sub{ margin-left:auto; font-size:12px; font-weight:normal; letter-spacing:0; color:var(--tx3); }
+
+/* ---- 警情通知：列表 ---- */
+.nl{ list-style:none; margin:0; padding:0; }
+.nl li{ display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px dashed var(--line); }
+.nl li:last-child{ border-bottom:0; }
+.nl .d{ flex:0 0 auto; font-size:12.5px; color:var(--tx3); font-family:SimSun,serif; }
+.nl .t{ flex:1 1 auto; font-size:14.5px; }
+.nl .tag{ flex:0 0 auto; font-style:normal; font-size:11.5px; padding:1px 7px; border-radius:2px; color:#fff; }
+.nl .tag.red{ background:var(--red); }
+.nl .tag.gr{ background:var(--gr); }
+.nl .tag.gy{ background:#9aa5a0; }
+
+/* ---- 通报详情 ---- */
+.ntc{ border:1px solid var(--bd); background:#fcfdfc; padding:18px 22px 20px; margin-top:6px; }
+.ntc h4{ margin:0 0 4px; font-size:16.5px; color:var(--ink); letter-spacing:1px; text-align:center; }
+.ntc .no{ font-size:12.5px; color:var(--tx3); text-align:center; padding-bottom:12px; border-bottom:1px solid var(--line); }
+.ntc p{ margin:12px 0; font-size:14px; line-height:2.1; color:var(--tx); text-indent:2em; }
+.ntc p.sign{ text-align:right; text-indent:0; color:var(--tx2); font-size:13px; }
+/* 被盖住的字：黑块。复制出来也只有方块 —— 想看真相得去源码里找 */
+.rd{ display:inline-block; padding:1px 12px; margin:0 2px; background:#232323; color:#232323;
+     border-radius:2px; letter-spacing:1px; font-size:14px; user-select:none; cursor:not-allowed; }
+.rd::selection{ background:#232323; color:#232323; }
+
+/* ---- 隐藏栏目：整块不在页面上，只有搜到那个名字才放出来 ---- */
+.hid{ display:none !important; }
+.hit{ padding:12px 16px; font-size:13.5px; line-height:1.95; color:#1f5c44;
+      background:var(--grw); border:1px solid var(--bd); border-left:3px solid var(--gr); }
+.hit b{ color:var(--gr); }
+
+/* 警情通知的 403 已经挪成独立子页 notice.html（真 404，题头导航齐全，回得来） */
+
+/* ---- 站内采访：跟通报贴在一起，只在旅行社网站内部发布 ---- */
+.ivw{ margin-top:16px; border-top:1px dashed var(--line); padding-top:14px; }
+.ivw h5{ margin:0 0 10px; font-size:14.5px; color:var(--gr); letter-spacing:1px; }
+.ivw .qa{ padding:8px 0; border-bottom:1px dashed var(--line); font-size:13.5px; line-height:1.95; }
+.ivw .qa:last-of-type{ border-bottom:0; }
+.ivw .qq{ color:var(--ink); font-weight:700; }
+.ivw .aa{ color:#333; }
+.ivw em{ font-style:normal; font-size:12.5px; color:var(--tx3); }
+
+/* ---- 线路卡片 ---- */
+.lines{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.line{ border:1px solid var(--line); background:#fff; overflow:hidden; }
+.line .pic{ height:118px; background:#eef3f0; border-bottom:1px solid var(--line); }
+.line .pic svg{ display:block; width:100%; height:100%; }
+.line .bd{ padding:12px 14px 14px; }
+.line .bd b{ display:block; font-size:15px; color:var(--tx); }
+.line .bd .desc{ margin:4px 0 0; font-size:12.5px; line-height:1.8; color:var(--tx2); }
+.line .bd .tags{ margin:5px 0 4px; font-size:11.5px; color:var(--tx2); }
+.line .bd .tags i{ font-style:normal; background:var(--grw); color:var(--gr); border:1px solid var(--bd);
+                   border-radius:2px; padding:0 5px; margin-right:5px; }
+.line .bd .btm{ display:flex; align-items:flex-end; margin-top:8px; }
+.line .bd .btm .p{ color:var(--red); font-size:19px; font-weight:700; }
+.line .bd .btm .p small{ font-size:12px; font-weight:normal; }
+.line .bd .btm a{ margin-left:auto; font-size:13px; color:#fff; background:var(--or);
+                  padding:5px 14px; border-radius:2px; }
+.line .bd .btm a:hover{ background:#c9662c; text-decoration:none; }
+
+/* ---- 按栏目看项目：每栏挂几条，点标题进线路大全 ---- */
+.cats{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.cat{ border:1px solid var(--line); background:#fcfdfc; padding:11px 14px 13px; }
+.cat b{ display:block; font-size:14.5px; margin-bottom:5px; }
+.cat b a{ color:var(--gr); }
+.cat ul{ margin:0; padding-left:16px; font-size:12.5px; line-height:1.95; color:var(--tx2); }
+.cat ul span{ float:right; color:var(--red); font-weight:700; }
+.cat .more{ display:block; margin-top:7px; font-size:12px; }
+
+/* ---- 右栏小件 ---- */
+.sbox{ background:#fff; border:1px solid var(--line); padding:16px 18px 18px; margin-bottom:18px; }
+.sbox h4{ margin:0 0 12px; font-size:15px; letter-spacing:1px; color:var(--gr);
+          padding-bottom:9px; border-bottom:1px solid var(--line); }
+.sbox p{ margin:6px 0; font-size:13px; color:var(--tx2); line-height:1.95; }
+.sbox .big{ font-size:17px; color:var(--or); font-weight:700; letter-spacing:.5px; }
+.sbox ul{ margin:6px 0; padding-left:18px; font-size:13px; color:var(--tx2); line-height:2; }
+.sbox .btn{ display:block; text-align:center; margin-top:10px; padding:8px 0; font-size:14px;
+            color:#fff; background:var(--gr); border-radius:2px; letter-spacing:2px; }
+.sbox .btn:hover{ background:var(--grl); text-decoration:none; }
+
+/* ---- 页脚 ---- */
+.foot{ background:var(--ink); color:#a9b5ae; font-size:12px; padding:22px 0; text-align:center; line-height:2.1; }
+.foot a{ color:#c9d5ce; margin:0 6px; }
+.foot .eye{ font-family:"Segoe UI Historic","Noto Sans Egyptian Hieroglyphs",var(--font); }
+
+/* ---- 右上角那枚小眼球（与主页面同一套字符眼） ---- */
+#seye{ position:fixed; right:22px; top:104px; z-index:95;   /* 只提图层：95 > 题头的 90，眼球压在题头上层，位置不动 */
+    padding:8px 12px 6px; border-radius:3px;
+    background:rgba(8,12,10,.9); box-shadow:0 0 0 1px rgba(120,180,150,.22), 0 6px 26px rgba(0,0,0,.45);
+    opacity:0; transform:translateY(-8px); pointer-events:none; cursor:pointer;
+    transition:opacity .9s ease, transform .9s ease; }
+#seye.on{ opacity:1; transform:translateY(0); pointer-events:auto; }
+#seye:hover{ box-shadow:0 0 0 1px rgba(150,220,180,.4), 0 6px 30px rgba(0,60,30,.5); }
+#seye .eyeb{ margin:0; font:15px/1.02 "Sarasa Mono SC","Sarasa Term SC","Noto Sans Mono CJK SC",Consolas,"Courier New",monospace;
+    color:#cfe6d6; text-shadow:0 0 7px rgba(160,220,180,.55), 0 0 16px rgba(120,200,150,.28);
+    white-space:pre; user-select:none; }
+#eye-tip{ position:absolute; right:0; top:100%; margin-top:8px; white-space:nowrap; }
+/* .tl 必须绝对定位（保安页同款）：脚本按每条真实高度算好 translateY 从上往下排，
+   若让它留在普通文档流里，天然高度 + translateY 会**叠加** → 两条之间凭空多出一整条的高度，
+   看上去就是"消息之间隔得很宽"。这就是之前那版的病根。 */
+#eye-tip .tl{ position:absolute; right:0; top:0; white-space:nowrap; transition:transform .6s ease; }
+#eye-tip .tl.in{ transition:transform .2s ease; }   /* 新条落位：快 */
+#eye-tip .tl.gone{ display:none; }                  /* 收完了：彻底不占位 */
+/* 下面这几个时长跟保安队专访页（pages/interview/guard.html）**逐字对齐**：
+   出得快（.2s 一冒就亮）、收得慢（.75s 慢慢淡出去），节奏才跟那边一个味儿。 */
+#eye-tip .tl span{ display:block; padding:6px 12px; font-size:12px; line-height:1.75; color:#dff0e4;
+    background:rgba(8,12,10,.94); border-left:2px solid #6fbf8f; box-shadow:0 4px 16px rgba(0,0,0,.4);
+    opacity:0; transform:translateX(10px); transition:opacity .75s ease, transform .75s ease; }
+#eye-tip .tl.on span{ opacity:1; transform:translateX(0); }
+#eye-tip .tl.in span{ transition:opacity .2s ease, transform .2s ease; }
+
+/* ---- 解锁提示（左下角，别跟右上角那只眼睛挤在一起） ---- */
+#utip{ position:fixed; left:22px; bottom:22px; z-index:80; max-width:230px;
+       padding:10px 14px; font-size:12.5px; line-height:1.85; color:#dff0e4;
+       background:rgba(8,12,10,.94); border-left:2px solid #6fbf8f; box-shadow:0 4px 16px rgba(0,0,0,.4);
+       opacity:0; transform:translateX(-10px); pointer-events:none;
+       transition:opacity .6s ease, transform .6s ease; }
+#utip.on{ opacity:1; transform:translateX(0); }
+
+@media (max-width:900px){
+    .main{ flex-direction:column; }
+    .right{ flex:1 1 auto; width:100%; }
+    .lines{ grid-template-columns:1fr; }
+    .sbar .wrap{ flex-wrap:wrap; }
+    .sbar input{ width:190px; }
+    #seye{ top:88px; }
+    /* 窄屏放不下整行不换行的台词盒 → 跟保安页一样改成定宽换行 */
+    #eye-tip .tl{ white-space:normal; width:176px; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap" id="top">
+    <div>青麓旅行社　|　客丽市本地出行服务　·　周边游 / 研学 / 团队拓展</div>
+    <div><a href="#">门店查询</a><a href="#">在线客服</a><a href="#">投诉建议</a><a href="#">English</a></div>
+</div></div>
+
+<div class="logo"><div class="wrap">
+    <svg class="mark" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="1" y="1" width="46" height="46" rx="6" fill="#1f6b52"/>
+        <path d="M8 34 L18 20 L26 30 L32 24 L40 34 Z" fill="#eef6f2"/>
+        <circle cx="34" cy="13" r="5" fill="#e07a3f"/>
+    </svg>
+    <div><b>青麓旅行社</b><i>QINGLU TRAVEL · SINCE 2004</i></div>
+    <div class="tel">报名热线　<b>0<span class="eye">𓂀</span>73-8826 4471</b>　|　08:30–18:00 节假日不休</div>
+</div></div>
+
+<div class="nav"><div class="wrap">
+    <a href="index.html" data-nav="index">网站首页</a>
+    <a href="lines.html#cat1" data-nav="cat1">周边线路</a>
+    <a href="lines.html#cat2" data-nav="cat2">国内游</a>
+    <a href="lines.html#cat3" data-nav="cat3">研学 · 学生团</a>
+    <a href="lines.html#cat4" data-nav="cat4">团队拓展</a>
+    <a href="notice.html" data-nav="notice">警情通知</a>
+    <a class="off">关于我们</a>
+    <a class="off">联系方式</a>
+</div></div>
+
+<div class="sbar"><div class="wrap">
+    <form id="sform" autocomplete="off">
+        <input id="sq" type="text" placeholder="站内检索：线路 / 目的地 / 通知 / 案例编号…">
+        <button type="submit">站内搜索</button>
+    </form>
+    <div class="hot"><a href="index.html?q=%E9%9D%92%E9%BE%99%E5%B3%A1">青龙峡</a><a href="index.html?q=%E7%99%BD%E9%B9%89%E6%B9%96">白鹭湖</a><a href="index.html?q=%E7%A0%94%E5%AD%A6">研学</a><a href="index.html?q=%E5%AE%89%E5%85%A8">安全</a></div>
+</div></div>
+
+<div class="banner">
+    <svg viewBox="0 0 1200 230" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="960" cy="52" r="30" fill="#f4dcae"/>
+        <path d="M0 132 L150 74 L268 132 Z" fill="#8aa596"/>
+        <path d="M190 132 L350 52 L520 132 Z" fill="#7d9a8c"/>
+        <path d="M430 132 L610 60 L800 132 Z" fill="#8aa596"/>
+        <path d="M700 132 L880 78 L1040 132 Z" fill="#799586"/>
+        <path d="M950 132 L1100 66 L1200 132 Z" fill="#8aa596"/>
+        <rect x="0" y="132" width="1200" height="98" fill="#a8c6d6"/>
+        <path d="M0 150 Q300 140 600 150 T1200 150" stroke="#c2dae6" stroke-width="3" fill="none"/>
+        <path d="M0 176 Q300 166 600 176 T1200 176" stroke="#c2dae6" stroke-width="2" fill="none"/>
+        <path d="M0 202 Q300 192 600 202 T1200 202" stroke="#c2dae6" stroke-width="2" fill="none"/>
+    </svg>
+    <div class="slogan"><b>秋 日 近 郊　两 日 成 行</b><span>青龙峡 · 白鹭湖 · 南岭牧场　学生团专享</span></div>
+</div>
+
+<div class="wrap">
+    <div id="sres"></div>
+
+    <div class="main">
+        <div class="left">
+
+<!-- ==================================================================
+     警情通知：这一栏是这页真正要看的东西，但**默认是隐藏的**。
+     只有站内搜索命中**案例编号 AQ-130812-2** 才整块放出来（编号得靠自己推）。
+     8·12 那起坠落事故 → 通报 + 当值安全员被辞退 + 站内采访。
+     事故的直接原因在页面上是盖着的（黑块），伤者姓名也盖着 —— 所以
+     放出来的那一刻，小眼球会说「只找到了一半原因」。
+     ================================================================== -->
+<div class="box hid" id="jing">
+    <h3>警情通知<span class="sub">站内检索命中　|　共 3 条</span></h3>
+    <div class="hit">
+        站内检索命中本栏目条目 <b>3</b> 条，其中 <b>1</b> 条未在前台列出。<br>
+        通报全文与站内采访请
+        <a href="aq130812-2.html#n812">查看完整通报 »</a>
+    </div>
+</div>
+
+<!-- ==================================================================
+     热门线路：旅行社的门面，图全是 SVG 画的占位
+     ================================================================== -->
+<div class="box">
+    <h3>热门线路<span class="sub">周边游 · 两日 / 一日　|　<a href="lines.html">查看全部线路 »</a></span></h3>
+    <div class="lines">
+        <div class="line">
+            <div class="pic"><svg viewBox="0 0 300 118" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="300" height="118" fill="#dfeaf0"/>
+                <path d="M0 84 L60 40 L120 84 Z" fill="#8aa596"/><path d="M90 84 L160 30 L240 84 Z" fill="#799586"/>
+                <path d="M210 84 L270 46 L300 84 Z" fill="#8aa596"/>
+                <rect y="84" width="300" height="34" fill="#a8c6d6"/>
+                <circle cx="248" cy="28" r="13" fill="#f4dcae"/></svg></div>
+            <div class="bd"><b>青龙峡 · 白鹭湖 两日游</b>
+                <div class="tags"><i>两日</i><i>学生团</i><i>含保险</i></div>
+                <p class="desc">峡谷栈道徒步 + 湖上游船 + 晚间篝火；含往返车费、一早两正、首道门票及责任险。</p>
+                <div class="btm"><span class="p">¥398<small> 起/人</small></span><a href="lines.html#cat1">立即预订</a></div></div>
+        </div>
+        <div class="line">
+            <div class="pic"><svg viewBox="0 0 300 118" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="300" height="118" fill="#eef1e6"/>
+                <rect y="70" width="300" height="48" fill="#93a982"/>
+                <path d="M40 70 L40 34 L104 34 L104 70 Z" fill="#e9e2cf"/>
+                <path d="M40 34 L72 16 L104 34 Z" fill="#b0895f"/>
+                <path d="M170 70 L170 40 L228 40 L228 70 Z" fill="#e9e2cf"/>
+                <path d="M170 40 L199 24 L228 40 Z" fill="#b0895f"/>
+                <circle cx="266" cy="26" r="12" fill="#f4dcae"/></svg></div>
+            <div class="bd"><b>南岭牧场 一日游</b>
+                <div class="tags"><i>一日</i><i>班级活动</i><i>含午餐</i></div>
+                <p class="desc">牧场参观、饲喂体验、手工奶酪制作，农家午餐（一正），适合家委会组织。</p>
+                <div class="btm"><span class="p">¥168<small> 起/人</small></span><a href="lines.html#cat1">立即预订</a></div></div>
+        </div>
+        <div class="line">
+            <div class="pic"><svg viewBox="0 0 300 118" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="300" height="118" fill="#e8f2f7"/>
+                <rect y="76" width="300" height="42" fill="#a8c6d6"/>
+                <path d="M0 76 Q75 66 150 76 T300 76" stroke="#c2dae6" stroke-width="3" fill="none"/>
+                <ellipse cx="96" cy="52" rx="30" ry="9" fill="#fff"/>
+                <path d="M84 52 Q96 32 108 52" fill="#fff"/>
+                <path d="M96 44 L96 58" stroke="#c9d8cd" stroke-width="2"/>
+                <ellipse cx="206" cy="40" rx="22" ry="7" fill="#fff"/>
+                <path d="M196 40 Q206 24 216 40" fill="#fff"/>
+                <circle cx="252" cy="24" r="12" fill="#f4dcae"/></svg></div>
+            <div class="bd"><b>白鹭湖 湿地观鸟 一日游</b>
+                <div class="tags"><i>一日</i><i>亲子</i><i>含船票</i></div>
+                <p class="desc">木栈道观鸟 + 游船环湖，随团自然老师带队讲解，含望远镜使用。</p>
+                <div class="btm"><span class="p">¥138<small> 起/人</small></span><a href="lines.html#cat1">立即预订</a></div></div>
+        </div>
+        <div class="line">
+            <div class="pic"><svg viewBox="0 0 300 118" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="300" height="118" fill="#f2efe7"/>
+                <rect x="26" y="34" width="86" height="60" fill="#e9e2cf"/><path d="M26 34 L69 16 L112 34 Z" fill="#b0895f"/>
+                <rect x="180" y="44" width="96" height="50" fill="#e9e2cf"/><path d="M180 44 L228 28 L276 44 Z" fill="#b0895f"/>
+                <rect y="94" width="300" height="24" fill="#c3cbb4"/>
+                <circle cx="256" cy="22" r="12" fill="#f4dcae"/></svg></div>
+            <div class="bd"><b>秋季研学定制（学校团）</b>
+                <div class="tags"><i>定制</i><i>可开发票</i><i>研学证明</i></div>
+                <p class="desc">按教学主题编排线路与课程，可衔接科技馆、博物馆、非遗工坊等点位。</p>
+                <div class="btm"><span class="p"><small>一团一议</small></span><a href="lines.html#cat3">在线咨询</a></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================================================================
+     按栏目看项目：四块栏目各挂三条，点栏目标题进「线路大全」。
+     这块跟上面那组卡片一起，构成首页的"旅游项目介绍"。
+     ================================================================== -->
+<div class="box">
+    <h3>按栏目看项目<span class="sub">周边 / 国内 / 研学 / 拓展　|　<a href="lines.html">线路大全 »</a></span></h3>
+    <div class="cats">
+        <div class="cat">
+            <b><a href="lines.html#cat1">周边线路</a></b>
+            <ul>
+                <li><a href="lines.html#cat1">青龙峡 · 白鹭湖 两日游</a><span>¥398</span></li>
+                <li><a href="lines.html#cat1">白鹭湖 湿地观鸟 一日游</a><span>¥138</span></li>
+                <li><a href="lines.html#cat1">南岭牧场 一日游</a><span>¥168</span></li>
+            </ul>
+            <a class="more" href="lines.html#cat1">查看全部周边线路 »</a>
+        </div>
+        <div class="cat">
+            <b><a href="lines.html#cat2">国内游</a></b>
+            <ul>
+                <li><a href="lines.html#cat2">桂林 · 漓江 双飞五日</a><span>¥2680</span></li>
+                <li><a href="lines.html#cat2">张家界 森林公园 双卧六日</a><span>¥2180</span></li>
+                <li><a href="lines.html#cat2">厦门 · 鼓浪屿 双飞四日</a><span>¥1980</span></li>
+            </ul>
+            <a class="more" href="lines.html#cat2">查看全部国内游 »</a>
+        </div>
+        <div class="cat">
+            <b><a href="lines.html#cat3">研学 · 学生团</a></b>
+            <ul>
+                <li><a href="lines.html#cat3">秋季研学定制（学校团）</a><span>一团一议</span></li>
+                <li><a href="lines.html#cat3">青龙峡 地质考察 两日</a><span>¥468</span></li>
+                <li><a href="lines.html#cat3">市郊 农事体验 一日</a><span>¥128</span></li>
+            </ul>
+            <a class="more" href="lines.html#cat3">查看全部研学线路 »</a>
+        </div>
+        <div class="cat">
+            <b><a href="lines.html#cat4">团队拓展</a></b>
+            <ul>
+                <li><a href="lines.html#cat4">白鹭湖营地 团队拓展 一日</a><span>¥188</span></li>
+                <li><a href="lines.html#cat4">南岭营地 军事化拓展 两日</a><span>¥428</span></li>
+                <li><a href="lines.html#cat4">定向越野 · 城市穿越 半日</a><span>¥98</span></li>
+            </ul>
+            <a class="more" href="lines.html#cat4">查看全部拓展项目 »</a>
+        </div>
+    </div>
+</div>
+
+<div class="box">
+    <h3>出行提示<span class="sub">安全 · 须知</span></h3>
+    <p style="margin:0;font-size:14px;line-height:2.1;color:var(--tx2)">
+        一、参加高空、水上等体验项目前，请如实告知健康状况，服从现场安全员指挥；<br>
+        二、项目进行中不得自行解除或调整安全器械，如需帮助请举手示意；<br>
+        三、未成年人参团须由校方或监护人出具同意材料，并留存紧急联系人电话；<br>
+        四、参加高空、水上、越野项目须签署
+            <a href="safe.html"><b>《户外项目安全操作告知书》</b></a>（含安全操作反面案例）；<br>
+        五、如遇突发情况，请第一时间联系现场领队或拨打我社 24 小时值班电话。
+    </p>
+</div>
+
+        </div>
+
+        <div class="right">
+            <div class="sbox">
+                <h4>快速报名</h4>
+                <p>线路：<b>青龙峡 · 白鹭湖 两日游</b></p>
+                <p>发团：每周六　满 30 人成行</p>
+                <p>热线　<span class="big">0<span class="eye">𓂀</span>73-8826 4471</span></p>
+                <a class="btn" href="#">在线咨询</a>
+            </div>
+            <div class="sbox">
+                <h4>资质公示</h4>
+                <ul>
+                    <li>旅行社业务经营许可证 L-<span class="eye">𓂀𓂀</span>-000000</li>
+                    <li>营业执照　注册号 00000000</li>
+                    <li>开户许可 / 税务登记　已公示</li>
+                </ul>
+                <p style="color:var(--tx3);font-size:12px">以上证照悬挂于门店显著位置，欢迎查验。</p>
+            </div>
+            <div class="sbox">
+                <h4>联系我们</h4>
+                <p>门店：客丽市西城区槐荫路 12 号<br>（一中正门东行 300 米）</p>
+                <p>营业：08:30 – 18:00　节假日不休</p>
+                <p>邮箱　qinglu@travel.example</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="foot">
+    青麓旅行社　版权所有　|　旅游业务经营许可证 L-𓂀𓂀-000000　|　电话　0<span class="eye">𓂀</span>73-8826 4471<br>
+    地址：客丽市西城区槐荫路 12 号　|　青ICP备 00000000 号-2　|　建议使用 1024×768 及以上分辨率浏览<br>
+    <a href="index.html">网站首页</a><a href="lines.html">线路大全</a><a href="notice.html">警情通知</a><a href="lines.html#contact">联系我们</a>
+</div>
+
+<!-- 右上角那枚小眼球：不属于这个网站，它从别处渗进来了 -->
+<div id="seye" aria-hidden="true" title="……">
+    <pre class="eyeb"></pre>
+    <div id="eye-tip"></div>
+</div>
+
+<div id="utip">新页面已解锁，请返回主页面查看</div>
+
+<!-- ==================================================================
+    内部留档（不对外发布 · 前端不显示，只留在源码里）
+    —— 8·12 事故：伤者为市一中高二学生玻某某，坠落高度约 6.4 m。
+    送检结论：主绳未见断裂，锁扣处于开启状态，锁扣内壁有非金属划痕，
+    与"器材自然失效"不符；同批次安全绳封存记录齐全，未发现问题。
+    结论文本未予公布，按主管部门意见，前端条目一并撤下。
+    —— 被辞退者：当值安全员（工号 A-07）。注意：校园里流传的那句
+       "老胡前段时间刚开除了一个职工"，说的是另一个人、另一件事，别混到这起来。
+    ================================================================== -->
+
+<script>
+/* ==================================================================
+   站内搜索：旅行社自己的检索
+   ------------------------------------------------------------------
+   第一条到第四条就是页面上列出的那些；第五条**没有列在前台栏目里**——
+   它只在检索结果里出现（"似乎只能通过搜索关键词找到"）。
+   想加条目就往 INDEX 里再加一行；sec:1 的条目会标成"前台未列出"。
+   ================================================================== */
+(function(){
+'use strict';
+var INDEX = [
+    /* ---- 前台正常栏目：一进来就能搜到 ---- */
+    { d:'2013-10-01', t:'线路大全（周边线路 / 国内游 / 研学·学生团 / 团队拓展）', u:'lines.html',
+      s:'按栏目列出我社在售线路与项目：周边一至两日、国内双飞双卧、研学定制、团队拓展，含价格与行程说明。',
+      k:'线路 大全 项目 周边 国内游 研学 学生团 拓展 团建 价格 行程 介绍 旅游 预订 报名' },
+    { d:'2013-10-08', t:'“十一”黄金周出游安全提示（第 3 号）', u:'safe.html',
+      s:'客流高峰期间请提前三十分钟到集合点；随团未成年人须由监护人签署《项目安全操作告知书》。',
+      k:'安全 提示 十一 黄金周 客流 集合 告知书 安全操作' },
+    { d:'2013-10-02', t:'户外项目安全操作告知书（附安全操作反面案例）', u:'safe.html#book',
+      s:'编号规则：AQ - 事发年月日 - 当日第几起。下列反面案例供领队与参团人对照自查；个别案例页面已损坏。',
+      k:'安全 告知书 安全操作 反面案例 案例 编号 AQ aq 规程 双检 自查' },
+    { d:'2013-08-20', t:'案例 AQ-130812-1　青龙峡 · 高空速降 · 器材复检记录缺失', u:'aq130812-1.html',
+      s:'当日第 1 起，未造成人身伤害，现场已整改；当值安全员书面警告。本起之外，当日另有一起来自参团学生的受伤事件已另行整理。',
+      k:'案例 AQ-130812-1 aq130812-1 130812-1 编号 高空速降 器材 复检 青龙峡 反面' },
+    { d:'2013-09-28', t:'青龙峡 · 白鹭湖 两日游（每周六发团）', u:'#',
+      s:'含往返车费、一早两正、景区首道门票及旅行社责任险；满 30 人成行。',
+      k:'青龙峡 白鹭湖 两日游 线路 周边游 学生团 报名 价格' },
+    { d:'2013-09-20', t:'南岭牧场 一日游（班级活动推荐）', u:'#',
+      s:'含午餐与牧场体验项目，适合班级活动与家委会组织。',
+      k:'南岭 牧场 一日游 班级 活动 线路' },
+    { d:'2013-09-05', t:'秋季研学团安全管理补充规定', u:'#',
+      s:'研学团实行“双人双检”与随团安全员制；未成年人须持校方同意材料。',
+      k:'安全 研学 规定 学生团 双检 安全员' },
+
+    /* ---- 下面三条全部与 8·12 事故有关：前台不列出，检索里也查不到。
+           钥匙是**案例编号 AQ-130812-2**（不再认"玻琳秋"三个字）：
+           玩家得先去 safe.html 看告知书 → 打开 AQ-130812-1（另一条链接是坏的）
+           → 从"当日第 1 起、另有一起来自参团学生"推出 -2，再拿编号回来搜。 ---- */
+    { d:'2013-08-20', t:'关于暂停青龙峡基地高空体验项目的通知', u:'aq130812-2.html#n812', lock:1,
+      s:'自即日起暂停该基地全部高空体验项目，待检测结论出具并整改验收后再行开放。',
+      k:'青龙峡 高空 速降 暂停 通知 项目' },
+    /* code —— 这条的「钥匙」。未解开之前它**不受 lock 限制、且只认编号**：
+       否则它被自己那把锁挡在门外，永远搜不出来，也就永远等不到解锁（死锁）。 */
+    { d:'2013-08-12', t:'关于青龙峡户外拓展基地“高空速降”项目意外事故的通报（处理情况）', u:'aq130812-2.html#n812',
+      lock:1, trig:1, code:'aq1308122',
+      /* 指向 AQ-130812-2 那个独立页面，不再指 notice.html ——
+         那边现在是恒定 404，#n812 通报全文藏在 #jing 里永远不显示，
+         指过去等于把玩家送进死路（看着搜到了，点进去还是 404）。
+         这两条结果只有在搜到编号之后才可能出现，所以不算"可见入口"。 */
+      s:'案例编号 AQ-130812-2：一名参团学生自器械处坠落受伤；当值安全员未按规程完成二次复检，已解除劳动关系。',
+      k:'青龙峡 高空 速降 坠落 事故 通报 安全员 辞退 安全绳 学生 8·12 8月12日 受伤 '
+       + '案例 编号 AQ-130812-2 aq130812-2 130812-2 aq1308122 AQ1308122' },
+    /* 这条**永远不出现在检索结果里**（hide:1）——
+       它自己写着"未对外发布"，却出现在官网公开检索中、还挂着
+       「该条未在本站前台栏目中列出」的自述，逻辑上自相矛盾，看着就别扭。
+       数据留着不删：同样的送检结论在下面的源码留档里还有一份，
+       玩家查源代码照样看得到，只是不再从检索框里冒出来。 */
+    { d:'2013-08-19', t:'内部通报：8·12 事故器材送检结果（未对外发布）', u:'#', sec:1, lock:1, hide:1,
+      s:'主绳未见断裂；锁扣处于「开启」状态，内壁留有非金属划痕……（其余内容不在检索摘要内。）',
+      k:'安全绳 锁扣 送检 检测 结果 8·12 内部 未发布 器材 主绳 划痕' }
+];
+var box  = document.getElementById('sres');
+var form = document.getElementById('sform');
+var inp  = document.getElementById('sq');
+if (!box || !form || !inp) return;
+
+var revealed = false, revealTick = 0;
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+/* 归一化：大小写、空格、连字符、点号全抹掉再比。
+   这样 "AQ-130812-2"、"aq 130812 2"、"aq1308122" 都能命中同一条 —— 编号这种东西
+   玩家可能带横线也可能不带，别在这种地方卡人。 */
+function norm(s){
+    return String(s).toLowerCase().replace(/[\s\-–—－_/·．.、,，（）()]/g, '');
+}
+function hit(q, it){
+    var nq = norm(q);
+    if (!nq) return false;
+    return norm(it.t + ' ' + it.s + ' ' + it.k + ' ' + it.d).indexOf(nq) >= 0;
+}
+
+/* 隐藏页的通行证：**只认当前这个标签页**（sessionStorage），不落 localStorage。
+   一落盘就等于存档 —— 玩家以后每次都能直接摸到那一页，它就不算隐藏的了。
+   所以关掉标签页就作废，下次想看必须重新搜一遍编号。 */
+function writeFlag(){
+    try { sessionStorage.setItem('mp_travel_hit', '1'); } catch (e){}
+}
+function scrollJing(){
+    var j = document.getElementById('jing');
+    if (j && j.scrollIntoView) j.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+/* 搜到那个编号 → 「警情通知」整块出现在页面上。
+   silent=true 只供脚本内部调用（不滚动），页面加载时不再自动触发。 */
+function revealJing(silent){
+    if (revealed) return;
+    revealed = true;
+    revealTick++;                            // 这次检索刚解开 → 滚动让位给警情通知，别被检索结果抢走
+    var j = document.getElementById('jing');
+    if (j) j.classList.remove('hid');        // 真东西上场
+    /* 导航高亮从「网站首页」挪到「警情通知」——提示玩家：东西在那边 */
+    if (window.MP_NAV_LOCK) window.MP_NAV_LOCK('notice');   /* 锁住：别被滚动重算打回网站首页 */
+    writeFlag();
+    if (!silent){
+        setTimeout(scrollJing, 220);
+        /* 检索本身不再让眼球说话了 —— 台词挪到 AQ-130812-2 那个独立页面说。 */
+    }
+}
+window.MP_REVEAL_JING = revealJing;          // 备用入口：控制台敲这句也能开
+
+/* 导航和页脚的「警情通知」是真链接，一律跳 notice.html ——
+   那边没解开就是 404「不予以开放」，解开之后整篇通报在那儿展开。
+   （这里不再拦截，因为通报全文已经搬到栏目页了，首页只留一句"去那边看"。） */
+
+/* 没有任何"读档恢复"：这一页刷新之后，那块内容不会自己回来。
+   玩家搜到编号 → 当场看到；关掉标签页 → 下次还得重新搜。
+   这就是"被藏起来的页面"该有的样子。 */
+
+function render(q){
+    var nq = norm(q);
+    /* ① 先看钥匙对不对：编号一旦对上就当场解禁，再做下面的筛选。
+          （必须先判 —— 钥匙条自己也带着 lock，不先放它出来就是死锁。） */
+    if (!revealed && nq){
+        for (var i = 0; i < INDEX.length; i++){
+            if (INDEX[i].code && nq.indexOf(INDEX[i].code) >= 0){ revealJing(); break; }
+        }
+    }
+    var res = INDEX.filter(function(it){
+        if (it.hide) return false;                    // hide:1 —— 整条永不进结果（见 INDEX 里那条的说明）
+        if (it.code && !revealed) return nq.indexOf(it.code) >= 0;   // 没解开前，它只认编号
+        if (it.lock && !revealed) return false;      // 事故相关的条目：解开之前不存在
+        return hit(q, it);
+    });
+    var h = '<div class="box"><h3>站内检索：“' + esc(q) + '”　·　共 ' + res.length + ' 条</h3>';
+    if (!res.length){
+        h += '<div class="none">没有找到相关内容。'
+           + (nq.indexOf('aq') === 0
+                ? '请核对案例编号是否完整 —— 编号规则为 <b>AQ - 事发年月日 - 当日第几起</b>。'
+                : '换个关键词试试，比如线路名、日期，或者“安全”。')
+           + '</div>';
+    }
+    res.forEach(function(it){
+        h += '<div class="r' + (it.sec ? ' sec' : '') + '">'
+           +   '<span class="d">' + it.d + '</span><b><a href="' + it.u + '">' + esc(it.t) + '</a></b>'
+           +   (it.sec ? '<div class="flag">⚠ 该条未在本站前台栏目中列出 —— 来源：内部检索</div>' : '')
+           +   '<p>' + esc(it.s) + '</p>'
+           + '</div>';
+    });
+    h += '</div>';
+    box.innerHTML = h;
+    box.classList.add('on');
+
+    /* 命中那条带 trig 的 → 整块警情通知当场放出来 */
+    for (var i = 0; i < res.length; i++){ if (res[i].trig){ revealJing(); break; } }
+
+}
+form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var q = (inp.value || '').trim();
+    if (!q){ box.classList.remove('on'); box.innerHTML = ''; return; }
+    render(q);
+});
+Array.prototype.forEach.call(document.querySelectorAll('.hot a'), function(a){
+    a.addEventListener('click', function(e){
+        e.preventDefault();
+        /* 关键词三个来源，按顺序取：标签上的 data-k → href 里的 ?q= → 链接文字。
+           早先只认 data-k，可热门词标签上压根没写这个属性 → 取到 null →
+           render('') 什么也不干，而 preventDefault 又把 href 跳转拦了，
+           两头堵死 = 点了完全没反应，眼球自然也不会说话。 */
+        var k = a.getAttribute('data-k');
+        if (!k){
+            var m = (a.getAttribute('href') || '').match(/[?&]q=([^&]*)/);
+            if (m){
+                try { k = decodeURIComponent(m[1].replace(/\+/g, ' ')); }
+                catch (_){ k = m[1]; }
+            }
+        }
+        if (!k) k = (a.textContent || '').trim();
+        inp.value = k;
+        render(k);
+    });
+});
+
+/* 从别的子页（safe.html / aq130812-1.html 的检索条是 GET 提交）跳回来时带着 ?q=，
+   这里接住、把检索词填进框并直接出结果 —— 玩家在哪个页面搜都一样。 */
+(function(){
+    var m = (location.search || '').match(/[?&]q=([^&]*)/);
+    if (!m) return;
+    var q = '';
+    try { q = decodeURIComponent(m[1].replace(/\+/g, ' ')); } catch (e){ q = m[1]; }
+    q = (q || '').trim();
+    if (!q) return;
+    inp.value = q;
+    var tick = revealTick;
+    render(q);
+    setTimeout(function(){
+        if (revealTick !== tick) return;     // 这次刚解开警情通知 → 那边在滚，别抢
+        if (box && box.scrollIntoView) box.scrollIntoView({ behavior:'smooth', block:'start' });
+    }, 260);
+})();
+})();
+</script>
+
+<script>
+/* ==================================================================
+   右上角那枚小眼球（与保安队专访同源）
+   ------------------------------------------------------------------
+   外框固定，瞳孔按鼠标方向挪，偶尔眨一次；不接任何跳转。
+   台词连着快速刷出来，叠成一整条挂在眼球下面；整条读完再从第一条
+   开始往上抽走，抽走一条下面自动补上来。放完再点眼球就再放一遍。
+   ================================================================== */
+(function(){
+'use strict';
+var wrap = document.getElementById('seye');
+var pre  = wrap && wrap.querySelector('.eyeb');
+var tip  = document.getElementById('eye-tip');
+if (!wrap || !pre) return;
+
+/* 台词：一组一组。改词儿只动这里
+   SET_A —— 进页面先说一遍；撞墙回来（404 / 什么都搜不到）点眼球可以再听一遍
+   SET_B —— 「警情通知」被搜出来的那一刻补的两句（只找到了一半） */
+var SET_A = [
+    '奇怪……',
+    '他们隐藏了某些重要的线索。',
+    '似乎只能通过搜索关键词找到',
+    '看来只能多多留意了',
+    '实在不行就只能强行查看网页源代码了。'
+];
+var SET_B = [
+    '只找到了一半原因。',
+    '还需要更详细的过程。'
+];
+/* ---- 节奏：一句接一句往下续，叠成一整条；读完再逐条抽走 ----
+   数值与保安队专访页（pages/interview/guard.html）完全一致 —— 那边是 750/3000/170/780，
+   两边同一个速度感。要单独调快就把 STEP 往小改（400~500 是"稍快"，330 就明显赶了）。 */
+var STEP = 750;         // 前后两条冒头的间隔（保安页同值）
+var HOLD = 3000;        // 整条挂在那儿读多久才收
+var REC  = 170;         // 收场时逐条错开
+var GAP  = 4;           // 两条之间的缝（保安页是 6，这里收一点）
+var OUT_MS = 780;       // 收回动画走完的时刻
+var lineEls = [], timers = [], playing = false, lastSet = SET_A;
+
+function buildLines(arr){
+    if (!tip) return;
+    tip.innerHTML = '';
+    lineEls = (arr || SET_A).map(function(s){
+        var d = document.createElement('div');
+        d.className = 'tl gone';
+        var b = document.createElement('span');
+        b.textContent = s;
+        d.appendChild(b);
+        tip.appendChild(d);
+        return d;
+    });
+}
+function clearTimers(){ timers.forEach(function(t){ clearTimeout(t); }); timers = []; }
+function layout(){
+    var y = 0;
+    lineEls.forEach(function(el){
+        if (el.classList.contains('gone')) return;
+        el.style.transform = 'translateY(' + y + 'px)';
+        var box = el.firstChild;
+        y += (box ? box.offsetHeight : 0) + GAP;
+    });
+}
+function playLines(arr){
+    clearTimers();                       // 允许打断：新的一组直接顶掉旧的
+    lastSet = arr || SET_A;
+    buildLines(lastSet);
+    if (!lineEls.length) return;
+    playing = true;
+    lineEls.forEach(function(el){ el.classList.remove('on', 'in', 'gone'); });
+    layout();
+    var n = lineEls.length;
+    lineEls.forEach(function(el, i){
+        timers.push(setTimeout(function(){
+            el.classList.add('in', 'on');
+            timers.push(setTimeout(function(){ el.classList.remove('in'); }, 220));
+            layout();
+        }, i * STEP));
+        var off = (n - 1) * STEP + HOLD + i * REC;
+        timers.push(setTimeout(function(){
+            el.classList.remove('on');
+            timers.push(setTimeout(function(){
+                el.classList.add('gone');
+                layout();
+            }, OUT_MS));
+        }, off));
+    });
+    var end = (n - 1) * STEP + HOLD + (n - 1) * REC + OUT_MS;
+    timers.push(setTimeout(function(){ playing = false; }, end + 300));
+}
+/* 别的脚本要它说话就调这个：MP_EYE.say() 说第一组，MP_EYE.say(['…','…']) 说指定的 */
+window.MP_EYE = { say: playLines };
+
+function eyeFrame(col, row, closed){
+    var a = [' .-"""""-. ',
+             '/         \\',
+             '|         |',
+             '|         |',
+             '\\         /',
+             ' `-.....-` '];
+    if (closed){ a[3] = '|  ─────  |'; }
+    else {
+        var line = '         '.split('');
+        line[col] = '●';
+        a[2 + row] = '|' + line.join('') + '|';
+    }
+    return a.join('\n');
+}
+var col = 4, row = 0, closed = false;
+function draw(){ pre.textContent = eyeFrame(col, row, closed); }
+draw();
+
+window.addEventListener('mousemove', function(e){
+    var w = window.innerWidth || 1, h = window.innerHeight || 1;
+    var dx = (e.clientX / w - 0.72) * 2, dy = (e.clientY / h - 0.14) * 2;
+    var nc = Math.max(1, Math.min(7, 4 + Math.round(dx * 3)));
+    var nr = (dy > 0.25) ? 1 : 0;
+    if (nc !== col || nr !== row){ col = nc; row = nr; if (!closed) draw(); }
+}, { passive:true });
+(function blink(){
+    setTimeout(function(){
+        closed = true; draw();
+        setTimeout(function(){ closed = false; draw(); blink(); }, 150);
+    }, 3500 + Math.random() * 4500);
+})();
+
+/* 眼球淡入 → 第一组从头放一遍；放完之后点它一下 → 把刚那组再放一遍 */
+setTimeout(function(){ wrap.classList.add('on'); playLines(SET_A); }, 1000);
+wrap.addEventListener('click', function(){
+    closed = true; draw();
+    setTimeout(function(){ closed = false; draw(); }, 200);
+    playLines(lastSet);
+});
+})();
+</script>
+
+<script>
+/* ==================================================================
+   进来就写解锁标记：mp_unlock_v1.travel = 1
+   主页面那边 1.5 秒一轮的轮询（或 storage 事件）会接住 → 冒一句提示，
+   再把「旅行社」那枚入口按钮飘出来。第一次才露左下角这条提示。
+   ================================================================== */
+(function(){
+'use strict';
+var UNLOCK_KEY = 'mp_unlock_v1', MY_KEY = 'travel';
+function writeUnlock(k){
+    var u = {};
+    try { u = JSON.parse(localStorage.getItem(UNLOCK_KEY) || '{}') || {}; } catch (e){ u = {}; }
+    if (u[k]) return false;
+    u[k] = 1;
+    try { localStorage.setItem(UNLOCK_KEY, JSON.stringify(u)); } catch (e){}
+    return true;
+}
+var first = writeUnlock(MY_KEY);
+if (first){
+    var t = document.getElementById('utip');
+    setTimeout(function(){ if (t) t.classList.add('on'); }, 900);
+    setTimeout(function(){ if (t) t.classList.remove('on'); }, 900 + 4600);
+}
+})();
+</script>
+
+
+
+
+
+
+
+<script>
+/* ==================================================================
+   导航高亮
+   ------------------------------------------------------------------
+   高亮该亮谁，由三件事决定，优先级从高到低：
+     1. 刚刚点过某个栏目（意图明确）→ 亮它
+     2. 带 #catN 进来还没滚到位 → 亮 hash 指的那个
+     3. 视口滚到哪 → 亮哪个栏目
+   页面级项（网站首页 / 警情通知）按文件名判断，不参与栏目逻辑。
+   ================================================================== */
+(function(){
+'use strict';
+
+function fileOf(u){
+    var s = String(u || '').split('#')[0].split('?')[0];
+    return s.split('/').pop().toLowerCase();
+}
+
+var hereFile = fileOf(location.pathname);
+/* 站内检索命中警情通知后，题头高亮锁到「警情通知」——
+   不这么做的话，下面 paint() 每次滚动都会按"当前在哪个页面"重算，
+   立刻把手动点亮的警情通知摘掉、换回网站首页。
+   清掉本页的 hid 块就恢复按页面判断。 */
+var navLock = '';
+var onLines  = (hereFile === 'lines.html');
+var boxes    = onLines ? Array.prototype.slice.call(document.querySelectorAll('.box[id^="cat"]')) : [];
+var links    = Array.prototype.slice.call(document.querySelectorAll('.nav a[data-nav]'));
+var cats     = links.filter(function(a){ return /^cat[0-9]+$/.test(a.getAttribute('data-nav') || ''); });
+
+/* 当前意图：'cat1' | 'cat2' ... ；空 = 交给视口判断 */
+var intent = '';
+/* 意图的有效期：从最后一次点击/进入算起，超时就交还给视口 */
+var INTENT_MS = 1200;
+var intentAt = 0;
+
+/* 进入时 hash 表达的初始意图 */
+var h0 = (location.hash || '').replace(/^#/, '');
+if (/^cat[0-9]+$/.test(h0)){ intent = h0; intentAt = Date.now(); }
+
+/* 视口里"我在这里"的栏目 */
+function visibleCat(){
+    if (!boxes.length) return '';
+    var line = window.scrollY + window.innerHeight * 0.3;
+    var cur = '';
+    for (var i = 0; i < boxes.length; i++){
+        if (boxes[i].offsetTop <= line) cur = boxes[i].id;
+    }
+    return cur;
+}
+
+function paint(){
+    /* 意图过期 → 交还给视口 */
+    if (intent && (Date.now() - intentAt) > INTENT_MS) intent = '';
+    var cat = (intent && document.getElementById(intent)) ? intent : visibleCat();
+
+    var picked = null;
+    links.forEach(function(a){
+        var key = a.getAttribute('data-nav') || '';
+        var on;
+        if (/^cat[0-9]+$/.test(key)){
+            /* 栏目项：只有 lines 页能亮，且同一时刻只亮一个 */
+            on = onLines && (key === cat);
+        } else {
+            /* 页面级项：文件对上就亮；但被 navLock 接管时听锁的 */
+            on = navLock ? (key === navLock)
+                         : (fileOf(a.getAttribute('href') || '') === hereFile);
+        }
+        if (on){ a.classList.add('on'); picked = a; }
+        else a.classList.remove('on');
+    });
+
+    /* lines 页若一个栏目都没命中，点亮第一个，题头永远有一项是亮的 */
+    if (onLines && !picked && cats.length) cats[0].classList.add('on');
+
+    /* 右栏栏目导航同步 */
+    var n2 = document.querySelectorAll('.nav2 a[data-c]');
+    for (var i = 0; i < n2.length; i++){
+        n2[i].className = (onLines && n2[i].getAttribute('data-c') === cat) ? 'on' : '';
+    }
+}
+
+/* ---- 点栏目 = 立意图，不等滚动 ---- */
+cats.forEach(function(a){
+    a.addEventListener('click', function(){
+        intent = a.getAttribute('data-nav');
+        intentAt = Date.now();
+        paint();
+    });
+});
+/* 页内「栏目导航」右栏点了也一样 */
+document.querySelectorAll('.nav2 a[data-c]').forEach(function(a){
+    a.addEventListener('click', function(){
+        var c = a.getAttribute('data-c');
+        if (/^cat[0-9]+$/.test(c)){ intent = c; intentAt = Date.now(); }
+    });
+});
+
+/* 供检索脚本调用：把题头高亮锁到某个栏目，直到本页的该块内容消失 */
+window.MP_NAV_LOCK = function(key){
+    navLock = key || '';
+    paint();
+};
+
+window.addEventListener('scroll', paint, { passive:true });
+window.addEventListener('resize', paint);
+window.addEventListener('hashchange', function(){
+    var h = (location.hash || '').replace(/^#/, '');
+    if (/^cat[0-9]+$/.test(h)){ intent = h; intentAt = Date.now(); }
+    paint();
+});
+window.addEventListener('load', paint);
+paint();
+setTimeout(paint, 300);
+})();
+</script>
+</body>
+</html>

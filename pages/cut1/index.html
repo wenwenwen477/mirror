@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CUT1</title>
+<style>
+:root{ --bg:#0a0c10; --ink:#c8d0c2; --ink2:#8f9a8c; }
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+    margin:0; background:var(--bg); color:var(--ink); overflow:hidden; cursor:crosshair;
+    font:14px/1.95 "Sarasa Mono SC","Sarasa Term SC","Noto Sans Mono CJK SC","Microsoft YaHei","PingFang SC",monospace;
+}
+/* 扫描线 + 暗角：跟主界面同一套氛围 */
+body::after{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:30;
+    background:
+        repeating-linear-gradient(0deg, rgba(0,0,0,.15) 0 1px, transparent 1px 3px),
+        radial-gradient(120% 120% at 50% 50%, rgba(0,0,0,0) 52%, rgba(0,0,0,.55) 100%);
+}
+#stageWrap{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; }
+
+/* ---- 整个 AVG 窗口：粗外框（用户要求明显一点） ---- */
+#frame{
+    position:relative; width:min(880px, 95vw); height:min(84vh, 760px);
+    border:3px solid rgba(200,208,194,.5);
+    box-shadow:0 0 22px rgba(200,208,194,.12);
+    background:#07090c;
+    display:flex; flex-direction:column; overflow:hidden;
+}
+#frame .cn{ position:absolute; width:14px; height:14px; border:0 solid rgba(200,208,194,.7); z-index:20; }
+#frame .cn.tl{ top:-2px; left:-2px;    border-top-width:2px;    border-left-width:2px; }
+#frame .cn.tr{ top:-2px; right:-2px;   border-top-width:2px;    border-right-width:2px; }
+#frame .cn.bl{ bottom:-2px; left:-2px; border-bottom-width:2px; border-left-width:2px; }
+#frame .cn.br{ bottom:-2px; right:-2px;border-bottom-width:2px; border-right-width:2px; }
+
+/* ---- 背景层（占位：教室氛围的极简渐变 + 一扇窗）铺满整框 ---- */
+#bg{ position:absolute; inset:0; z-index:1;
+    background:
+        radial-gradient(130% 90% at 50% -10%, rgba(58,66,58,.55), rgba(7,9,12,1) 72%);
+}
+#bg::before{   /* 窗 */
+    content:""; position:absolute; top:14%; left:8%; width:30%; height:46%;
+    border:1px solid rgba(200,208,194,.12);
+    background:linear-gradient(180deg, rgba(120,140,150,.06), rgba(120,140,150,.02));
+    box-shadow:inset 0 0 30px rgba(200,208,194,.04);
+}
+
+/* ---- 角色层：女主立绘（占位，填色）+ 其他角色（白边占位）铺满整框 ---- */
+#actors{ position:absolute; inset:0; z-index:2; pointer-events:none; transition:opacity .8s ease; }
+/* 背景揭示：立绘淡出，只留背景 */
+#frame.bgonly #actors{ opacity:0; }
+.actor{ position:absolute; bottom:0; opacity:0; transition:opacity .6s ease; will-change:opacity; }
+.actor .inner{ transform:translateY(34px); will-change:transform; transition:transform .8s cubic-bezier(.22,.61,.36,1); }
+.actor.on{ opacity:1; }
+.actor.on .inner{ transform:translateY(0); }
+.actor svg{ display:block; height:min(50vh,400px); will-change:transform;
+    filter:drop-shadow(0 0 10px rgba(200,208,194,.18));
+    animation:bob 6.5s ease-in-out infinite; }
+/* 更慢、更轻的浮动，呼吸感而非跳动 */
+@keyframes bob{ 0%,100%{ transform:translateY(0) scale(1); } 50%{ transform:translateY(-7px) scale(1.012); } }
+.actor.heroine{ right:10%; }
+.actor.heroine.center{ left:50%; right:auto; margin-left:-115px; }
+.actor.boy{ left:10%; }
+.actor.teacher{ left:9%; }
+.actor.mira{ left:10%; }
+.actor .nametag{
+    text-align:center; font-size:12px; letter-spacing:3px; margin-top:4px;
+    color:rgba(200,208,194,.5); text-shadow:0 0 8px rgba(0,0,0,.8);
+}
+.actor.boy .nametag{ color:rgba(223,230,216,.65); }
+
+/* ---- 文本层：覆盖整框的半透明大矩形，文字置顶、累计显示 ---- */
+#textbox{
+    position:absolute; inset:0; z-index:5; pointer-events:none;
+    display:flex; flex-direction:column; justify-content:flex-start;
+    padding:64px 46px 46px;   /* 顶部留出目录/重播按钮的一行空间 */
+    /* 上浓下淡：顶部文字区更实，底部留出背景/立绘 */
+    background:linear-gradient(180deg, rgba(7,9,12,.52), rgba(7,9,12,.14));
+    transition:background .5s ease;
+}
+/* 背景揭示：矩形更淡，立绘淡出 → 整个背景直接显现 */
+#textbox.reveal{
+    background:linear-gradient(180deg, rgba(7,9,12,.3), rgba(7,9,12,.04));
+}
+#log{ display:flex; flex-direction:column; gap:14px; }
+.ln{ font-size:17px; line-height:1.95; color:#dde2d6; text-shadow:0 0 7px rgba(0,0,0,.7); white-space:pre-wrap; }
+.ln .sp{ display:block; font-size:14px; letter-spacing:2px; margin-bottom:4px; }
+.ln .sp.narr{ color:var(--ink2); }
+.ln .sp.hero{ color:#e7b98a; }
+.ln .sp.boy{ color:#9fc3d6; }
+.ln .sp.tea{ color:#e0a9a0; }
+.ln .sp.mira{ color:#e9b8c8; }   /* 幂偌：淡粉，女二号 */
+.ln .sp.unknown{ color:#93a091; } /* 未知道姓名前，幂偌显示为「？？？」 */
+.ln .sp.inner{ color:#a9a3c2; }  /* 内心独白：淡紫灰，和旁白区分 */
+.ln.cur{ font-size:19px; color:#eaece6; }   /* 正在打字的当前行稍大 */
+#next{ position:absolute; right:22px; bottom:18px; font-size:13px; color:rgba(200,208,194,.6);
+    animation:blink 1.1s steps(1) infinite; pointer-events:none; }
+#next.off{ display:none; }
+
+/* ---- 顶部按钮：目录（节点选择回看）/ 重播 ---- */
+#menuBtn, #end{
+    position:absolute; top:12px; z-index:8; font:11px/1 inherit; letter-spacing:2px;
+    color:rgba(200,208,194,.4); background:none; border:1px solid rgba(200,208,194,.2);
+    padding:7px 10px; cursor:crosshair; border-radius:2px; transition:all .2s ease;
+}
+#menuBtn{ left:14px; } #end{ right:14px; }
+#menuBtn:hover, #end:hover{ color:rgba(200,208,194,.85); border-color:rgba(200,208,194,.6); }
+#end.off{ display:none; }
+
+/* ---- 节点选择遮罩：回看任意一段 ---- */
+#nodes{
+    position:absolute; inset:0; z-index:15; display:none;
+    background:rgba(7,9,12,.94); flex-direction:column; align-items:center; justify-content:center; gap:12px;
+    padding:30px;
+}
+#nodes.open{ display:flex; }
+#nodes h2{ margin:0 0 6px; font-size:14px; letter-spacing:6px; color:var(--ink2); font-weight:normal; }
+#nodes .list{ display:flex; flex-direction:column; gap:8px; width:min(420px,86%);
+    max-height:calc(100% - 56px); overflow-y:auto; padding:4px 12px 4px 4px; }
+#nodes .list::-webkit-scrollbar{ width:8px; }
+#nodes .list::-webkit-scrollbar-track{ background:rgba(200,208,194,.05); }
+#nodes .list::-webkit-scrollbar-thumb{ background:rgba(200,208,194,.25); border-radius:4px; }
+#nodes .list::-webkit-scrollbar-thumb:hover{ background:rgba(200,208,194,.45); }
+.node-item{
+    all:unset; cursor:pointer; display:flex; align-items:center; gap:14px;
+    padding:11px 16px; border:1px solid rgba(200,208,194,.22); border-radius:2px;
+    color:var(--ink); font-size:14px; letter-spacing:1px; transition:all .18s ease;
+}
+.node-item:hover{ border-color:rgba(200,208,194,.7); background:rgba(200,208,194,.06); transform:translateX(4px); }
+.node-item .no{ color:var(--ink2); font-size:12px; }
+.node-item .nm{ flex:1; }
+
+/* ---- 开场：空框 + 被小方框围起来的三角开始键 ---- */
+#idle{
+    position:absolute; inset:0; z-index:12;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px;
+    background:rgba(7,9,12,.97); transition:opacity .5s ease;
+}
+#idle.off{ opacity:0; pointer-events:none; }
+#idle .tag{ font-size:12px; letter-spacing:6px; color:var(--ink2); }
+#play{
+    width:74px; height:74px; margin:0; border:1px solid rgba(200,208,194,.55);
+    background:rgba(200,208,194,.04); color:var(--ink); cursor:pointer; font:30px/1 inherit;
+    display:flex; align-items:center; justify-content:center; border-radius:3px;
+    box-shadow:0 0 16px rgba(200,208,194,.16) inset, 0 0 20px rgba(200,208,194,.14);
+    text-shadow:0 0 10px rgba(200,208,194,.55); position:relative;
+    transition:transform .18s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease;
+}
+#play::before, #play::after{ content:""; position:absolute; width:9px; height:9px; border:0 solid rgba(200,208,194,.8); }
+#play::before{ top:5px; left:5px; border-top-width:1px; border-left-width:1px; }
+#play::after { bottom:5px; right:5px; border-bottom-width:1px; border-right-width:1px; }
+#play:hover{ transform:scale(1.08); border-color:rgba(200,208,194,.9);
+    box-shadow:0 0 24px rgba(200,208,194,.34) inset, 0 0 30px rgba(200,208,194,.3); }
+#play:active{ transform:scale(.95); }
+#idle .hint{ font-size:11px; letter-spacing:2px; color:rgba(200,208,194,.3); text-align:center; line-height:1.8; }
+
+/* ============ 特效：化学实验室爆炸（独立火光画面） ============ */
+#fx{
+    position:absolute; inset:0; z-index:3; pointer-events:none; opacity:0;
+    transition:opacity .25s ease;
+}
+#fx.explode{
+    opacity:1;
+    background:
+        radial-gradient(circle at 50% 52%, rgba(255,244,190,.95), rgba(255,150,40,.72) 20%, rgba(220,46,12,.55) 38%, rgba(110,12,0,0) 62%),
+        radial-gradient(circle at 34% 40%, rgba(255,196,84,.6), rgba(0,0,0,0) 40%),
+        radial-gradient(circle at 68% 60%, rgba(255,150,40,.6), rgba(0,0,0,0) 42%);
+    animation:fireburst 1.25s ease-out forwards;
+}
+@keyframes fireburst{
+    0%{ transform:scale(.18); filter:brightness(2.4); opacity:0; }
+    12%{ transform:scale(1.12); opacity:1; filter:brightness(1.7); }
+    32%{ filter:brightness(1); }
+    100%{ transform:scale(1.3); opacity:0; filter:brightness(.6); }
+}
+/* 爆炸时文字更实一点，压住火光 */
+#textbox.overfx{ background:linear-gradient(180deg, rgba(7,9,12,.74), rgba(7,9,12,.32)); }
+
+/* ============ 突脸层：整屏放大的老师脸（独立场景，背景直接换成脸） ============ */
+#face{
+    position:absolute; inset:0; z-index:3; pointer-events:none; overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+    background:#05070a;
+    opacity:0; visibility:hidden; transition:opacity .35s ease;
+}
+#face.on{ opacity:1; visibility:visible; }
+#face svg{ height:120%; width:auto;
+    filter:drop-shadow(0 0 34px rgba(200,208,194,.14)); }
+/* 突脸场景的文字略实一点，压在脸上好读 */
+#textbox.facemode{ background:linear-gradient(180deg, rgba(7,9,12,.6), rgba(7,9,12,.2)); }
+
+/* ============ 特效：天花板（摔倒后躺着仰视的独立画面） ============ */
+#ceil{
+    position:absolute; inset:0; z-index:3; pointer-events:none; opacity:0; visibility:hidden;
+    transition:opacity .4s ease;
+    background:
+        radial-gradient(circle at 50% 30%, rgba(255,248,222,.12), rgba(0,0,0,0) 30%),
+        radial-gradient(130% 130% at 50% 50%, #11141a 42%, #05070a 100%);
+}
+#ceil::before{   /* 吊灯：平躺仰视时天花板上的灯 */
+    content:""; position:absolute; top:6%; left:50%; transform:translateX(-50%);
+    width:30px; height:40px; border-radius:0 0 50% 50%;
+    background:radial-gradient(circle at 50% 28%, rgba(255,249,224,.95), rgba(255,240,200,.22) 58%, rgba(0,0,0,0) 72%);
+    box-shadow:0 36px 70px 34px rgba(255,238,196,.10);
+}
+#ceil::after{   /* 四角暗影，强化仰视的包裹感 */
+    content:""; position:absolute; inset:0;
+    background:radial-gradient(120% 120% at 50% 50%, rgba(0,0,0,0) 50%, rgba(0,0,0,.6) 100%);
+}
+#ceil.on{ opacity:1; visibility:visible; }
+/* 天花板场景文字略实一点，压在天棚上好读 */
+#textbox.ceilmode{ background:linear-gradient(180deg, rgba(7,9,12,.62), rgba(7,9,12,.24)); }
+
+/* ============ 走廊场景（出了教室以后，背景换成走廊） ============ */
+#frame.corridor #bg{
+    background:
+        linear-gradient(180deg, rgba(4,6,9,.88) 0 20%, rgba(0,0,0,0) 46%),
+        radial-gradient(140% 74% at 50% 62%, rgba(86,98,90,.34), rgba(7,9,12,1) 70%);
+}
+#frame.corridor #bg::before{ display:none; }   /* 走廊没有教室那扇窗 */
+#frame.corridor #bg::after{                    /* 两侧依次排开的门 */
+    content:""; position:absolute; top:30%; left:0; right:0; height:38%;
+    background:repeating-linear-gradient(90deg, rgba(200,208,194,.05) 0 2px, rgba(0,0,0,0) 2px 92px);
+}
+
+/* ============ 镜头推进：把某个角色的立绘平滑放大怼近（不是整屏头像，不会吓人） ============ */
+.actor.zoom{ z-index:6; left:50%!important; right:auto!important; margin-left:-115px!important; }
+.actor.on.zoom .inner{ transform:scale(1.85) translateY(5%); }   /* .inner 自带 .8s 缓动 → 平滑推镜 */
+
+/* ============ 倒视画面：躺着倒着看，整个画面旋转 180°（文字层不转） ============ */
+#frame.down #bg, #frame.down #actors, #frame.down #ceil, #frame.down #face{
+    transform:rotate(180deg); transition:transform .75s cubic-bezier(.3,.7,.3,1);
+}
+
+/* ============ 特效：画面抖动（爆炸冲击 / 突脸共用） ============ */
+#frame.shake{ animation:shake .55s linear; }
+@keyframes shake{
+    0%,100%{ transform:translate(0,0); }
+    10%{ transform:translate(-6px,4px); } 20%{ transform:translate(7px,-3px); }
+    30%{ transform:translate(-5px,5px); } 40%{ transform:translate(6px,3px); }
+    50%{ transform:translate(-4px,-4px); } 60%{ transform:translate(5px,2px); }
+    70%{ transform:translate(-3px,3px); } 80%{ transform:translate(4px,-2px); }
+    90%{ transform:translate(-2px,1px); }
+}
+
+/* ============ 特效：白光闪 ============ */
+#flash{
+    position:absolute; inset:0; z-index:25; pointer-events:none; opacity:0;
+    background:rgba(255,244,232,.96);
+}
+#flash.on{ animation:flashpop .5s ease-out; }
+@keyframes flashpop{ 0%{ opacity:0; } 16%{ opacity:1; } 100%{ opacity:0; } }
+
+</style>
+</head>
+<body>
+<div id="stageWrap">
+    <div id="frame">
+        <span class="cn tl"></span><span class="cn tr"></span>
+        <span class="cn bl"></span><span class="cn br"></span>
+
+        <div id="bg"></div>
+        <div id="actors">
+            <div class="actor heroine" id="aHero"><div class="inner"></div></div>
+            <div class="actor boy"     id="aBoy"><div class="inner"></div></div>
+            <div class="actor teacher" id="aTea"><div class="inner"></div></div>
+            <div class="actor mira"    id="aMira"><div class="inner"></div></div>
+        </div>
+
+        <!-- 特效层：化学实验室爆炸的独立火光画面 -->
+        <div id="fx"></div>
+
+        <!-- 突脸层：整屏放大的老师脸（独立场景背景） -->
+        <div id="face"></div>
+
+        <!-- 天花板层：摔倒后躺着仰视的独立画面（背景直接换成天花板） -->
+        <div id="ceil"></div>
+
+        <div id="textbox">
+            <div id="log"></div>
+            <div id="next" class="off">▼</div>
+        </div>
+
+        <button id="menuBtn" title="目录 / 回看">☰ 目录</button>
+        <button id="end" class="off" title="重播全部">↻ 重播</button>
+
+        <!-- 节点选择遮罩 -->
+        <div id="nodes">
+            <h2>选 择 回 看 节 点</h2>
+            <div class="list" id="nodeList"></div>
+        </div>
+
+        <!-- 开场 -->
+        <div id="idle">
+            <div class="tag">CUT1</div>
+            <button id="play" title="开始">▶</button>
+            <div class="hint">点 击 开 始　　·　　点 击 / 空 格 推 进 文 本<br>点「☰ 目录」可 回 看 任 意 一 段</div>
+        </div>
+        <!-- 特效层：白光闪（爆炸冲击 / jumpscare 突脸共用） -->
+        <div id="flash"></div>
+    </div>
+</div>
+
+<script>
+/* ==================================================================
+   CUT1 —— 老式文字 AVG / Galgame 演出（参考 Sayo 教风格）
+   ------------------------------------------------------------------
+   玩法：底部文本框逐字打出一长段文本，点击/空格推进；女主有立绘，
+         其他角色用白边占位；顶部「☰ 目录」可跳到任意节点反复回看。
+   素材：F:\网页游戏\幂偌0.2\原文.txt（第 2~3 段起，续写至初遇攀谈、自报姓名：涵盖第 3~37 段）
+   ------------------------------------------------------------------
+   ⚠ 幂偌的名字保护：她在「自报姓名」节点亲口叫出名字之前，说话人标签、
+     立绘名牌、目录里含她名字的段名一律显示「？？？」；揭示后自动回溯更新。
+     标记方式：那一条台词写 nameReveal:true。
+   ------------------------------------------------------------------
+   ⚠ 立绘目前是 SVG 占位图。以后换真素材：把 actorSVG() 里返回的
+     <svg>…</svg> 换成 <img src="你画的立绘.png"> 即可（保持外层 .actor
+     结构和 .inner / .on 类名不动，动画与切换逻辑无需改）。
+   改剧情只动 NODES：每个节点 name=段名，cast=['heroine'|'boy'] 决定
+         谁登场，lines=[{sp:说话人, t:文本}] 是逐条打出的台词。
+         画面 flags（节点级）：reveal(空镜) / ceil(天花板) / down(倒视 180°) /
+         scene:'corridor'(走廊背景) / face:'teacher'|'mira'(整屏大脸，慎用，很吓人) /
+         zoom:'heroine'|'boy'|'teacher'|'mira'(镜头推进＝放大立绘，推荐代替 face) /
+         fx:'explosion'(火光)。
+         行级 flags（写在某一条台词上，这句一开演就生效）：
+         scene:'corridor' / shake:true / ceil:true(切天花板) / zoom:'mira' / nameReveal:true(幂偌自报姓名)。
+   ================================================================== */
+(function(){
+'use strict';
+
+/* ---- 占位立绘 ----
+   heroine = 原版填色立绘（框脸短发 + 圆点眼 + 微笑嘴），用户指定沿用；
+   mira    = 填色立绘（黑色四六分及肩长发 + 白色吊带连衣裙 + 半截淡棕夹克），与女主靠发型/衣装区分；
+   boy / teacher = 白边占位，露耳短发（与女主区分），只留两个圆点眼睛，无眉无嘴；
+   teacher 额外加衬衫领 + 领带，和「男生」剪影区分。 */
+function actorSVG(type){
+    var isMira = (type === 'mira');
+    var fill   = (type === 'heroine' || isMira);
+    var isMale = (type === 'boy' || type === 'teacher');
+    var skin  = fill ? '#e9d9c7' : 'none';
+    var eye   = fill ? '#23201c' : 'none';
+    var st    = fill ? 'rgba(200,208,194,.3)' : '#dfe6d8';
+    var sw    = fill ? 1.2 : 2;
+    var hair  = fill ? (isMira ? '#2c2622' : '#3a2f2a') : 'none';   // 幂偌=黑长发
+    var cloth = fill ? (isMira ? '#d9d2c4' : '#6f7d6a') : 'none';   // 幂偌=白色连衣裙
+    /* 发型区分：女主=框脸短发；幂偌=及肩长发；男生/班主任=露耳短发 */
+    var hairPath;
+    if (isMira){
+        hairPath = 'M46 110 C44 42 156 42 154 110 L158 176 C158 198 140 206 140 206 L132 206 L132 150 C132 116 68 116 68 150 L68 206 L60 206 C60 206 42 198 42 176 Z';
+    } else if (isMale){
+        hairPath = 'M52 106 C52 50 82 38 100 38 C120 38 150 50 150 106 L150 94 C150 66 124 56 100 56 C76 56 52 66 52 94 Z';
+    } else {
+        hairPath = 'M48 100 C48 38 152 38 152 100 L154 158 C154 188 100 196 100 196 C100 196 46 188 46 158 Z';
+    }
+    /* 衣身：女主=裤装；幂偌=连衣裙（到膝）；男生=白边裤装 */
+    var bodyPath = isMira
+        ? 'M62 188 C70 176 130 176 138 188 L150 314 C122 332 78 332 50 314 Z'
+        : 'M60 188 C70 172 130 172 140 188 L156 326 C122 344 78 344 44 326 Z';
+    var extra = '';
+    if (type === 'teacher'){
+        // 白边 + 衬衫领 / 领带，和「男生」剪影区分开
+        extra = '<path d="M84 188 L100 206 L116 188" fill="none" stroke="'+st+'" stroke-width="2"/>'
+              + '<path d="M100 206 L95 252 L105 252 Z" fill="none" stroke="'+st+'" stroke-width="2"/>';
+    }
+    if (isMira){
+        // 半截淡棕夹克，覆盖肩到腰，叠在连衣裙上
+        extra += '<path d="M58 184 C70 170 130 170 142 184 L150 256 C122 270 78 270 50 256 Z" fill="#b89a72" stroke="'+st+'" stroke-width="'+sw+'"/>';
+    }
+    // 女性（女主/幂偌）保留微笑嘴；男性（含班主任）无眉无嘴，仅两个圆点眼睛
+    var mouth = fill ? '<path d="M88 126 Q100 135 112 126" fill="none" stroke="'+st+'" stroke-width="'+sw+'"/>' : '';
+    return ''
+    + '<svg viewBox="0 0 200 340" xmlns="http://www.w3.org/2000/svg">'
+    +   '<path d="'+hairPath+'" fill="'+hair+'" stroke="'+st+'" stroke-width="'+sw+'"/>'
+    +   '<circle cx="100" cy="108" r="42" fill="'+skin+'" stroke="'+st+'" stroke-width="'+sw+'"/>'
+    +   '<circle cx="86" cy="108" r="4.5" fill="'+eye+'" stroke="'+st+'" stroke-width="'+ (fill?0:1.4) +'"/>'
+    +   '<circle cx="114" cy="108" r="4.5" fill="'+eye+'" stroke="'+st+'" stroke-width="'+ (fill?0:1.4) +'"/>'
+    +   mouth
+    +   '<path d="'+bodyPath+'" fill="'+cloth+'" stroke="'+st+'" stroke-width="'+sw+'"/>'
+    +   extra
+    + '</svg>';
+}
+
+/* ---- 头像（只取头部，用于「突脸/近脸」整屏大脸背景；type = teacher | mira | heroine | boy） ---- */
+function actorHeadSVG(type){
+    var isMale = (type === 'boy' || type === 'teacher');
+    var isMira = (type === 'mira');
+    var st    = isMale ? '#dfe6d8' : 'rgba(200,208,194,.3)';
+    var sw    = isMale ? 2 : 1.2;
+    var hair  = isMale ? 'none' : (isMira ? '#2c2622' : '#3a2f2a');
+    var skin  = isMale ? 'none' : '#e9d9c7';
+    var eye   = isMale ? 'none' : '#23201c';
+    var hairPath;
+    if (isMira){          // 幂偌：黑色四六分及肩长发（比女主更长的发尾）
+        hairPath = 'M46 110 C44 42 156 42 154 110 L158 176 C158 198 140 206 140 206 L132 206 L132 150 C132 116 68 116 68 150 L68 206 L60 206 C60 206 42 198 42 176 Z';
+    } else if (isMale){   // 男生/班主任：露耳短发
+        hairPath = 'M52 106 C52 50 82 38 100 38 C120 38 150 50 150 106 L150 94 C150 66 124 56 100 56 C76 56 52 66 52 94 Z';
+    } else {              // 女主：框脸短发
+        hairPath = 'M48 100 C48 38 152 38 152 100 L154 158 C154 188 100 196 100 196 C100 196 46 188 46 158 Z';
+    }
+    var vb    = isMira ? '0 0 200 260' : '0 0 200 200';   // 长发需要更高的画布
+    var mouth = isMale ? '' : '<path d="M88 126 Q100 135 112 126" fill="none" stroke="'+st+'" stroke-width="'+sw+'"/>';
+    return '<svg viewBox="'+vb+'" xmlns="http://www.w3.org/2000/svg">'
+        +   '<path d="'+hairPath+'" fill="'+hair+'" stroke="'+st+'" stroke-width="'+sw+'"/>'
+        +   '<circle cx="100" cy="108" r="42" fill="'+skin+'" stroke="'+st+'" stroke-width="'+sw+'"/>'
+        +   '<circle cx="86" cy="108" r="4.5" fill="'+eye+'" stroke="'+st+'" stroke-width="'+ (isMale?1.4:0) +'"/>'
+        +   '<circle cx="114" cy="108" r="4.5" fill="'+eye+'" stroke="'+st+'" stroke-width="'+ (isMale?1.4:0) +'"/>'
+        +   mouth
+        + '</svg>';
+}
+
+/* ---- 剧本：节点 → 登场角色 → 逐条台词 ---- */
+var NODES = [
+    { name:'教室', cast:[], reveal:true, lines:[
+        { sp:'旁白', t:'（放学前的教室。窗边那个位置，是玻琳秋的。）' }
+    ]},
+    { name:'接书', cast:['heroine','boy'], lines:[
+        { sp:'男生', t:'「接住咯！」' }
+    ]},
+    { name:'书砸下', cast:['heroine','boy'], lines:[
+        { sp:'旁白', t:'势大力沉——某个人扔过来的书本，猛然砸向玻琳秋。' }
+    ]},
+    { name:'借书', cast:['heroine','boy'], lines:[
+        { sp:'旁白', t:'玻琳秋向扔给她书的男生挥了挥手：' },
+        { sp:'玻琳秋', t:'「这本借我看看啊！」' }
+    ]},
+    { name:'门口挥手', cast:['heroine','boy'], lines:[
+        { sp:'旁白', t:'他远远地，在门口挥了挥手，示意他同意，并且即将出门。' }
+    ]},
+    { name:'靠窗座位', cast:['heroine'], lines:[
+        { sp:'旁白', t:'玻琳秋的座位靠窗。' }
+    ]},
+    { name:'竖大拇指', cast:['heroine'], lines:[
+        { sp:'旁白', t:'抬抬手，她向男生竖了个大拇指：' },
+        { sp:'玻琳秋', t:'「好嘞！」' }
+    ]},
+    { name:'打开书', cast:['heroine'], lines:[
+        { sp:'旁白', t:'然后，满心欢喜地打开书本。' }
+    ]},
+
+    /* —— 以下：延续原文，做到「班会」那一段（原文第 3、4、5、6、8、9、10、11、15、16 段） —— */
+    { name:'书签', cast:['heroine'], lines:[
+        { sp:'旁白', t:'（扉页里还夹着个书签呢。）' },
+        { sp:'旁白', t:'黄叶子，梭形的，已经干了，绑着红绳。' },
+        { sp:'旁白', t:'笑嘻嘻地，她捏起书签，轻轻放在手边。' },
+        { sp:'旁白', t:'接着一手扶住书页，一手一行一行地读。' }
+    ]},
+    { name:'阅读', cast:['heroine'], lines:[
+        { sp:'旁白', t:'这是独属于她的仪式，即使这样一行一行读有些像是小孩子。' },
+        { sp:'旁白', t:'可是，对于她来说，做个孩子也不错。' },
+        { sp:'旁白', t:'随意地，偶然看向窗户之外……大家在上体育课。' },
+        { sp:'旁白', t:'淡淡笑了一下，她继续看书了。' }
+    ]},
+    { name:'变故将至', cast:['heroine'], lines:[
+        { sp:'旁白', t:'玻琳秋的座位靠窗，身旁是她的拐杖。' },
+        { sp:'旁白', t:'窗户上的水滴慢慢滑落，时间早就过去了不少，她也已经看了不少的字……' }
+    ]},
+    { name:'实验室爆炸', cast:[], fx:'explosion', lines:[
+        { sp:'旁白', t:'“轰！！——”化学实验室里却发生了爆炸。大火弥漫在实验室之中。' },
+        { sp:'旁白', t:'几个学生叽叽喳喳地互相吵闹：“我***啊！！谁教你的放那么大一块进去的？！”' },
+        { sp:'旁白', t:'互相解释，交头接耳：“谁知道啊我靠！手抖了当时……”' },
+        { sp:'旁白', t:'学生们仓皇着躲避逃窜，“你**真无敌了……”东奔西跑：“谁知道才那么点能炸啊我靠！……”' }
+    ]},
+    { name:'远观', cast:['heroine'], lines:[
+        { sp:'旁白', t:'远远地，隔着窗，玻琳秋抬了抬头，顺着爆炸的声音方向看去，瞪大了双眼：' },
+        { sp:'玻琳秋', t:'“我靠……还冒烟了啊……”' },
+        { sp:'旁白', t:'“咔吧——”拐杖倒在了地上。' }
+    ]},
+    { name:'空教室', cast:[], reveal:true, lines:[
+        { sp:'旁白', t:'硕大的教室，只有她一个人。书本林立，试卷成群，黑板上遗留着老师的板书，空气里缥缈着粉笔的灰屑。' },
+        { sp:'旁白', t:'透着光，能看见光路，也能看见墙角的尘土。回头，她默默地看着自己的拐杖。' },
+        { sp:'旁白', t:'“诶哟……”她弯了弯腰去捡拾。' }
+    ]},
+    { name:'开班会', cast:['heroine'], lines:[
+        { sp:'旁白', t:'起身再看时，已经在开班会了。' }
+    ]},
+    { name:'班主任宣讲', cast:['heroine','teacher'], lines:[
+        { sp:'班主任', t:'“好在没有造成大面积伤害……同学们啊……一定要注意实验安全……绝对不要一意孤行不按照实验要求搁那儿乱加东西……最后搞得……”' },
+        { sp:'旁白', t:'班主任正在一本正经地宣讲。教室里，大家闲聊的闲聊，学习的学习。' }
+    ]},
+    { name:'自习', cast:['heroine','teacher'], lines:[
+        { sp:'旁白', t:'玻琳秋喜滋滋地阅读她手里的书。' },
+        { sp:'旁白', t:'班主任结束宣讲，随意指示：“好了，接下来大家自习吧……安静一下……”' },
+        { sp:'旁白', t:'「然后是下一页。」' },
+        { sp:'玻琳秋', t:'「突然。」' }
+    ]},
+    /* 突脸：独立场景——背景直接换成整屏放大的老师脸，文本是全新的、不接自习；
+       这一幕播完，点一下才切回正常对话（班主任关心）。 */
+    { name:'班主任突脸', face:'teacher', cast:[], lines:[
+        { sp:'班主任', t:'「琳秋？」' }
+    ]},
+    { name:'班主任关心', cast:['heroine','teacher'], lines:[
+        { sp:'班主任', t:'“恢复的怎么样了？……还适应吧？……”他问，端了端咯吱窝里的书。' },
+        { sp:'玻琳秋', t:'“啊……啊……呃……还好……”她含含糊糊地回答他的问题。' },
+        { sp:'班主任', t:'“去食堂的时候自己一个人方便吗？……用不用安排你熟悉的人陪着你？……”' },
+        { sp:'玻琳秋', t:'“嗯？……还行吧……暂时不用……”她含含糊糊地笑了笑。' },
+        { sp:'班主任', t:'“我知道了——书可以等下课再看。”' },
+        { sp:'玻琳秋', t:'“啊？啊——嗯……”她慌忙把书收了起来，趴在课桌上，专心致志地自习。' }
+    ]},
+
+    /* —— 以下：续写原文，做到「还知道了她的名字叫「幂偌」」（原文第 17~37 段） —— */
+    { name:'放学铃', cast:['heroine'], lines:[
+        { sp:'旁白', t:'直到——' },
+        { sp:'旁白', t:'“丁铃铃铃铃——”放学铃声响起。' }
+    ]},
+    { name:'冲饭', cast:['heroine'], lines:[
+        { sp:'旁白', t:'每每这个时候，总是学生最热血的时刻：“冲啊卧槽！”' },
+        { sp:'旁白', t:'原因嘛，原因也很显而易见，“不快点抢不上饭了就！……”' },
+        { sp:'旁白', t:'不是什么很美好的生活，却又反而有趣，“前面的能不能稍微让一下！求求了啊我草……”' }
+    ]},
+    { name:'离校', cast:[], reveal:true, lines:[
+        { sp:'旁白', t:'“耶？等……等我一下啊！……”掉队的人也赶快跟上自己的朋友。' },
+        { sp:'旁白', t:'男男女女都离开了教室……硕大的教室，只剩她一人。' }
+    ]},
+    { name:'合书', cast:['heroine'], lines:[
+        { sp:'旁白', t:'“砰——”合上书本。' },
+        { sp:'旁白', t:'玻琳秋心满意足地笑着。' }
+    ]},
+    { name:'起身离座', cast:['heroine'], lines:[
+        { sp:'旁白', t:'拿起一根拐杖，支撑着慢慢站起来。起身以后，翘起右脚，拿起另一根拐杖：“嗒……嗒嗒……嗒……”' },
+        { sp:'旁白', t:'支撑着身体，她从课桌之间的过道慢慢向前。没走几步，途经过道中间，她回头看了看……' },
+        { sp:'内心', t:'【没忘带东西吧？】' },
+        { sp:'旁白', t:'就这样，她回头注视了自己的座位数秒。然后回头，继续向前。' },
+        { sp:'内心', t:'【应该都带了。】' },
+        { sp:'旁白', t:'硕大的教室，只剩她的背影。' }
+    ]},
+    /* 回眸座位：空镜（reveal）——整个背景显现，立绘淡出，多换一页 */
+    { name:'回眸座位', cast:[], reveal:true, lines:[
+        { sp:'内心', t:'【都带了……】' },
+        { sp:'旁白', t:'她又回头，把那个靠窗的座位数秒，好好收进了眼里。' }
+    ]},
+    { name:'关门', cast:['heroine'], lines:[
+        { sp:'玻琳秋', t:'「哐——」她关上了教室的门。' }
+    ]},
+
+    /* 摔倒三连：绊倒 → 倒地 → 躺看天花板（独立画面），多分段、多换页、减旁白 */
+    { name:'绊倒', cast:['heroine'], lines:[
+        { sp:'玻琳秋', t:'刚一转身——' },
+        // 拟声词出来的那一瞬间：背景立刻切到走廊，同时抖一下
+        { sp:'旁白', t:'「咵！」拐杖却绊到了门口的桌子。', scene:'corridor', shake:true },
+        { sp:'玻琳秋', t:'「卧槽！——」' }
+    ]},
+    // 倒地：「噗通！！」落地的同一瞬间背景就换成天花板（行级 ceil），她已经躺在地上了
+    { name:'倒地', cast:['heroine'], scene:'corridor', lines:[
+        { sp:'旁白', t:'「噗通！！」一声，身体失衡，她直直地倒了下去。', ceil:true, shake:true },
+        { sp:'玻琳秋', t:'「呜——……」' }
+    ]},
+    /* 天花板：独立画面——整屏换成抬头看到的天花板（躺着仰视的主观视角），立绘淡出 */
+    { name:'看天花板', cast:[], ceil:true, lines:[
+        { sp:'旁白', t:'就这么平躺在地上，正面朝上。' },
+        { sp:'内心', t:'……对着天花板，深情地注视着。' },
+        { sp:'旁白', t:'硕大的走廊，只剩她眼中的一隅。' },
+        { sp:'内心', t:'啊……屁股……' },
+        { sp:'内心', t:'屁股不会也要骨折了吧沃日啊……' },
+        { sp:'内心', t:'怎么这么疼……' }
+    ]},
+
+    /* ==== 幂偌登场 → 初遇 → 攀谈 → 自报姓名 ====
+       ⚠ 幂偌在说出自己名字之前，说话人与立绘名牌一律显示「？？？」（见 setNamed / revealMiraName）。
+       每段 = 一个节点 = 换一页画面，故意多分段做出演出节奏。 */
+    /* ① 天花板画面里落进来的声音（她还只是个声音） */
+    { name:'有声音落下', cast:[], ceil:true, lines:[
+        { sp:'幂偌', t:'「你没事儿吧？……要帮忙吗？……」' },
+        { sp:'旁白', t:'有声音进入了她的天花板，不再只剩她一人。' }
+    ]},
+    /* ② 倒着看：整个画面旋转 180°（躺着看人的主观视角），走廊背景、立绘倒着登场 */
+    { name:'倒着看', cast:['mira'], down:true, scene:'corridor', lines:[
+        { sp:'旁白', t:'画面倒着……玻琳秋好好看了看声音的主人：是个女生，人瘦瘦的。' },
+        { sp:'旁白', t:'穿棕色的靴子，白色吊带连衣裙，外套是半截淡棕色夹克。' },
+        { sp:'旁白', t:'还有黑色的、四六分及肩长发。' },
+        { sp:'内心', t:'【来参观的吗？……】' },
+        { sp:'内心', t:'【还是新来的老师？……】' }
+    ]},
+    /* ③ 俯身凑近：不再用整屏大脸，改成镜头推近——把幂偌的立绘平滑放大怼近（仍是倒着的仰视角） */
+    { name:'俯身', cast:['mira'], down:true, scene:'corridor', lines:[
+        { sp:'旁白', t:'她俯了下来。' },
+        { sp:'内心', t:'【……好近。】', zoom:'mira' }
+    ]},
+    /* ④ 逞强失败：回到正常朝向的走廊，两人同框 */
+    { name:'逞强', cast:['heroine','mira'], scene:'corridor', lines:[
+        { sp:'玻琳秋', t:'「没事儿——我能——」' },
+        { sp:'旁白', t:'她要逞强了。' },
+        { sp:'玻琳秋', t:'「嘶哦——」' },
+        { sp:'旁白', t:'屁股却又四分五裂般疼痛，玻琳秋只能放弃嘴硬，乖乖躺着。' }
+    ]},
+    /* ⑤ 伸手求拉 */
+    { name:'伸出手', cast:['heroine','mira'], scene:'corridor', lines:[
+        { sp:'玻琳秋', t:'「呃……求求了……拉我一把吧……」' },
+        { sp:'旁白', t:'她向那个女生伸出手。' }
+    ]},
+    /* ⑥ 被扶起来 + 道谢 */
+    { name:'被扶起来', cast:['heroine','mira'], scene:'corridor', lines:[
+        { sp:'旁白', t:'扶着那个女生，玻琳秋慢慢站了起来。' },
+        { sp:'玻琳秋', t:'「嗯……」' },
+        { sp:'旁白', t:'她仍然觉得痛，嘶哦嘶哦地感叹自己的痛苦，同时不忘道谢：' },
+        { sp:'玻琳秋', t:'「谢谢您啊……」' }
+    ]},
+    /* ⑦ 问路 */
+    { name:'问路', cast:['heroine','mira'], scene:'corridor', lines:[
+        { sp:'幂偌', t:'「没事的……」对方笑了笑，顺带向她问路：' },
+        { sp:'幂偌', t:'「对了同学……你知道高二本部在哪栋楼吗？」' }
+    ]},
+    /* ⑧ 这儿就是高二本部 */
+    { name:'这儿就是', cast:['heroine','mira'], scene:'corridor', lines:[
+        { sp:'玻琳秋', t:'看一看她，玻琳秋眨眨眼：「这儿……就是高二本部啊……」' },
+        { sp:'幂偌', t:'「欸？……」对方意外。' }
+    ]},
+    /* ⑨ 走廊空镜：背景揭示（立绘淡出），两人面面相觑 */
+    { name:'面面相觑', cast:[], reveal:true, scene:'corridor', lines:[
+        { sp:'旁白', t:'硕大的走廊，她们面面相觑。脚下是两根拐杖，散在两边。' }
+    ]},
+    /* ⑩ 攀谈：真的聊起来（原文第 37 段） */
+    { name:'攀谈', cast:['heroine','mira'], scene:'corridor', lines:[
+        { sp:'旁白', t:'玻琳秋很喜欢说话，有一句没一句地也就和她聊起来了。' },
+        { sp:'玻琳秋', t:'「你学的播音主持啊原来……」' },
+        { sp:'旁白', t:'玻琳秋感觉新奇。' },
+        { sp:'幂偌', t:'「初中的时候比较有兴趣……所以延续下来了。」' },
+        { sp:'旁白', t:'那个女生似乎也很健谈，总跟她聊得来。' }
+    ]},
+    /* ⑪ 自报姓名：名字揭示点。这一打完，之前所有「？？？」立刻回溯变成「幂偌」 */
+    { name:'自报姓名', cast:['heroine','mira'], scene:'corridor', lines:[
+        { sp:'幂偌', t:'「啊——还没说名字呢。我叫幂偌。」', nameReveal:true },
+        { sp:'玻琳秋', t:'「我叫玻琳秋……叫我琳秋就行。」' },
+        { sp:'旁白', t:'就这样，她知道了那个女生的名字叫「幂偌」。' }
+    ]}
+];
+
+var frame   = document.getElementById('frame');
+var textbox = document.getElementById('textbox');
+var logEl   = document.getElementById('log');
+var nextEl  = document.getElementById('next');
+var aHero   = document.getElementById('aHero');
+var aBoy    = document.getElementById('aBoy');
+var aTea    = document.getElementById('aTea');
+var aMira   = document.getElementById('aMira');
+var fxEl    = document.getElementById('fx');
+var faceEl  = document.getElementById('face');
+var ceilEl  = document.getElementById('ceil');
+var flashEl = document.getElementById('flash');
+var idle    = document.getElementById('idle');
+var endBtn  = document.getElementById('end');
+var nodesEl = document.getElementById('nodes');
+var nodeList= document.getElementById('nodeList');
+var menuBtn = document.getElementById('menuBtn');
+
+var nodeIdx = 0, lineIdx = 0, playing = false, typing = false, typeTimer = null, fullText = '', curTx = null;
+
+/* 幂偌的名字是否已揭晓：未揭晓时，她的说话人 / 立绘名牌 / 目录条目一律显示「？？？」 */
+var miraNamed = false;
+var pendingReveal = null;   // 当前这句打完后要执行的揭示回调
+
+/* 立绘名牌初始值：不提前透露名字 */
+aMira.querySelector('.inner').innerHTML = actorSVG('mira') + '<div class="nametag">？？？（占位立绘）</div>';
+
+/* 占位立绘注入 */
+aHero.querySelector('.inner').innerHTML = actorSVG('heroine') + '<div class="nametag">玻琳秋（占位立绘）</div>';
+aBoy.querySelector('.inner').innerHTML  = actorSVG('boy')     + '<div class="nametag">男生（白边占位）</div>';
+aTea.querySelector('.inner').innerHTML  = actorSVG('teacher') + '<div class="nametag">班主任（白边占位）</div>';
+/* 突脸层：注入放大的老师头像（白边头部） */
+faceEl.innerHTML = actorHeadSVG('teacher');
+
+/* 说话人配色：幂偌在自报姓名前是「？？？」（unknown），之后才用 mira 淡粉 */
+function spClass(sp){
+    if (sp === '玻琳秋') return 'hero';
+    if (sp === '班主任') return 'tea';
+    if (sp === '幂偌')  return miraNamed ? 'mira' : 'unknown';
+    if (sp === '男生')  return 'boy';
+    if (sp === '内心')  return 'inner';
+    return 'narr';
+}
+
+/* 目录条目：幂偌未揭晓时，含她名字的段名一律打码，避免剧透 */
+function nodeLabel(n){
+    return (!miraNamed && n.name.indexOf('幂偌') >= 0) ? '？？？' : n.name;
+}
+
+/* 切换「是否已知道幂偌名字」，并同步立绘名牌 + 目录条目 */
+function setNamed(v){
+    miraNamed = v;
+    var nt = aMira.querySelector('.nametag');
+    if (nt) nt.textContent = (v ? '幂偌' : '？？？') + '（占位立绘）';
+    refreshNodes();
+}
+
+/* 名字揭示：幂偌亲口说出名字的那一刻调用。
+   ① 切换状态 ② 回溯更新本幕已经打出的所有「？？？」标签 */
+function revealMiraName(){
+    setNamed(true);
+    var tags = logEl.querySelectorAll('.sp[data-sp="mira"]');
+    for (var i = 0; i < tags.length; i++){
+        tags[i].textContent = '幂偌';
+        tags[i].className = 'sp mira';
+    }
+}
+
+/* 幂偌说出自己名字所在的节点序号（用于从目录跳段时判断该不该显示真名） */
+function miraRevealIdx(){
+    for (var i = 0; i < NODES.length; i++){
+        var ls = NODES[i].lines;
+        for (var j = 0; j < ls.length; j++) if (ls[j].nameReveal) return i;
+    }
+    return -1;
+}
+
+/* 登场角色切换 */
+function setCast(cast){
+    var aloneHero = (cast.length === 1 && cast[0] === 'heroine');
+    aHero.classList.toggle('on', cast.indexOf('heroine') >= 0);
+    aHero.classList.toggle('center', aloneHero);
+    aBoy.classList.toggle('on', cast.indexOf('boy') >= 0);
+    aTea.classList.toggle('on', cast.indexOf('teacher') >= 0);
+    aMira.classList.toggle('on', cast.indexOf('mira') >= 0);
+}
+
+/* 目录节点列表 */
+function buildNodes(){
+    nodeList.innerHTML = '';
+    NODES.forEach(function(n, i){
+        var b = document.createElement('div');
+        b.className = 'node-item';
+        b.innerHTML = '<span class="no">' + (i+1) + '</span><span class="nm">' + nodeLabel(n) + '</span>';
+        b.addEventListener('click', function(){ jumpNode(i); });
+        nodeList.appendChild(b);
+    });
+}
+function refreshNodes(){
+    var items = nodeList.children;
+    for (var i = 0; i < items.length && i < NODES.length; i++){
+        items[i].querySelector('.nm').textContent = nodeLabel(NODES[i]);
+    }
+}
+
+/* 开一行：把说话人 + 文本作为一条 .ln 追加到顶部文本区（累计），并逐字打出 */
+function startLine(sp, t, line){
+    var prev = logEl.querySelector('.ln.cur');
+    if (prev) prev.classList.remove('cur');
+    var div = document.createElement('div');
+    div.className = 'ln cur';
+    if (sp){
+        var named = (sp !== '幂偌') || miraNamed;
+        var s = document.createElement('span');
+        s.className = 'sp ' + spClass(sp);
+        s.textContent = named ? sp : '？？？';
+        if (sp === '幂偌') s.setAttribute('data-sp', 'mira');   // 供揭示后回溯更新
+        div.appendChild(s);
+    }
+    var tx = document.createElement('span');
+    div.appendChild(tx);
+    logEl.appendChild(div);
+    curTx = tx; fullText = t; typing = true;
+    nextEl.classList.add('off');
+    // 幂偌自报姓名的那一句：打完（或被打断补全）才揭晓真名
+    pendingReveal = (line && line.nameReveal) ? revealMiraName : null;
+    typeInto();
+    // 行级演出：背景切换 / 抖动 / 镜头推进（标记在某一句上时，这句一开始播就立刻生效）
+    if (line){
+        if (line.scene) frame.classList.toggle('corridor', line.scene === 'corridor');
+        if (line.shake) doShake();
+        if (line.zoom) applyZoom(line.zoom);
+        if (line.ceil) applyCeil(true);
+    }
+}
+
+/* 白光闪（化学实验室爆炸冲击用） */
+function popFlash(){
+    flashEl.classList.remove('on'); void flashEl.offsetWidth; flashEl.classList.add('on');
+    setTimeout(function(){ flashEl.classList.remove('on'); }, 520);
+}
+
+/* 画面抖动：爆炸冲击、绊倒等瞬间都可复用 */
+function doShake(){
+    frame.classList.remove('shake'); void frame.offsetWidth; frame.classList.add('shake');
+    setTimeout(function(){ frame.classList.remove('shake'); }, 600);
+}
+
+/* 镜头推进：放大某个角色的立绘（zoom:'heroine'|'boy'|'teacher'|'mira'；空字符串=取消） */
+function applyZoom(who){
+    var map = { heroine:aHero, boy:aBoy, teacher:aTea, mira:aMira };
+    map.heroine.classList.remove('zoom'); map.boy.classList.remove('zoom');
+    map.teacher.classList.remove('zoom'); map.mira.classList.remove('zoom');
+    if (who && map[who]) map[who].classList.add('zoom');
+}
+
+/* 天花板画面开关：立绘淡出 + 整屏换成躺着仰视的天花板 */
+function applyCeil(on){
+    frame.classList.toggle('bgonly', on);
+    ceilEl.classList.toggle('on', on);
+    textbox.classList.toggle('ceilmode', on);
+}
+
+/* 逐字打字机（打在 curTx 上） */
+function typeInto(){
+    clearTimeout(typeTimer);
+    var i = 0;
+    (function step(){
+        if (i >= fullText.length){ typing = false; updateNext(); fireLineEnd(); return; }
+        curTx.textContent = fullText.slice(0, i+1);
+        var ch = fullText.charAt(i);
+        var delay = (ch === '，' || ch === '。' || ch === '：' || ch === '、' || ch === '”' || ch === '』') ? 90 : 30;
+        i++;
+        typeTimer = setTimeout(step, delay);
+    })();
+}
+function finishType(){
+    clearTimeout(typeTimer);
+    if (curTx) curTx.textContent = fullText;
+    typing = false; updateNext(); fireLineEnd();
+}
+/* 一句打完/补全时执行挂起的揭示（幂偌自报姓名） */
+function fireLineEnd(){ if (pendingReveal){ var fn = pendingReveal; pendingReveal = null; fn(); } }
+
+/* ▼ 只在「还能继续推进」时显示 */
+function updateNext(){
+    if (typing){ nextEl.classList.add('off'); return; }
+    var node = NODES[nodeIdx];
+    var hasMore = (lineIdx < node.lines.length - 1) || (nodeIdx < NODES.length - 1);
+    nextEl.classList.toggle('off', !hasMore);
+}
+
+/* 显示某节点的某条线（累计追加） */
+function showLine(){
+    var node = NODES[nodeIdx], line = node.lines[lineIdx];
+    startLine(line.sp, line.t, line);
+}
+
+/* 进入某节点（清文本区 + 设置登场 + 背景揭示/爆炸/突脸画面 + 第一条线） */
+function showNode(i){
+    nodeIdx = i; lineIdx = 0;
+    var node = NODES[i];
+    logEl.innerHTML = '';
+    setCast(node.cast);
+    applyZoom(node.zoom || '');   // 节点级镜头推进（行级的由 startLine 处理）
+    var reveal = !!node.reveal;
+    var explosion = (node.fx === 'explosion');
+    var facemode = node.face || '';      // 'teacher' / 'mira' → 整屏大脸角色
+    var ceilmode = !!node.ceil;
+    var downmode = !!node.down;          // 倒视：整个画面旋转 180°
+    // reveal / 爆炸 / 天花板 都会让角色立绘淡出（bgonly），只剩背景或特效画面
+    frame.classList.toggle('bgonly', reveal || explosion || ceilmode);
+    frame.classList.toggle('down', downmode);
+    frame.classList.toggle('corridor', node.scene === 'corridor');   // 出了教室换走廊背景
+    textbox.classList.toggle('reveal', reveal);
+    textbox.classList.toggle('overfx', explosion);
+    textbox.classList.toggle('facemode', !!facemode);
+    textbox.classList.toggle('ceilmode', ceilmode);
+    // 突脸/近脸：背景直接换成整屏放大的脸（独立场景，覆盖正常背景与角色）
+    if (facemode) faceEl.innerHTML = actorHeadSVG(facemode);
+    faceEl.classList.toggle('on', !!facemode);
+    // 天花板：背景直接换成抬头看到的天花板（躺着仰视的独立画面）
+    ceilEl.classList.toggle('on', ceilmode);
+    if (explosion){
+        // 化学实验室爆炸：独立火光画面，覆盖背景与角色，随后切回正常画面
+        fxEl.classList.remove('explode'); void fxEl.offsetWidth; fxEl.classList.add('explode');
+        doShake();
+        popFlash();
+    } else {
+        fxEl.classList.remove('explode');
+    }
+    startLine(node.lines[0].sp, node.lines[0].t, node.lines[0]);
+}
+
+/* 推进：没打完→打完；打完了→下一条 / 下一节点 / 结束 */
+function advance(){
+    if (!playing) return;
+    if (typing){ finishType(); return; }
+    var node = NODES[nodeIdx];
+    if (lineIdx < node.lines.length - 1){ lineIdx++; showLine(); }
+    else if (nodeIdx < NODES.length - 1){ showNode(nodeIdx + 1); }
+    else endShow();
+}
+
+/* 从头播（反复观看整段）——名字状态重置 */
+function startAll(){
+    playing = true; closeNodes(); endBtn.classList.add('off'); idle.classList.add('off');
+    setNamed(false);
+    showNode(0);
+}
+
+/* 跳到某节点并继续（反复观看某一段）：跳到揭示之后就该显示真名，跳回之前则重新打码 */
+function jumpNode(i){
+    playing = true; closeNodes(); idle.classList.add('off'); endBtn.classList.add('off');
+    var ri = miraRevealIdx();
+    setNamed(ri >= 0 && i >= ri);
+    showNode(i);
+}
+
+function endShow(){
+    playing = false; endBtn.classList.remove('off');
+    /* **这里什么都不解锁**（2026-10-03 改）：
+       CUT2 不是看完这一段就白送的 —— 玩家得自己在学校官网里翻到「学生食堂」那一页，
+       进去了才算"捡到"（标记由 canteen.html 自己写，见 pages/school/canteen.html）。
+       线索是碎片化的：官网的快速通道、通告里的只言片语，都得他自己对上。 */
+}
+
+/* 目录开合 */
+function openNodes(){ nodesEl.classList.add('open'); }
+function closeNodes(){ nodesEl.classList.remove('open'); }
+
+/* 交互 */
+document.getElementById('play').addEventListener('click', function(e){ e.stopPropagation(); startAll(); });
+idle.addEventListener('click', function(){ if (!nodesEl.classList.contains('open')) startAll(); });
+frame.addEventListener('click', function(e){
+    if (nodesEl.classList.contains('open')) { closeNodes(); return; }
+    if (e.target.closest('#menuBtn') || e.target.closest('#end') || e.target.closest('#nodes')) return;
+    advance();
+});
+endBtn.addEventListener('click', function(e){ e.stopPropagation(); startAll(); });
+menuBtn.addEventListener('click', function(e){ e.stopPropagation(); nodesEl.classList.contains('open') ? closeNodes() : openNodes(); });
+document.addEventListener('keydown', function(e){
+    if (e.code === 'Space' || e.code === 'Enter'){
+        e.preventDefault();
+        if (nodesEl.classList.contains('open')) { closeNodes(); return; }
+        if (idle.classList.contains('off')) advance(); else startAll();
+    }
+});
+
+buildNodes();
+setNamed(false);
+})();
+</script>
+</body>
+</html>

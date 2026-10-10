@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>案例 AQ-130812-2　高空速降事故处理情况通报｜青麓旅行社</title>
+<style>
+/* ==================================================================
+   案例 AQ-130812-2：**搜到编号之后才看得到的那一页**。
+   404 页永远保持 404 —— 搜到了不是"把 404 换掉"，而是另外把这个页面打开。
+   本页讲清 8·12 高空速降事故的处理结果：安全员被辞退、项目暂停，
+   但**伤者姓名和器械失效的直接原因仍被盖着**（黑块），留给下一段去揭。
+   ================================================================== */
+:root{
+    --ink:#1f2a24; --tx:#2b2b2b; --tx2:#5c5c5c; --tx3:#8a8a8a;
+    --gr:#1f6b52; --grl:#2f8f68; --grw:#eef6f2;
+    --or:#e07a3f; --red:#c0392b; --line:#e0e6e2; --bd:#cdd8d2;
+    --bg:#fff; --bgf:#f5f7f6;
+    --font:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",SimSun,sans-serif;
+}
+*{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
+@media (prefers-reduced-motion: reduce){ html{ scroll-behavior:auto; } }
+body{ margin:0; background:var(--bgf); color:var(--tx); font:15px/1.9 var(--font); }
+a{ color:#1a4a8a; text-decoration:none; }
+a:hover{ color:var(--or); text-decoration:underline; }
+.wrap{ width:1000px; max-width:96%; margin:0 auto; }
+
+.topbar{ background:var(--ink); color:#cfd8d2; font-size:12px; }
+.topbar .wrap{ display:flex; justify-content:space-between; align-items:center; height:32px; }
+.topbar a{ color:#cfd8d2; margin-left:14px; }
+.topbar a:hover{ color:#fff; }
+
+.logo{ background:#fff; border-bottom:1px solid var(--line); }
+.logo .wrap{ display:flex; align-items:center; gap:18px; padding:16px 0 14px; }
+.logo .mark{ flex:0 0 auto; width:46px; height:46px; }
+.logo b{ font-size:24px; letter-spacing:3px; color:var(--gr); }
+.logo i{ display:block; font-style:normal; font-size:11.5px; color:var(--tx3); letter-spacing:1.5px; }
+.logo .tel{ margin-left:auto; text-align:right; font-size:12.5px; color:var(--tx2); line-height:1.7; }
+.logo .tel b{ display:block; font-size:19px; color:var(--or); letter-spacing:.5px; }
+
+/* 题头常驻：点栏目往下滚时导航不会跟着滚出视口，否则高亮看不见 */
+.nav{ background:var(--gr); position:sticky; top:0; z-index:90;
+      box-shadow:0 2px 0 rgba(0,0,0,.06); }
+.nav .wrap{ display:flex; flex-wrap:wrap; }
+.nav a{ color:#eaf3ee; font-size:14.5px; padding:11px 20px; letter-spacing:1px; }
+.nav a:hover{ background:var(--grl); text-decoration:none; }
+.nav a.on{ background:#fff; color:var(--gr); font-weight:700;
+             box-shadow:inset 0 -3px 0 var(--or); }
+.nav a.on:hover{ background:#fff; color:var(--gr); text-decoration:none; }
+.nav a.off{ color:#a9c4b6; cursor:default; }
+.nav a.off:hover{ background:transparent; }
+
+.sbar{ background:#fff; border-bottom:1px solid var(--line); padding:14px 0 12px; }
+.sbar .wrap{ display:flex; align-items:center; gap:14px; }
+.sbar form{ display:flex; flex:0 0 auto; }
+.sbar input{ width:260px; height:36px; padding:0 12px; font:14px var(--font); color:var(--tx);
+             border:2px solid var(--gr); border-right:0; border-radius:2px 0 0 2px; outline:none; }
+.sbar button{ height:36px; padding:0 22px; font:14px var(--font); letter-spacing:2px; cursor:pointer;
+              color:#fff; background:var(--gr); border:2px solid var(--gr); border-radius:0 2px 2px 0; }
+.sbar button:hover{ background:var(--grl); border-color:var(--grl); }
+.sbar .hot{ font-size:12.5px; color:var(--tx3); }
+.sbar .hot a{ margin:0 8px; }
+
+.crumb{ font-size:12.5px; color:var(--tx3); padding:14px 0 0; }
+.crumb a{ margin:0 4px; }
+
+.main{ display:flex; gap:20px; padding:18px 0 10px; align-items:flex-start; }
+.left{ flex:1 1 auto; min-width:0; }
+.right{ flex:0 0 268px; }
+.box{ background:#fff; border:1px solid var(--line); padding:20px 26px 24px; margin-bottom:18px; }
+
+.doc{ border:1px solid var(--bd); background:#fcfdfc; padding:18px 22px 20px; }
+.doc .dt{ text-align:center; font-size:16.5px; letter-spacing:1px; color:var(--ink); }
+.doc .dno{ text-align:center; font-size:12.5px; color:var(--tx3);
+           padding-bottom:12px; border-bottom:1px solid var(--line); }
+.doc p{ margin:12px 0; font-size:14px; line-height:2.1; text-indent:2em; }
+.doc p.sign{ text-align:right; text-indent:0; color:var(--tx2); font-size:13px; }
+
+/* 通报正文块（这一段是从 notice.html 搬过来的，样式也得跟过去） */
+.ntc{ border:1px solid var(--bd); background:#fcfdfc; padding:18px 22px 20px; margin-top:6px;}
+.ntc h4{ margin:0 0 4px; font-size:16.5px; color:var(--ink); letter-spacing:1px; text-align:center;}
+.ntc .no{ font-size:12.5px; color:var(--tx3); text-align:center; padding-bottom:12px; border-bottom:1px solid var(--line);}
+.ntc p{ margin:12px 0; font-size:14px; line-height:2.1; color:var(--tx); text-indent:2em;}
+.ntc p.sign{ text-align:right; text-indent:0; color:var(--tx2); font-size:13px;}
+/* 黑块：盖住的东西复制不出来（选中也是同色） */
+.rd{ display:inline-block; padding:1px 12px; margin:0 2px; background:#232323; color:#232323;
+     border-radius:2px; letter-spacing:1px; font-size:14px; user-select:none; cursor:not-allowed;}
+.rd::selection{ background:#232323; color:#232323;}
+/* 单号 / 条款号：等宽体，跟正文字号区分开，看着像"抄来的" */
+.mono{ font-family:Consolas,"Courier New",monospace; font-size:13px; letter-spacing:.5px; color:var(--ink); }
+/* 站内采访块 */
+.ivw{ margin-top:16px; border-top:1px dashed var(--line); padding-top:14px;}
+.ivw h5{ margin:0 0 10px; font-size:14.5px; color:var(--gr); letter-spacing:1px;}
+.ivw .qa{ padding:8px 0; border-bottom:1px dashed var(--line); font-size:13.5px; line-height:1.95;}
+.ivw .qa:last-of-type{ border-bottom:0;}
+.ivw .qq{ color:var(--ink); font-weight:700;}
+.ivw .aa{ color:#333;}
+
+.meta{ border:1px solid var(--line); background:var(--grw); padding:12px 16px; margin:14px 0 4px;
+       font-size:13px; color:var(--tx2); line-height:1.95; }
+.meta b{ color:var(--gr); }
+.meta .no{ font-family:Consolas,"Courier New",monospace; font-size:14px; color:var(--ink); }
+
+/* 这一句是给玩家的梯子：当日第 1 起 + 另有一起来自参团学生 → 编号接上去 */
+.next{ margin-top:16px; padding:14px 16px; border:1px dashed var(--bd); background:#fffdf7;
+       font-size:13.5px; line-height:2; color:var(--tx2); }
+.next b{ color:var(--or); }
+.howto{ margin-top:12px; font-size:12.5px; color:var(--tx3); line-height:1.9; }
+
+.sbox{ background:#fff; border:1px solid var(--line); padding:16px 18px 18px; margin-bottom:18px; }
+.sbox h4{ margin:0 0 12px; font-size:15px; letter-spacing:1px; color:var(--gr);
+          padding-bottom:9px; border-bottom:1px solid var(--line); }
+.sbox p{ margin:6px 0; font-size:13px; color:var(--tx2); line-height:1.95; }
+.sbox ul{ margin:6px 0; padding-left:18px; font-size:13px; color:var(--tx2); line-height:2; }
+
+.foot{ background:var(--ink); color:#a9b5ae; font-size:12px; padding:22px 0; text-align:center; line-height:2.1; }
+.foot a{ color:#c9d5ce; margin:0 6px; }
+.foot .eye{ font-family:"Segoe UI Historic","Noto Sans Egyptian Hieroglyphs",var(--font); }
+
+@media (max-width:900px){
+    .main{ flex-direction:column; }
+    .right{ flex:1 1 auto; width:100%; }
+    .sbar .wrap{ flex-wrap:wrap; }
+    .sbar input{ width:190px; }
+    #seye{ top:88px; }
+    /* 窄屏放不下整行不换行的台词盒 → 跟保安页一样改成定宽换行 */
+    #eye-tip .tl{ white-space:normal; width:176px; }
+}
+/* ---- 右上角那枚小眼球（与主页面同一套字符眼） ---- */
+#seye{ position:fixed; right:22px; top:104px; z-index:95;   /* 只提图层：95 > 题头的 90，眼球压在题头上层，位置不动 */
+    padding:8px 12px 6px; border-radius:3px;
+    background:rgba(8,12,10,.9); box-shadow:0 0 0 1px rgba(120,180,150,.22), 0 6px 26px rgba(0,0,0,.45);
+    opacity:0; transform:translateY(-8px); pointer-events:none; cursor:pointer;
+    transition:opacity .9s ease, transform .9s ease; }
+#seye.on{ opacity:1; transform:translateY(0); pointer-events:auto; }
+#seye:hover{ box-shadow:0 0 0 1px rgba(150,220,180,.4), 0 6px 30px rgba(0,60,30,.5); }
+#seye .eyeb{ margin:0; font:15px/1.02 "Sarasa Mono SC","Sarasa Term SC","Noto Sans Mono CJK SC",Consolas,"Courier New",monospace;
+    color:#cfe6d6; text-shadow:0 0 7px rgba(160,220,180,.55), 0 0 16px rgba(120,200,150,.28);
+    white-space:pre; user-select:none; }
+#eye-tip{ position:absolute; right:0; top:100%; margin-top:8px; white-space:nowrap; }
+/* .tl 必须绝对定位（保安页同款）：脚本按每条真实高度算好 translateY 从上往下排，
+   若让它留在普通文档流里，天然高度 + translateY 会**叠加** → 两条之间凭空多出一整条的高度，
+   看上去就是"消息之间隔得很宽"。这就是之前那版的病根。 */
+#eye-tip .tl{ position:absolute; right:0; top:0; white-space:nowrap; transition:transform .6s ease; }
+#eye-tip .tl.in{ transition:transform .2s ease; }   /* 新条落位：快 */
+#eye-tip .tl.gone{ display:none; }                  /* 收完了：彻底不占位 */
+/* 下面这几个时长跟保安队专访页（pages/interview/guard.html）**逐字对齐**：
+   出得快（.2s 一冒就亮）、收得慢（.75s 慢慢淡出去），节奏才跟那边一个味儿。 */
+#eye-tip .tl span{ display:block; padding:6px 12px; font-size:12px; line-height:1.75; color:#dff0e4;
+    background:rgba(8,12,10,.94); border-left:2px solid #6fbf8f; box-shadow:0 4px 16px rgba(0,0,0,.4);
+    opacity:0; transform:translateX(10px); transition:opacity .75s ease, transform .75s ease; }
+#eye-tip .tl.on span{ opacity:1; transform:translateX(0); }
+#eye-tip .tl.in span{ transition:opacity .2s ease, transform .2s ease; }
+
+/* ==================================================================
+   广告位 · 安全装备图解（这一块就是解谜入口）
+   ================================================================== */
+.adbox{ margin-top:16px; position:relative; display:flex; align-items:center; gap:16px;
+    border:1px solid var(--bd); padding:14px 18px; cursor:pointer; border-radius:3px;
+    background:linear-gradient(180deg,#fffdf6,#eef6f2);
+    transition:box-shadow .25s ease, transform .25s ease, border-color .25s ease; }
+.adbox:hover{ box-shadow:0 8px 26px rgba(31,107,82,.18); transform:translateY(-1px); border-color:var(--grl); }
+.adbox .adtag{ position:absolute; right:10px; top:9px; font-size:10.5px; color:#b0b0b0;
+    letter-spacing:2px; border:1px solid #e2e2e2; border-radius:2px; padding:0 5px; background:#fff; }
+.adbox .thumb{ flex:0 0 auto; width:70px; height:70px; }
+.adbox .adtx{ flex:1 1 auto; min-width:0; }
+.adbox .adtx b{ display:block; font-size:15px; color:var(--gr); letter-spacing:1px; margin-bottom:5px; }
+.adbox .adtx p{ margin:0; font-size:12.5px; color:var(--tx2); line-height:1.8; }
+.adbox .cta{ flex:0 0 auto; font-size:13px; color:#fff; background:var(--or); padding:9px 15px;
+    border-radius:2px; letter-spacing:1px; white-space:nowrap; }
+
+/* ==================================================================
+   安全绳佩戴教学 · 小游戏 弹层
+   ================================================================== */
+#rope-modal{ position:fixed; inset:0; z-index:120; display:flex; overflow:auto;
+    background:rgba(6,14,10,.74); opacity:0; visibility:hidden; padding:20px;
+    transition:opacity .5s ease, background-color .9s ease; }
+#rope-modal.on{ opacity:1; visibility:visible; }
+#rope-modal.to-black{ background:#000; }
+/* margin:auto 而非 align-items:center —— 卡片比视口高时仍能滚到顶部，不会被裁掉 */
+#rope-modal .card{ position:relative; margin:auto; width:min(420px,94vw); background:#fff; border-radius:4px;
+    box-shadow:0 30px 80px rgba(0,0,0,.5); padding:22px 24px 20px; text-align:center;
+    transition:transform .9s cubic-bezier(.4,.05,.2,1), opacity .9s ease; }
+#rope-modal .card.park{ transform:translateX(min(30vw,260px)) scale(.62); opacity:.6; }
+#rope-modal .x{ position:absolute; right:10px; top:8px; width:26px; height:26px; line-height:23px;
+    border:1px solid var(--line); border-radius:2px; color:var(--tx3); cursor:pointer; font-size:16px;
+    background:#fff; text-align:center; }
+#rope-modal .x:hover{ color:var(--red); border-color:var(--red); }
+#rope-modal h3{ margin:0 0 4px; font-size:17px; color:var(--gr); letter-spacing:1px; }
+#rope-modal .sub{ font-size:12.5px; color:var(--tx3); margin-bottom:10px; }
+#rope-modal .stage{ position:relative; width:300px; height:360px; margin:0 auto; }
+#rope-modal .stage svg.body{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+#rope-modal .dring{ position:absolute; left:50%; top:47%; width:34px; height:34px;
+    transform:translate(-50%,-50%); border-radius:50%; border:2px dashed rgba(224,122,63,.75);
+    animation:ringPulse 1.6s ease-in-out infinite; }
+@keyframes ringPulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(224,122,63,.30); } 50%{ box-shadow:0 0 0 10px rgba(224,122,63,0); } }
+#rope-modal .hook{ position:absolute; left:0; top:0; width:56px; height:56px; cursor:grab;
+    touch-action:none; will-change:transform; z-index:3; }
+#rope-modal .hook.drag{ cursor:grabbing; }
+#rope-modal .hook.snap{ transition:transform .16s cubic-bezier(.3,1.6,.5,1); }
+#rope-modal .hook svg{ width:100%; height:100%; display:block; filter:drop-shadow(0 3px 5px rgba(0,0,0,.25)); }
+#rope-modal #rpGate{ transform-box:fill-box; transform-origin:50% 18%; }
+#rope-modal .rp-flash{ position:absolute; left:50%; top:42%; transform:translate(-50%,-50%) scale(.4);
+    font:700 32px var(--font); color:var(--or); opacity:0; pointer-events:none;
+    text-shadow:0 2px 10px rgba(224,122,63,.5); }
+#rope-modal .hint{ font-size:12.5px; color:var(--tx2); margin-top:6px; min-height:20px; }
+#rope-modal .hint.bad{ color:var(--red); }
+#rope-modal .hint.ok{ color:var(--gr); }
+
+</style>
+<script>
+/* ==================================================================
+   访问门槛：这一页**只能从站内检索命中编号进来**，而且**不留存档**。
+   全站没有一条指向本页的可见链接 —— 玩家得先在告知书里看出编号规则、
+   打开 AQ-130812-1 推出"当日另有一起接续本起"，再拿 AQ-130812-2 回检索。
+   搜到时首页/警情通知页会往 **sessionStorage** 写一个通行证再跳过来，
+   所以这里只认它：直接敲网址进来的 → 送回警情通知（那边恒定 404）；
+   关掉标签页通行证就没了，下次想看**必须重新搜一遍编号**。
+   想调试直接看：控制台敲
+     sessionStorage.setItem('mp_travel_hit','1')
+   再刷新本页即可。
+   ================================================================== */
+(function(){
+    var ok = false;
+    try { ok = sessionStorage.getItem('mp_travel_hit') === '1'; } catch (e){}
+    if (!ok) location.replace('notice.html');
+})();
+</script>
+</head>
+<body>
+
+<!-- 右上角那枚小眼球：不属于这个网站，它从别处渗进来了 -->
+<div id="seye" aria-hidden="true" title="……">
+    <pre class="eyeb"></pre>
+    <div id="eye-tip"></div>
+</div>
+
+<div class="topbar"><div class="wrap">
+    <span>青麓旅行社｜客丽市本地出行服务 · 周边游 / 研学 / 团队拓展</span>
+    <span>门店查询　在线客服　投诉建议</span>
+</div></div>
+
+<div class="logo"><div class="wrap">
+    <span class="mark"></span>
+    <b>青麓旅行社</b>
+    <i>QINGLU TRAVEL · SINCE 2004</i>
+    <span class="tel">报名热线<br><b>0<span class="eye">𓂀</span>73-8826 4471</b><br>08:30-18:00 节假不休</span>
+</div></div>
+
+<div class="nav"><div class="wrap">
+    <a href="index.html" data-nav="index">网站首页</a>
+    <a href="lines.html" data-nav="cat1">周边线路</a>
+    <a href="lines.html" data-nav="cat2">国内游</a>
+    <a href="lines.html" data-nav="cat3">研学 · 学生团</a>
+    <a href="lines.html" data-nav="cat4">团队拓展</a>
+    <a href="notice.html" data-nav="notice">警情通知</a>
+    <a class="off">关于我们</a>
+    <a class="off">联系方式</a>
+</div></div>
+
+<div class="sbar"><div class="wrap">
+    <form action="index.html" method="get" autocomplete="off">
+        <input type="text" name="q" placeholder="站内检索：线路 / 目的地 / 通知 / 案例编号…">
+        <button type="submit">站内检索</button>
+    </form>
+    <span class="hot">热门：<a href="index.html?q=%E9%9D%92%E9%BE%99%E5%B3%A1">青龙峡</a><a href="index.html?q=%E7%99%BD%E9%B9%89%E6%B9%96">白鹭湖</a><a href="index.html?q=%E7%A0%94%E5%AD%A6">研学</a><a href="index.html?q=%E5%AE%89%E5%85%A8">安全</a></span>
+</div></div>
+
+<div class="wrap">
+    <div class="crumb">当前位置：<a href="index.html">网站首页</a> &gt; <a href="notice.html">警情通知</a> &gt; 案例 AQ-130812-2</div>
+
+    <div class="box">
+        <h3>案例 AQ-130812-2<span class="sub">检索命中　|　2013-08-12　|　安委办</span></h3>
+        <div class="ntc" id="n812">
+            <h4>关于青龙峡户外拓展基地“高空速降”项目意外事故的通报</h4>
+            <div class="no">青麓旅发〔2013〕17 号　|　2013 年 8 月 12 日　|　安委办　|　案例编号 AQ-130812-2</div>
+
+            <p>2013 年 8 月 12 日 15 时 40 分许，我社组织的“秋日近郊两日游”学生团在青龙峡户外拓展基地参加高空速降体验项目时，一名参团学生自器械处坠落受伤。现场领队随即启动应急预案，拨打 120 并将伤者送往市第三医院救治，同时向基地管理方与我社安委办报告。目前伤者已出院，在家休养，伤情稳定。</p>
+
+            <p>经现场初步核查，事故当事人系<span class="rd">一名参加该团的女学生</span>（其姓名、学校及家属信息，按家属意见不予公开）。事故发生时，项目器械的<span class="rd">直接失效原因</span>尚在进一步检测中，相关器材已封存送检，检测结果将另行公布。</p>
+
+            <p>经查，当值安全员在项目开始前未按规程完成二次复检，违反了《户外拓展项目安全操作规程》第 11 条。经我社研究决定：<b>与该安全员解除劳动关系</b>，并报主管部门备案；对该项目领队予以通报批评并扣发当月绩效；暂停青龙峡基地全部高空体验项目，待检测结论出具并整改验收后再行开放。</p>
+
+            <p>我社对此次事故造成的人身伤害深表歉意，已与伤者家属就医疗、后续治疗及补偿事宜达成一致。请各门市、各领队以此为戒，严格执行器材“双人双检”制度，绝不得简化流程。</p>
+
+            <!-- 保险公司这一笔，是这起事故唯一没被撤掉的东西。
+                 和 notice.html 同口径：只写公司全称和条款编号，不给链接。 -->
+            <p style="font-size:13.5px;color:var(--tx2)">本次事故涉及的团体意外伤害保险，由
+                <b>明泰保险股份有限公司</b>承保（户外项目保险 · 保单号 <span class="mono">MT-2013-特-0518</span>）。
+                伤者医疗费用已由该保单据实结算，事故责任认定与理赔事宜互不替代。
+                依照《高危岗位特别核保办法》（明泰核〔2013〕第 9 号）第五条，
+                涉及被保险人身份核验的材料由我社安委办统一留存，不对外提供查询。</p>
+
+            <p class="sign">青麓旅行社安全生产委员会<br>2013 年 8 月 12 日</p>
+
+            <!-- 站内采访：**原文口径，一句不编**。
+                 她就说了这三段，一段比一段短，最后那个「我……」之后就没了 ——
+                 原文写得很明白：「她采访时没有把话说完说全。」
+                 所以这里到「我……」为止，后面是空的，谁也别替她补。 -->
+            <div class="ivw">
+                <h5>本站专访　当事人：「那会儿……我光觉得……」</h5>
+                <div class="qa"><div class="qq">记　当时是怎么摔下来的？</div>
+                    <div class="aa">当事人　那会儿……我光觉得……有啥……又冷又凉的东西……溅到我脸上了。
+                        后来吧……后来我才想明白，反正大概就是……那个拉我的大叔，急得把口水喷我脸上了。
+                        后来？……后来怎么着了？……</div></div>
+                <div class="qa"><div class="qq">记　后来呢？</div>
+                    <div class="aa">当事人　后来？……后来……</div></div>
+                <div class="qa"><div class="qq">记　你还想起什么了吗？</div>
+                    <div class="aa">当事人　我……</div></div>
+                <div class="qa"><div class="qq">本站注</div>
+                    <div class="aa">采访到此中断，当事人其后未再补充。以上采访经当事人本人同意刊出；
+                        其姓名、学校及家属信息，按家属意见不予公开。</div></div>
+            </div>
+        </div>
+
+        <!-- 广告位（解谜入口）：点开是「安全绳正确佩戴」图解 + 小游戏 -->
+        <div class="adbox" id="adRope">
+            <span class="adtag">广告</span>
+            <svg class="thumb" viewBox="0 0 70 70" xmlns="http://www.w3.org/2000/svg">
+                <rect x="1" y="1" width="68" height="68" rx="4" fill="#eef6f2" stroke="#cdd8d2"/>
+                <line x1="35" y1="-4" x2="35" y2="22" stroke="#9a9486" stroke-width="2.5"/>
+                <circle cx="35" cy="22" r="7" fill="none" stroke="#3a3630" stroke-width="2.5"/>
+                <circle cx="35" cy="30" r="6" fill="none" stroke="#e8a838" stroke-width="3"/>
+                <circle cx="35" cy="30" r="3" fill="#e8a838" stroke="none"/>
+                <path d="M28 38 C25 50 25 58 28 66 L42 66 C45 58 45 50 42 38 C40 34 30 34 28 38Z" fill="none" stroke="#e8a838" stroke-width="3"/>
+                <line x1="25" y1="44" x2="45" y2="44" stroke="#e8a838" stroke-width="3"/>
+                <line x1="27" y1="57" x2="43" y2="57" stroke="#e8a838" stroke-width="3"/>
+            </svg>
+            <div class="adtx">
+                <b>高空速降 · 安全装备图解</b>
+                <p>安全带佩戴不到位，是高空项目最大的隐患。点击查看「安全绳正确佩戴」图集 →</p>
+            </div>
+            <span class="cta">查看图解</span>
+        </div>
+    </div>
+
+    <div class="go">
+        <a href="notice.html">返回警情通知</a>
+        <a href="index.html" class="gy">回到站内检索</a>
+    </div>
+</div>
+
+<div class="foot">
+    青麓旅行社　版权所有　|　旅游业务经营许可证 L-𓂀𓂀-000000　|　电话　0<span class="eye">𓂀</span>73-8826 4471<br>
+    地址：客丽市西城区槐荫路 12 号　|　青ICP备 00000000 号-2<br>
+    <a href="index.html">网站首页</a><a href="lines.html">线路大全</a><a href="notice.html">警情通知</a><a href="lines.html#contact">联系我们</a>
+</div>
+
+<script>
+/* 题头高亮：与另外五页同一套，按当前文件名自动点亮。
+   本页属于「警情通知」栏目，所以亮它。 */
+(function(){
+'use strict';
+function fileOf(u){
+    var s = String(u || '').split('#')[0].split('?')[0];
+    return s.split('/').pop().toLowerCase();
+}
+var hereFile = fileOf(location.pathname);
+document.querySelectorAll('.nav a[data-nav]').forEach(function(a){
+    var key = a.getAttribute('data-nav') || '';
+    var on = (key === 'notice')
+           ? (hereFile === 'notice.html' || hereFile === 'aq130812-2.html')
+           : (fileOf(a.getAttribute('href') || '') === hereFile);
+    if (on) a.classList.add('on'); else a.classList.remove('on');
+});
+})();
+</script>
+
+<script>
+/* ==================================================================
+   右上角那枚小眼球（与保安队专访同源）
+   ------------------------------------------------------------------
+   外框固定，瞳孔按鼠标方向挪，偶尔眨一次；不接任何跳转。
+   台词连着快速刷出来，叠成一整条挂在眼球下面；整条读完再从第一条
+   开始往上抽走，抽走一条下面自动补上来。放完再点眼球就再放一遍。
+   ================================================================== */
+(function(){
+'use strict';
+var wrap = document.getElementById('seye');
+var pre  = wrap && wrap.querySelector('.eyeb');
+var tip  = document.getElementById('eye-tip');
+if (!wrap || !pre) return;
+
+/* 台词：一组一组。改词儿只动这里
+   SET_A —— 进页面先说一遍；撞墙回来（404 / 什么都搜不到）点眼球可以再听一遍
+   SET_B —— 「警情通知」被搜出来的那一刻补的两句（只找到了一半） */
+var SET_A = [
+    '只有一半，不过足以想象事实了。',
+    '想要找到新的线索',
+    '或许还需要更加细致……'
+];
+var SET_B = SET_A;
+/* ---- 节奏：一句接一句往下续，叠成一整条；读完再逐条抽走 ----
+   数值与保安队专访页（pages/interview/guard.html）完全一致 —— 那边是 750/3000/170/780，
+   两边同一个速度感。要单独调快就把 STEP 往小改（400~500 是"稍快"，330 就明显赶了）。 */
+var STEP = 750;         // 前后两条冒头的间隔（保安页同值）
+var HOLD = 3000;        // 整条挂在那儿读多久才收
+var REC  = 170;         // 收场时逐条错开
+var GAP  = 4;           // 两条之间的缝（保安页是 6，这里收一点）
+var OUT_MS = 780;       // 收回动画走完的时刻
+var lineEls = [], timers = [], playing = false, lastSet = SET_A;
+
+function buildLines(arr){
+    if (!tip) return;
+    tip.innerHTML = '';
+    lineEls = (arr || SET_A).map(function(s){
+        var d = document.createElement('div');
+        d.className = 'tl gone';
+        var b = document.createElement('span');
+        b.textContent = s;
+        d.appendChild(b);
+        tip.appendChild(d);
+        return d;
+    });
+}
+function clearTimers(){ timers.forEach(function(t){ clearTimeout(t); }); timers = []; }
+function layout(){
+    var y = 0;
+    lineEls.forEach(function(el){
+        if (el.classList.contains('gone')) return;
+        el.style.transform = 'translateY(' + y + 'px)';
+        var box = el.firstChild;
+        y += (box ? box.offsetHeight : 0) + GAP;
+    });
+}
+function playLines(arr){
+    clearTimers();                       // 允许打断：新的一组直接顶掉旧的
+    lastSet = arr || SET_A;
+    buildLines(lastSet);
+    if (!lineEls.length) return;
+    playing = true;
+    lineEls.forEach(function(el){ el.classList.remove('on', 'in', 'gone'); });
+    layout();
+    var n = lineEls.length;
+    lineEls.forEach(function(el, i){
+        timers.push(setTimeout(function(){
+            el.classList.add('in', 'on');
+            timers.push(setTimeout(function(){ el.classList.remove('in'); }, 220));
+            layout();
+        }, i * STEP));
+        var off = (n - 1) * STEP + HOLD + i * REC;
+        timers.push(setTimeout(function(){
+            el.classList.remove('on');
+            timers.push(setTimeout(function(){
+                el.classList.add('gone');
+                layout();
+            }, OUT_MS));
+        }, off));
+    });
+    var end = (n - 1) * STEP + HOLD + (n - 1) * REC + OUT_MS;
+    timers.push(setTimeout(function(){ playing = false; }, end + 300));
+}
+/* 别的脚本要它说话就调这个：MP_EYE.say() 说第一组，MP_EYE.say(['…','…']) 说指定的 */
+window.MP_EYE = { say: playLines };
+
+function eyeFrame(col, row, closed){
+    var a = [' .-"""""-. ',
+             '/         \\',
+             '|         |',
+             '|         |',
+             '\\         /',
+             ' `-.....-` '];
+    if (closed){ a[3] = '|  ─────  |'; }
+    else {
+        var line = '         '.split('');
+        line[col] = '●';
+        a[2 + row] = '|' + line.join('') + '|';
+    }
+    return a.join('\n');
+}
+var col = 4, row = 0, closed = false;
+function draw(){ pre.textContent = eyeFrame(col, row, closed); }
+draw();
+
+window.addEventListener('mousemove', function(e){
+    var w = window.innerWidth || 1, h = window.innerHeight || 1;
+    var dx = (e.clientX / w - 0.72) * 2, dy = (e.clientY / h - 0.14) * 2;
+    var nc = Math.max(1, Math.min(7, 4 + Math.round(dx * 3)));
+    var nr = (dy > 0.25) ? 1 : 0;
+    if (nc !== col || nr !== row){ col = nc; row = nr; if (!closed) draw(); }
+}, { passive:true });
+(function blink(){
+    setTimeout(function(){
+        closed = true; draw();
+        setTimeout(function(){ closed = false; draw(); blink(); }, 150);
+    }, 3500 + Math.random() * 4500);
+})();
+
+/* 眼球淡入 → 第一组从头放一遍；放完之后点它一下 → 把刚那组再放一遍 */
+setTimeout(function(){ wrap.classList.add('on'); playLines(SET_A); }, 1000);
+wrap.addEventListener('click', function(){
+    closed = true; draw();
+    setTimeout(function(){ closed = false; draw(); }, 200);
+    playLines(lastSet);
+});
+})();
+</script>
+
+<!-- ==================================================================
+     安全绳佩戴教学 · 小游戏（点广告打开）
+     ------------------------------------------------------------------
+     拖拽卡扣 → 对准 D 环 → 扣好（啪）→「佩戴安全绳的部分」往右挪等待演出
+     → 淡到黑 → 直接进 CUT5（开口就是那张「头朝地摔的。」黑卡）。
+     ================================================================== -->
+<div id="rope-modal" aria-hidden="true">
+    <div class="card">
+        <div class="x" id="rpClose">×</div>
+        <h3>安全绳 · 正确佩戴</h3>
+        <div class="sub">高空速降项目 · 装备图解　|　步骤 1 / 1</div>
+        <div class="stage" id="rpStage">
+            <svg class="body" viewBox="0 0 300 360" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+                <!-- 连上之后才出现的上段绳 -->
+                <g id="rpUpRope" opacity="0">
+                    <line x1="150" y1="-40" x2="150" y2="170" stroke="#9a9486" stroke-width="4" stroke-linecap="round"/>
+                </g>
+                <g stroke="#d9d3c4" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="150" cy="80" r="24"/>
+                    <line x1="150" y1="104" x2="150" y2="118"/>
+                    <path d="M122 122 C120 170 120 210 126 250 L174 250 C180 210 180 170 178 122 C170 110 130 110 122 122 Z" fill="rgba(232,226,212,.14)"/>
+                    <path d="M126 128 C112 168 110 205 112 240"/>
+                    <path d="M174 128 C188 168 190 205 188 240"/>
+                    <path d="M134 250 C132 300 132 338 138 358"/>
+                    <path d="M166 250 C168 300 168 338 162 358"/>
+                </g>
+                <g stroke="#e8a838" stroke-width="6" fill="none" stroke-linecap="round">
+                    <line x1="119" y1="146" x2="181" y2="146"/>
+                    <line x1="117" y1="246" x2="183" y2="246"/>
+                    <line x1="131" y1="250" x2="127" y2="300"/>
+                    <line x1="169" y1="250" x2="173" y2="300"/>
+                    <circle cx="150" cy="170" r="7" fill="#e8a838" stroke="none"/>
+                </g>
+            </svg>
+            <div class="dring" id="rpDring"></div>
+            <div class="rp-flash" id="rpFlash">啪</div>
+            <div class="hook" id="rpHook" title="拖动我">
+                <svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse cx="28" cy="28" rx="12" ry="19" fill="none" stroke="#3a3630" stroke-width="4"/>
+                    <line id="rpGate" x1="28" y1="9" x2="28" y2="47" stroke="#3a3630" stroke-width="4" stroke-linecap="round"/>
+                </svg>
+            </div>
+        </div>
+        <div class="hint" id="rpHint">把卡扣拖到 D 环上，扣好。</div>
+    </div>
+</div>
+
+<script>
+/* ==================================================================
+   安全绳佩戴小游戏：
+   拖动卡扣 → 靠近 D 环松手 → 吸附扣好（啪）→ 舞台往右挪等待 → 转场进 CUT5
+   ================================================================== */
+(function(){
+'use strict';
+var modal = document.getElementById('rope-modal');
+var ad    = document.getElementById('adRope');
+if (!modal || !ad) return;
+var card  = modal.querySelector('.card');
+var stage = document.getElementById('rpStage');
+var hook  = document.getElementById('rpHook');
+var dring = document.getElementById('rpDring');
+var gate  = document.getElementById('rpGate');
+var upRope= document.getElementById('rpUpRope');
+var flash = document.getElementById('rpFlash');
+var hint  = document.getElementById('rpHint');
+var closeBtn = document.getElementById('rpClose');
+
+var HOME = { x: 26, y: 250 };          /* 卡扣初始位置（stage 内 px） */
+var done = false, dragging = false;
+var bx = HOME.x, by = HOME.y, sx = 0, sy = 0;
+
+/* --- 啪：与 CUT5 同一套合成音，两处一个味儿 --- */
+var _ac = null;
+function ac(){ if (_ac) return _ac; try { _ac = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ _ac = null; } return _ac; }
+function playSnap(){
+    var a = ac(); if (!a) return;
+    if (a.state === 'suspended'){ try { a.resume(); } catch(e){} }
+    var t = a.currentTime;
+    var buf = a.createBuffer(1, Math.floor(a.sampleRate * 0.05), a.sampleRate);
+    var d = buf.getChannelData(0);
+    for (var i = 0; i < d.length; i++){ d[i] = (Math.random()*2-1) * Math.pow(1 - i/d.length, 3); }
+    var n = a.createBufferSource(); n.buffer = buf;
+    var bp = a.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2600; bp.Q.value = 1.2;
+    var g = a.createGain(); g.gain.setValueAtTime(0.9, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.06);
+    n.connect(bp); bp.connect(g); g.connect(a.destination); n.start(t); n.stop(t+0.07);
+    var o = a.createOscillator(); o.type = 'square';
+    o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(60, t+0.05);
+    var g2 = a.createGain(); g2.gain.setValueAtTime(0.5, t); g2.gain.exponentialRampToValueAtTime(0.001, t+0.08);
+    o.connect(g2); g2.connect(a.destination); o.start(t); o.stop(t+0.09);
+}
+
+function setHook(x, y){ bx = x; by = y; hook.style.transform = 'translate(' + x + 'px,' + y + 'px)'; }
+function resetHook(){ hook.classList.remove('snap'); setHook(HOME.x, HOME.y); }
+
+function openModal(){
+    modal.classList.add('on');
+    modal.setAttribute('aria-hidden', 'false');
+    done = false; dragging = false;
+    resetHook();
+    gate.style.transform = 'rotate(52deg)';
+    upRope.style.opacity = '0';
+    hint.textContent = '把卡扣拖到 D 环上，扣好。';
+    hint.className = 'hint';
+}
+ad.addEventListener('click', openModal);
+closeBtn.addEventListener('click', function(){ modal.classList.remove('on'); });
+
+hook.addEventListener('pointerdown', function(e){
+    if (done) return;
+    dragging = true; hook.classList.add('drag'); hook.classList.remove('snap');
+    try { hook.setPointerCapture(e.pointerId); } catch(err){}
+    sx = e.clientX; sy = e.clientY;
+    var baseX = bx, baseY = by;
+    hook._move = function(ev){
+        setHook(baseX + (ev.clientX - sx), baseY + (ev.clientY - sy));
+    };
+    e.preventDefault();
+});
+hook.addEventListener('pointermove', function(e){ if (dragging && hook._move) hook._move(e); });
+function endDrag(){ if (!dragging) return; dragging = false; hook.classList.remove('drag'); check(); }
+hook.addEventListener('pointerup', endDrag);
+hook.addEventListener('pointercancel', function(){ dragging = false; hook.classList.remove('drag'); });
+
+function check(){
+    var hb = hook.getBoundingClientRect();
+    var tb = dring.getBoundingClientRect();
+    var dx = (hb.left + hb.width/2) - (tb.left + tb.width/2);
+    var dy = (hb.top + hb.height/2) - (tb.top + tb.height/2);
+    var dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < 54){ success(); }
+    else {
+        hint.textContent = '还差一点——对准胸口那个 D 环再松手。';
+        hint.className = 'hint bad';
+        hook.classList.add('snap'); setHook(HOME.x, HOME.y);
+        setTimeout(function(){ hook.classList.remove('snap'); }, 240);
+    }
+}
+
+function success(){
+    done = true;
+    var sb = stage.getBoundingClientRect();
+    var tb = dring.getBoundingClientRect();
+    var x = (tb.left - sb.left) + tb.width/2 - hook.offsetWidth/2;
+    var y = (tb.top - sb.top) + tb.height/2 - hook.offsetHeight/2;
+    hook.classList.add('snap'); setHook(x, y);
+    gate.style.transition = 'transform .16s ease';
+    gate.style.transform = 'rotate(0deg)';
+    upRope.style.transition = 'opacity .3s ease';
+    upRope.style.opacity = '1';
+    try {
+        flash.animate([
+            { opacity:0, transform:'translate(-50%,-50%) scale(.4)' },
+            { opacity:1, transform:'translate(-50%,-50%) scale(1.2)', offset:.2 },
+            { opacity:0, transform:'translate(-50%,-50%) scale(1.5)' }
+        ], { duration:520, easing:'ease-out', fill:'forwards' });
+    } catch(e){}
+    playSnap();
+    hint.textContent = '扣好了。';
+    hint.className = 'hint ok';
+    if (window.MP_EYE && window.MP_EYE.say) { try { window.MP_EYE.say(['……扣上了。', '演出，要开始了。']); } catch(e){} }
+    /* 把「佩戴安全绳的部分」往右挪，停在那儿等演出 */
+    setTimeout(function(){
+        card.classList.add('park');
+        hint.textContent = '安全绳已就位 · 等待演出……';
+        hint.className = 'hint';
+    }, 720);
+    /* 转场：淡到黑 → 直接进 CUT5（开口就是那张「头朝地摔的。」黑卡） */
+    setTimeout(function(){ modal.classList.add('to-black'); }, 2150);
+    setTimeout(function(){ location.href = '../novel/cut5.html'; }, 2900);
+}
+
+/* 初始化：卡扣先摆到左下角，免得打开时从左上角跳一下 */
+setHook(HOME.x, HOME.y);
+})();
+</script>
+
+</body>
+</html>

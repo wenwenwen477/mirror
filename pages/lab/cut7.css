@@ -1,0 +1,169 @@
+/* ==================================================================
+   CUT7 · 实验楼 —— 共用样式
+   ------------------------------------------------------------------
+   选关页（index.html）与各段（p1.html / p2.html …）共用这一份。
+   配色沿用主界面那套（--bg / --ink 与 CUT1 一致）。
+   ★ 这一份只管"长什么样"，不管"说什么" —— 台词都在各段的 js 数据里。
+   ================================================================== */
+:root{
+    --bg:#0a0c10; --ink:#c8d0c2; --ink2:#8f9a8c; --acc:#9ad4b6;
+    --line:rgba(200,208,194,.42);
+}
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+    margin:0; background:var(--bg); color:var(--ink); overflow:hidden;
+    font:15px/1.95 "Sarasa Mono SC","Sarasa Term SC","Noto Sans Mono CJK SC","Microsoft YaHei","PingFang SC",monospace;
+    user-select:none; -webkit-user-select:none;
+}
+/* 扫描线 + 暗角：跟主界面同一套氛围 */
+body::after{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:60;
+    background:
+        repeating-linear-gradient(0deg, rgba(0,0,0,.15) 0 1px, transparent 1px 3px),
+        radial-gradient(120% 120% at 50% 50%, rgba(0,0,0,0) 52%, rgba(0,0,0,.55) 100%);
+}
+/* 全屏压黑：段落之间、返回选关时用 */
+#veil{ position:fixed; inset:0; z-index:70; background:#07090b; opacity:0;
+    pointer-events:none; transition:opacity .8s ease; }
+#veil.on{ opacity:1; }
+/* 压黑时上面浮的那行小字（"第一段 · 完" 之类） */
+#veil .vm{ position:absolute; left:0; right:0; top:50%; transform:translateY(-50%);
+    text-align:center; font-size:16px; letter-spacing:4px; color:var(--ink2); opacity:0;
+    transition:opacity .8s ease .5s; }
+#veil.on .vm{ opacity:1; }
+
+/* ---------------- 选关页 ---------------- */
+#wrap{ position:fixed; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; padding:28px 20px; }
+#head{ text-align:center; margin-bottom:26px; }
+#head .cut{ font-size:13px; letter-spacing:5px; color:var(--ink2); }
+#head h1{ margin:8px 0 4px; font-size:27px; font-weight:700; letter-spacing:6px; }
+#head .sub{ font-size:13px; letter-spacing:1px; color:var(--ink2); }
+#levels{ width:min(600px, 92vw); display:flex; flex-direction:column; gap:11px; }
+.lv{ position:relative; display:flex; align-items:center; gap:14px;
+    padding:14px 18px; border:2px solid rgba(200,208,194,.28); background:#080a0e;
+    cursor:pointer; transition:border-color .25s ease, background .25s ease, transform .25s ease; }
+.lv.sel{ border-color:var(--acc); background:rgba(154,212,182,.08); transform:translateX(6px); }
+.lv.lock{ border-color:rgba(200,208,194,.14); cursor:not-allowed; }
+.lv.lock:hover{ transform:none; }
+.lv .no{ flex:none; width:72px; font-size:13.5px; letter-spacing:2px; color:var(--ink2); }
+.lv .tag{ flex:none; width:58px; height:58px; display:flex; align-items:center; justify-content:center;
+    border:1px solid rgba(200,208,194,.3); font-size:19px; letter-spacing:1px; color:var(--ink); }
+.lv.lock .tag{ color:#5c6459; border-color:rgba(200,208,194,.14); }
+.lv .mid{ flex:1; min-width:0; }
+.lv .t{ font-size:17px; letter-spacing:1px; }
+.lv .d{ margin-top:4px; font-size:13.5px; color:var(--ink2); letter-spacing:.5px; }
+.lv.lock .t,.lv.lock .d{ color:#5c6459; }
+.lv .ar{ flex:none; font-size:15px; color:var(--acc); opacity:0; transition:opacity .25s ease; }
+.lv.sel:not(.lock) .ar{ opacity:1; }
+#foot{ margin-top:22px; font-size:13px; letter-spacing:1.5px; color:#6d756b; text-align:center; }
+#foot b{ color:var(--ink2); font-weight:400; }
+
+/* ---------------- 对话框（传说之下那种：一个大框，Z 继续） ---------------- */
+#stage{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; }
+#dbox{
+    position:relative; width:min(760px, 92vw); min-height:210px; padding:36px 40px 50px;
+    border:3px solid var(--ink); background:#07090c;
+    box-shadow:0 0 24px rgba(200,208,194,.1);
+    transition:transform 1.1s cubic-bezier(.4,0,.6,1), opacity 1.1s ease;
+}
+/* 段落结束时：框自己往下挪出画面 —— 镜头往下走，接下一段 */
+#dbox.sink{ transform:translateY(190px); opacity:0; }
+/* 黑屏大字占屏时：框淡出去（不分 rpg / 居中，通用）
+   —— 收得快一点，让大字是"硬切"上来的，框只是让位 */
+#dbox.off{ opacity:0; pointer-events:none; transition:opacity .18s ease; }
+#dname{ position:absolute; left:40px; top:-15px; padding:0 11px; background:#07090c;
+    font-size:15px; letter-spacing:3px; color:#e8c86a; }
+#dtext{ font-size:18.5px; line-height:2.0; white-space:pre-wrap; min-height:112px; }
+#dtext .cur{ opacity:.45; }
+#dnext{ position:absolute; right:24px; bottom:16px; font-size:16px; color:var(--acc);
+    opacity:0; transition:opacity .2s ease; }
+#dnext.on{ opacity:1; animation:blink 1.1s steps(1,end) infinite; }
+@keyframes blink{ 0%,50%{opacity:1} 50.01%,100%{opacity:.15} }
+#hint{ position:fixed; left:0; right:0; bottom:26px; text-align:center;
+    font-size:13px; letter-spacing:2px; color:#5f675d; }
+#hint b{ color:var(--ink2); font-weight:400; }
+/* ---------------- 演出（第三段开场：黑屏 + 居中对对话框背后的那段戏） ---------------- */
+#scene{ position:fixed; inset:0; z-index:20; background:#07090b;
+    display:flex; align-items:center; justify-content:center;
+    opacity:0; transition:opacity 1s ease; }
+#scene.on{ opacity:1; }
+#sc{ display:block; }
+/* 演出还没完：RPG 那张地图先按着不动 */
+#world.hold{ opacity:0; }
+/* 对话框要浮在演出上面；演出期间点哪儿都算翻页，所以别拦点击 */
+#stage{ z-index:30; pointer-events:none; }
+#dbox{ pointer-events:auto; }
+
+/* ---------------- RPG 段（p2 起：一层 / 二层 / 三层） ---------------- */
+#world{ position:fixed; left:0; right:0; top:30px; height:calc(100vh - 226px);
+    display:flex; align-items:center; justify-content:center;
+    transition:opacity 1s ease, filter 1s ease; }
+/* 上楼之后：画面压暗，镜头让给对话 */
+#world.dim{ opacity:.2; filter:blur(1px); }
+#cv{ display:block; border:3px solid rgba(200,208,194,.28); background:#0b0e12; }
+#rpghint{ position:fixed; left:20px; top:18px; font-size:12.5px; letter-spacing:2px; color:#5f675d; }
+#rpghint b{ color:var(--ink2); font-weight:400; }
+/* RPG 的对话框：挪到画面下沿，不像第一段那样居中 */
+#dbox.rpg{ position:fixed; left:50%; bottom:30px; transform:translateX(-50%);
+    width:min(760px, 92vw); min-height:150px; padding:26px 34px 42px;
+    /* 下沉（sink）是镜头动作，要慢；说完收起（off）只是淡出，要快 */
+    transition:transform 1.1s cubic-bezier(.4,0,.6,1), opacity .3s ease; }
+#dbox.rpg.sink{ transform:translate(-50%, 190px); }
+/* 没在说话的时候：框收起来，画面全留给场景 */
+#dbox.rpg.off{ opacity:0; pointer-events:none; }
+#dbox.rpg #dtext{ min-height:78px; }
+/* 背包（C） */
+#bag{ position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.98);
+    width:min(560px, 90vw); padding:22px 28px; border:3px solid var(--ink); background:#07090c;
+    box-shadow:0 0 30px rgba(200,208,194,.12); z-index:65;
+    opacity:0; pointer-events:none; transition:opacity .18s ease, transform .18s ease; }
+#bag.on{ opacity:1; pointer-events:auto; transform:translate(-50%,-50%) scale(1); }
+#bag .bgh{ font-size:15px; letter-spacing:4px; color:var(--acc); margin-bottom:12px; }
+#bag ul{ margin:0; padding:0; list-style:none; }
+#bag li{ padding:7px 2px; border-bottom:1px solid rgba(200,208,194,.12);
+    font-size:14.5px; letter-spacing:1px; line-height:1.7; }
+#bag li.it{ color:var(--ink2); }
+#bag li.cl::before{ content:'·　'; color:var(--acc); }
+#bag li.none{ color:#5c6459; }
+#bag .bgf{ margin-top:14px; text-align:right; font-size:12.5px; letter-spacing:2px; color:#5f675d; }
+#bag .bgf b{ color:var(--ink2); font-weight:400; }
+
+/* 按 M 开关音效时冒出来的那行小提示 */
+#sfxtoast{ position:fixed; left:50%; bottom:62px; transform:translateX(-50%);
+    padding:6px 18px; border:1px solid rgba(200,208,194,.35); background:#07090c;
+    font-size:13px; letter-spacing:3px; color:var(--ink); z-index:80;
+    opacity:0; pointer-events:none; transition:opacity .3s ease; }
+#sfxtoast.on{ opacity:1; }
+/* 顶部那行小标题（第几段） */
+#ptag{ position:fixed; left:0; right:0; top:26px; text-align:center;
+    font-size:13px; letter-spacing:4px; color:#5f675d; }
+
+/* ==================================================================
+   黑屏大字（big.js）—— 照 CUT4「翻页吧。」那张卡的形制
+   ------------------------------------------------------------------
+   ★ 上屏**冷不丁**：.on 不带任何 transition，一帧铺满，没有淡入。
+   ★ 收的时候给 .3 秒淡出 —— 黑卡一撤直接把底下的画面怼回脸上太愣
+     （2026-10-06 改）。连续大字由 dialog.js 接力：黑底不撤，字原地换。
+   ★ 屏上只剩字：没有名字框、没有 ▼ 继续指示器。
+   ★ 纯黑底 + 居中宋体白字 + 一条极淡的横线 + 一行更小的英文。
+     不打字、不抖 —— 字一出来就是完整的、静止的。
+   ★ 层级 120：压在扫描线(60)/压黑(70)/对话框(#stage 30)之上，
+     整个屏幕只剩这一行字。
+   ================================================================== */
+#bigw{ position:fixed; inset:0; z-index:120; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; padding:0 8vw; text-align:center;
+    background:#000; opacity:0; pointer-events:none; visibility:hidden;
+    transition:opacity .3s ease, visibility 0s linear .3s; }
+#bigw.on{ opacity:1; visibility:visible; transition:none; }
+/* ★ 字是**静止**的：没有 animation、没有 text-shadow —— 干净的一行白字。
+   要动只动"要不要显示"，不动字本身。 */
+#bigw .zh{ font-family:"Songti SC","SimSun","Noto Serif CJK SC","Source Han Serif SC",serif;
+    font-weight:400; color:#fff;
+    font-size:clamp(32px,6.4vw,66px); line-height:1.35;
+    letter-spacing:.22em; text-indent:.22em; }
+#bigw .rule{ width:min(300px,52vw); height:1px; margin:26px 0 16px;
+    background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.34), rgba(255,255,255,0)); }
+#bigw .en{ font-size:11.5px; letter-spacing:.44em; text-indent:.44em;
+    color:rgba(255,255,255,.44); }

@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CUT8 · 答记者问</title>
+<link rel="stylesheet" href="../lab/cut7.css">
+<style>
+/* ==================================================================
+   CUT8 · 答记者问 —— 逆转裁判式舞台
+   ------------------------------------------------------------------
+   ★ 立绘**全部同台**：这个场面有几个人，台上就站几个人。
+     演出靠走位（左右移动 / 纵深进退 = 缩放）、跳跃、旋转、明暗来做；
+     再叠一层**运镜**：镜头平移 + 推拉（焦点跟说话人走，收紧=张力）。
+   ★ 原作插在半路的采访问答 → 上半屏滑下「采访室」，双线交织；
+     "轰隆"一声巨响会把采访线当场砸断（原文就是这么写的）。
+   ★ 大黑屏卡用在「目不转睛，前所未见……」那两拍 —— 整块黑掉，
+     只剩一行白字（CUT4「翻页吧。」的形制）。
+   ================================================================== */
+#theater{ position:fixed; inset:0; background:#07090b; overflow:hidden; }
+#theater.shake8{ animation:sh8 .6s linear; }
+@keyframes sh8{
+    0%,100%{ transform:translate(0,0); }
+    12%{ transform:translate(-7px,4px); } 25%{ transform:translate(8px,-3px); }
+    38%{ transform:translate(-6px,5px); } 50%{ transform:translate(6px,3px); }
+    62%{ transform:translate(-4px,-4px); } 75%{ transform:translate(4px,2px); }
+    88%{ transform:translate(-2px,1px); }
+}
+
+/* ---------------- 世界：背景 + 全体立绘，一起吃运镜 ---------------- */
+#world{ position:absolute; inset:0; z-index:1; will-change:transform; }
+#bgc{ position:absolute; inset:0; }
+
+/* 立绘：底部中心锚点，走位 / 缩放 / 旋转全在 transform 里 */
+.pc{ position:absolute; left:0; bottom:0; opacity:0;
+     transform-origin:50% 100%; will-change:transform,opacity; }
+.pc svg{ display:block; height:min(56vh,520px);
+         filter:drop-shadow(0 0 12px rgba(200,208,194,.14));
+         transition:filter .35s ease; }
+.pc.tall svg{ height:min(63vh,585px); }
+.pc.far svg{ filter:brightness(.75) drop-shadow(0 0 8px rgba(200,208,194,.08)); }
+.pc .tag{ text-align:center; font-size:12px; letter-spacing:3px; margin-top:8px;
+          color:rgba(200,208,194,.5); white-space:nowrap; }
+.pc.dim svg{ filter:brightness(.5) saturate(.8) drop-shadow(0 0 10px rgba(200,208,194,.05)); }
+
+/* 停电 / 火光 */
+#dark8{ position:fixed; inset:0; z-index:8; background:#000; opacity:0;
+        pointer-events:none; transition:opacity 1.2s ease; }
+#dark8.on{ opacity:.82; }
+#fire8{ position:fixed; left:15%; right:15%; bottom:0; height:36%; z-index:9;
+        pointer-events:none; opacity:0; transition:opacity 1.2s ease;
+        background:radial-gradient(ellipse at 50% 100%, rgba(255,120,40,.32), rgba(255,60,20,.12) 45%, transparent 72%); }
+#fire8.on{ opacity:1; animation:flick8 1.6s ease-in-out infinite; }
+@keyframes flick8{ 0%,100%{ filter:brightness(1) } 50%{ filter:brightness(1.4) } }
+
+/* ---------------- 上半分屏：两个模式（采访室 / 坠落） ----------------
+   分屏里也全用对话立绘，不再画小黑人剪影。 */
+#fb{ position:fixed; left:0; right:0; top:0; height:46%; z-index:20;
+     transform:translateY(-103%); transition:transform .65s cubic-bezier(.3,.7,.3,1);
+     background:#0d1117; border-bottom:2px solid rgba(200,208,194,.3);
+     box-shadow:0 14px 40px rgba(0,0,0,.5); }
+#fb.on{ transform:none; }
+#fbcap{ position:absolute; left:20px; bottom:10px; font-size:12px; letter-spacing:3px;
+        color:rgba(200,208,194,.55); text-shadow:0 0 8px rgba(0,0,0,.8); z-index:5; }
+.fmode{ position:absolute; inset:0; display:none; overflow:hidden; }
+.fmode.on{ display:block; }
+
+/* —— 模式一：采访室（她 + 记者，对话立绘） —— */
+#fmode-itv{ background:
+    radial-gradient(120% 90% at 50% -10%, rgba(120,136,150,.16), rgba(10,13,17,0) 60%), #0d1117; }
+#fmode-itv .fwall{ position:absolute; left:0; right:0; bottom:22%; height:2px;
+    background:rgba(200,208,194,.12); }
+#fmode-itv .fdesk{ position:absolute; left:18%; right:18%; bottom:10%; height:9%;
+    background:#1c232b; border-top:2px solid rgba(200,208,194,.16); }
+#fmode-itv .fred{ position:absolute; bottom:21%; width:8px; height:5px; border-radius:1px;
+    background:rgba(200,60,60,.85); animation:fred8 1.4s ease-in-out infinite; }
+@keyframes fred8{ 0%,100%{ opacity:.45 } 50%{ opacity:1 } }
+#fmode-itv .fps{ position:absolute; bottom:17%; }
+#fmode-itv .fps svg{ display:block; height:23vh;
+    filter:drop-shadow(0 0 10px rgba(200,208,194,.12)); }
+#fmode-itv .fps .ftag{ text-align:center; font-size:11px; letter-spacing:2px;
+    color:rgba(200,208,194,.45); margin-top:4px; }
+
+/* —— 模式二：坠落（幂偌的立绘栽下来，碎成碎片，再慢慢拼回去） —— */
+#fmode-fall{ background:
+    linear-gradient(180deg, rgba(120,144,168,.10), rgba(10,13,17,0) 55%), #0b0e14; }
+#fmode-fall .ffloor{ position:absolute; left:8%; right:8%; bottom:15%; height:2px;
+    background:rgba(200,208,194,.14); }
+#fmode-fall .fbox{ position:absolute; left:50%; bottom:15%;
+    transform:translateX(-50%); will-change:transform; }
+#fmode-fall .fbox svg{ display:block; height:26vh;
+    filter:drop-shadow(0 0 10px rgba(200,208,194,.12)); }
+#fmode-fall .ffrags{ position:absolute; inset:0; }
+#fmode-fall .ffrags .fp{ position:absolute; will-change:transform,opacity; }
+#fmode-fall .ffrags .fp svg{ display:block; }
+#fmode-fall .fhit{ position:absolute; left:50%; bottom:15%; width:0; height:2px; opacity:0;
+    background:linear-gradient(90deg, rgba(240,232,216,0), rgba(240,232,216,.9), rgba(240,232,216,0)); }
+/* 碎裂戏的狠话：写在分屏里（不挡底下的台词），随立绘一起崩飞/重组 */
+#fmode-fall .fcap{ position:absolute; left:50%; top:5%; transform:translateX(-50%);
+    width:86%; text-align:center; z-index:7; opacity:0; pointer-events:none;
+    font-family:"Songti SC","SimSun","Noto Serif CJK SC","Source Han Serif SC",serif;
+    font-size:clamp(15px,2.5vw,27px); letter-spacing:.06em; line-height:1.55;
+    color:#f0e8d8; text-shadow:0 0 20px rgba(0,0,0,.92); transition:opacity .6s ease; }
+#fmode-fall .fcap.on{ opacity:1; }
+/* 采访线在跑的时候，下面的事件世界压暗一点 */
+body.itv #world{ filter:brightness(.5); }
+#world{ transition:transform .1s linear, filter .8s ease; }
+
+/* 对话框浮在一切之上；黑屏大字卡保持干净（CUT4 形制），红章只在场景里用（如黑板擦），不砸在黑卡上 */
+#dbox{ z-index:122; }
+/* 开场（标题 / 未开始）先藏起来，begin() 真正开演时再揭开 */
+#dbox.start-hidden{ opacity:0; pointer-events:none; }
+
+/* ---------------- 红章 ---------------- */
+#stamp{ position:fixed; left:50%; top:36%; z-index:126;
+        transform:translate(-50%,-50%) scale(3) rotate(14deg);
+        opacity:0; pointer-events:none; }
+#stamp.on{ animation:slam8 1.15s cubic-bezier(.2,.9,.3,1) forwards; }
+@keyframes slam8{
+    0%{ opacity:0; transform:translate(-50%,-50%) scale(3) rotate(14deg); }
+    34%{ opacity:1; transform:translate(-50%,-50%) scale(1) rotate(-6deg); }
+    42%{ transform:translate(-50%,-50%) scale(1.07) rotate(-6deg); }
+    50%,86%{ opacity:1; transform:translate(-50%,-50%) scale(1) rotate(-6deg); }
+    100%{ opacity:0; transform:translate(-50%,-50%) scale(1) rotate(-6deg); }
+}
+#stamp .seal{ display:flex; align-items:center; justify-content:center;
+    width:min(44vw,290px); height:min(44vw,290px);
+    border:6px solid rgba(176,35,42,.85); border-radius:12px;
+    box-shadow:0 0 36px rgba(176,35,42,.4), inset 0 0 26px rgba(176,35,42,.2);
+    background:rgba(22,9,9,.42); }
+#stamp .word{ font-family:"Songti SC","SimSun","Noto Serif CJK SC","Source Han Serif SC",serif;
+    font-weight:700; color:#c8323a; font-size:clamp(44px,7.6vw,104px);
+    letter-spacing:.06em; text-indent:.06em;
+    text-shadow:0 0 24px rgba(200,50,58,.55); }
+
+/* 白闪 */
+#flash{ position:fixed; inset:0; z-index:58; background:rgba(255,250,240,.96);
+        opacity:0; pointer-events:none; }
+#flash.on{ animation:fl8 .55s ease-out; }
+@keyframes fl8{ 0%{opacity:0} 14%{opacity:1} 100%{opacity:0} }
+
+/* 开场卡 / 终幕 */
+#title8,#fin{ position:fixed; inset:0; z-index:65; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:14px;
+    background:rgba(5,7,9,.97); transition:opacity .9s ease; }
+#title8.off,#fin.off{ opacity:0; pointer-events:none; }
+#title8 .t8{ font-size:13px; letter-spacing:6px; color:var(--ink2); }
+#title8 .n8{ font-size:30px; letter-spacing:12px; text-indent:12px; color:var(--ink); }
+#title8 .h8{ margin-top:16px; font-size:11.5px; letter-spacing:3px; color:#5f675d; }
+#fin .f8{ font-size:16px; letter-spacing:6px; color:var(--ink2); }
+#toArticle{ margin-top:20px; padding:12px 24px; border:1px solid rgba(200,208,194,.4);
+    color:var(--ink); font-size:14px; letter-spacing:3px; text-decoration:none;
+    transition:all .2s ease; }
+#toArticle:hover{ border-color:#c8453f; color:#e8caca; background:rgba(176,35,42,.08); }
+#fin .fh{ margin-top:14px; font-size:11.5px; letter-spacing:2px; color:#5f675d; }
+</style>
+</head>
+<body>
+<div id="theater">
+    <div id="world"><canvas id="bgc"></canvas></div>
+    <div id="dark8"></div>
+    <div id="fire8"></div>
+
+    <!-- 上半分屏：采访室 / 坠落两用 -->
+    <div id="fb">
+        <div class="fmode" id="fmode-itv">
+            <div class="fwall"></div>
+            <div class="fdesk"></div>
+            <div class="fred" style="left:34%"></div>
+            <div class="fred" style="left:50%; animation-delay:.5s"></div>
+            <div class="fred" style="left:66%; animation-delay:1s"></div>
+            <div class="fps" id="fpcLq" style="left:24%"></div>
+            <div class="fps" id="fpcJi" style="left:66%"></div>
+        </div>
+        <div class="fmode" id="fmode-fall">
+            <div class="ffloor"></div>
+            <div class="fbox" id="fbox"></div>
+            <div class="ffrags" id="ffrags"></div>
+            <div class="fhit" id="fhit"></div>
+            <div class="fcap" id="fcap"></div>
+        </div>
+        <div id="fbcap"></div>
+    </div>
+
+    <div id="dbox" class="rpg start-hidden">
+        <div id="dname"></div>
+        <div id="dtext"></div>
+        <div id="dnext">▶</div>
+    </div>
+
+    <div id="title8">
+        <div class="t8">C U T 8</div>
+        <div class="n8">答 记 者 问</div>
+        <div class="h8">点 击 · Z 开 始　　·　　M 音 效</div>
+    </div>
+
+    <div id="fin" class="off">
+        <div class="f8">采 访 · 完</div>
+        <a id="toArticle" href="index.html">翻开当时的整理稿 →</a>
+        <div class="fh">有些字，是当时就不让登的。</div>
+    </div>
+
+    <div id="veil"><div class="vm"></div></div>
+</div>
+
+<!-- 红章 / 白闪放在舞台之外：舞台的层叠会把它们困在里面，砸不到黑屏卡上 -->
+<div id="stamp"><div class="seal"><span class="word" id="stampw"></span></div></div>
+<div id="flash"></div>
+
+<script src="../lab/sfx.js" charset="utf-8"></script>
+<script src="../lab/big.js" charset="utf-8"></script>
+<script src="../lab/dialog.js" charset="utf-8"></script>
+<script>
+/* ==================================================================
+   CUT8 · 答记者问 —— 舞台本体
+   ------------------------------------------------------------------
+   ★ 剧情顺着原文：幂偌跟大爷回来 → 对峙套话 → 逃跑 → 化学实验室 →
+     停电 → 跳楼吧 → 落下 → 谢谢你 → 自焚 → 采访收尾。一句不编。
+   ★ 舞台引擎：
+       · 五个立绘全程同台（这个场面有几个人就站几个），各自一份状态
+         { x 走位 / y 升降 / s 纵深缩放 / r 旋转 / a 显隐 }，每帧缓动；
+       · 运镜：镜头平移 + 推拉，焦点跟着说话人走，收紧就是张力；
+       · 谁说话谁亮，其他人压暗；
+       · 走位时自带一点起伏（像在走）。
+   ★ 调度表 STAGE：cue 名 → 一串指令（T:谁,属性;  C:镜头x,变焦;  K 震;
+     F 白闪;  B 轰隆;  D±停电;  I±采访线），台词里只写一个 cue 名。
+   ================================================================== */
+(function(){
+'use strict';
+
+var SFX = window.CUT7Sfx || null;
+
+/* ---------------- 立绘（CUT1 同一套语言：填色 + 圆点眼） ---------------- */
+function spriteSVG(type){
+    var st = 'rgba(200,208,194,.3)', sw = 1.2;
+    if (type === 'lq'){
+        return '<svg viewBox="0 0 200 340" xmlns="http://www.w3.org/2000/svg">'
+            + '<path d="M48 100 C48 38 152 38 152 100 L154 158 C154 188 100 196 100 196 C100 196 46 188 46 158 Z" fill="#3a2f2a" stroke="' + st + '" stroke-width="' + sw + '"/>'
+            + '<circle cx="100" cy="108" r="42" fill="#e9d9c7" stroke="' + st + '" stroke-width="' + sw + '"/>'
+            + '<circle cx="86" cy="108" r="4.5" fill="#23201c"/>'
+            + '<circle cx="114" cy="108" r="4.5" fill="#23201c"/>'
+            + '<path d="M88 126 Q100 135 112 126" fill="none" stroke="' + st + '" stroke-width="' + sw + '"/>'
+            + '<path d="M60 188 C70 172 130 172 140 188 L156 326 C122 344 78 344 44 326 Z" fill="#6f7d6a" stroke="' + st + '" stroke-width="' + sw + '"/>'
+            + '<path d="M148 232 L166 336" stroke="#9c7a4e" stroke-width="4.5" fill="none" stroke-linecap="round"/>'
+            + '<path d="M156 240 L170 240" stroke="#9c7a4e" stroke-width="4" stroke-linecap="round"/>'
+            + '</svg>';
+    }
+    if (type === 'mp'){
+        return '<svg viewBox="0 0 200 340" xmlns="http://www.w3.org/2000/svg">'
+            + '<path d="M46 110 C44 42 156 42 154 110 L158 176 C158 198 140 206 140 206 L132 206 L132 150 C132 116 68 116 68 150 L68 206 L60 206 C60 206 42 198 42 176 Z" fill="#2c2622" stroke="' + st + '" stroke-width="' + sw + '"/>'
+            + '<circle cx="100" cy="108" r="42" fill="#e9d9c7" stroke="' + st + '" stroke-width="' + sw + '"/>'
+            + '<circle cx="86" cy="108" r="4.5" fill="#23201c"/>'
+            + '<circle cx="114" cy="108" r="4.5" fill="#23201c"/>'
+            + '<path d="M88 126 Q100 135 112 126" fill="none" stroke="' + st + '" stroke-width="' + sw + '"/>'
+            + '<path d="M62 188 C70 176 130 176 138 188 L150 314 C122 332 78 332 50 314 Z" fill="#d9d2c4" stroke="' + st + '" stroke-width="' + sw + '"/>'
+            + '<path d="M58 184 C70 170 130 170 142 184 L150 256 C122 270 78 270 50 256 Z" fill="#b89a72" stroke="' + st + '" stroke-width="' + sw + '"/>'
+            + '</svg>';
+    }
+    if (type === 'guard'){
+        /* 安保大爷：灰发 + 八字胡，制服 + 深色马甲 + 肩章 */
+        return '<svg viewBox="0 0 200 340" xmlns="http://www.w3.org/2000/svg">'
+            + '<circle cx="100" cy="108" r="42" fill="#e6d4c2" stroke="' + st + '" stroke-width="' + sw + '"/>'
+            + '<path d="M56 104 C56 52 80 40 100 40 C120 40 144 52 144 104 C138 84 122 74 100 74 C78 74 62 84 56 104 Z" fill="#8f959b" stroke="' + st + '" stroke-width="' + sw + '"/>'
+            + '<path d="M58 92 C54 78 56 66 62 58 M142 92 C146 78 144 66 138 58" fill="none" stroke="#8f959b" stroke-width="5" stroke-linecap="round"/>'
+            + '<circle cx="86" cy="106" r="4" fill="#23201c"/>'
+            + '<circle cx="114" cy="106" r="4" fill="#23201c"/>'
+            + '<path d="M80 130 C90 125 110 125 120 130 C110 141 90 141 80 130 Z" fill="#7d838a"/>'
+            + '<path d="M58 186 C68 170 132 170 142 186 L158 328 C122 346 78 346 42 328 Z" fill="#2f3a44" stroke="' + st + '" stroke-width="' + sw + '"/>'
+            + '<path d="M88 180 L100 200 L112 180 L112 170 L88 170 Z" fill="#d9d4c8" stroke="' + st + '" stroke-width="1"/>'
+            + '<path d="M97 198 L103 198 L105 238 L100 246 L95 238 Z" fill="#23282e"/>'
+            + '<path d="M70 186 C78 176 122 176 130 186 L136 262 C112 274 88 274 64 262 Z" fill="#26303a" stroke="' + st + '" stroke-width="' + sw + '"/>'
+            + '<rect x="60" y="182" width="16" height="5" fill="#cfc7b8"/>'
+            + '<rect x="124" y="182" width="16" height="5" fill="#cfc7b8"/>'
+            + '</svg>';
+    }
+    if (type === 'man'){
+        /* 那个男人：乱发（盖在额头上）、灰败的脸、眼下发乌、没有嘴，衣服上带着黑渍 */
+        return '<svg viewBox="0 0 200 340" xmlns="http://www.w3.org/2000/svg">'
+            + '<circle cx="100" cy="108" r="42" fill="#d9cdbd" stroke="' + st + '" stroke-width="' + sw + '"/>'
+            + '<path d="M55 104 C53 50 82 38 100 38 C121 38 147 52 145 104 C137 82 122 72 100 72 C78 72 63 82 55 104 Z" fill="#26221e" stroke="' + st + '" stroke-width="' + sw + '"/>'
+            + '<path d="M70 64 L62 52 M128 62 L136 50" stroke="#26221e" stroke-width="3.6" stroke-linecap="round"/>'
+            + '<circle cx="86" cy="106" r="4.6" fill="#1c1a18"/>'
+            + '<circle cx="114" cy="106" r="4.6" fill="#1c1a18"/>'
+            + '<path d="M76 96 C82 92 90 92 94 95" fill="none" stroke="rgba(40,30,30,.35)" stroke-width="2.6"/>'
+            + '<path d="M106 95 C110 92 118 92 124 96" fill="none" stroke="rgba(40,30,30,.35)" stroke-width="2.6"/>'
+            + '<path d="M62 190 C70 176 130 176 138 190 L152 330 C120 346 80 346 48 330 Z" fill="#2a2724" stroke="' + st + '" stroke-width="' + sw + '"/>'
+            + '<path d="M84 240 C96 236 108 240 110 254 C100 264 86 260 84 240 Z" fill="#1c1a17"/>'
+            + '<path d="M112 288 C122 284 132 288 134 300 C124 310 112 306 112 288 Z" fill="#1c1a17"/>'
+            + '<path d="M88 182 L100 198 L112 182" fill="none" stroke="#171512" stroke-width="3"/>'
+            + '</svg>';
+    }
+    /* ji —— 本台记者：短分头、黑框眼镜、深色西装 + 领带，手里一支台标话筒 */
+    return '<svg viewBox="0 0 200 340" xmlns="http://www.w3.org/2000/svg">'
+        + '<circle cx="100" cy="108" r="42" fill="#e6d4c2" stroke="' + st + '" stroke-width="' + sw + '"/>'
+        + '<path d="M56 104 C56 50 80 38 100 38 C120 38 146 52 144 104 C138 84 122 74 100 74 C78 74 62 84 56 104 Z" fill="#3a3632" stroke="' + st + '" stroke-width="' + sw + '"/>'
+        + '<rect x="65" y="99" width="27" height="18" fill="none" stroke="#23201c" stroke-width="2.4"/>'
+        + '<rect x="108" y="99" width="27" height="18" fill="none" stroke="#23201c" stroke-width="2.4"/>'
+        + '<path d="M92 107 L108 107" stroke="#23201c" stroke-width="2.4"/>'
+        + '<path d="M65 105 L52 100" stroke="#23201c" stroke-width="2"/>'
+        + '<path d="M135 105 L148 100" stroke="#23201c" stroke-width="2"/>'
+        + '<circle cx="78.5" cy="108" r="3.6" fill="#23201c"/>'
+        + '<circle cx="121.5" cy="108" r="3.6" fill="#23201c"/>'
+        + '<path d="M90 138 L110 138" stroke="#6b4a44" stroke-width="2.2"/>'
+        + '<path d="M58 188 C68 172 132 172 142 188 L158 326 C122 344 78 344 42 326 Z" fill="#2e3a46" stroke="' + st + '" stroke-width="' + sw + '"/>'
+        + '<path d="M88 180 L100 200 L112 180 L112 170 L88 170 Z" fill="#e8e4da" stroke="' + st + '" stroke-width="1"/>'
+        + '<path d="M96 197 L104 197 L107 242 L100 252 L93 242 Z" fill="#8d3b3b"/>'
+        + '<path d="M88 181 L76 218" stroke="#222c36" stroke-width="3.4" fill="none"/>'
+        + '<path d="M112 181 L124 218" stroke="#222c36" stroke-width="3.4" fill="none"/>'
+        + '<path d="M88 176 L96 212 M112 176 L104 212" stroke="#46525c" stroke-width="2"/>'
+        + '<rect x="87" y="212" width="26" height="17" fill="#e8e4da" stroke="' + st + '" stroke-width="1"/>'
+        + '<rect x="87" y="212" width="26" height="4.5" fill="#b0232a"/>'
+        + '<path d="M142 212 C152 202 155 188 150 172" stroke="#2e3a46" stroke-width="9" fill="none" stroke-linecap="round"/>'
+        + '<circle cx="150" cy="168" r="5.5" fill="#e6d4c2" stroke="' + st + '" stroke-width="1"/>'
+        + '<path d="M150 168 L157 146" stroke="#1a1a1a" stroke-width="4.5"/>'
+        + '<circle cx="159" cy="139" r="10" fill="#1a1a1a" stroke="' + st + '" stroke-width="1"/>'
+        + '<circle cx="159" cy="139" r="3.4" fill="#b0232a"/>'
+        + '</svg>';
+}
+var TAGS = { lq:'玻琳秋', mp:'幂偌', guard:'安保大爷', man:'那个男人', ji:'本台记者' };
+
+/* ---------------- 舞台引擎：全体立绘同台 + 运镜 ---------------- */
+var world = document.getElementById('world');
+var W = 0, H = 0;
+var CH = {};                                   /* 谁 → {el, st, tg} */
+var cam = { x:.5, z:1, tx:.5, tz:1 };          /* 镜头：焦点 + 变焦 */
+var shakeT = 0;
+
+function mkChar(type, cls){
+    var el = document.createElement('div');
+    el.className = 'pc' + (cls ? ' ' + cls : '');
+    el.innerHTML = spriteSVG(type) + '<div class="tag">' + TAGS[type] + '</div>';
+    world.appendChild(el);
+    var st = { x:1.28, y:0, s:1, r:0, a:0 };   /* 默认在台外右侧候场 */
+    if (type === 'lq') st.x = .28;
+    CH[type] = { el: el, st: st, tg: { x: st.x, y: 0, s: 1, r: 0, a: 0 } };
+}
+mkChar('lq'); mkChar('mp'); mkChar('guard'); mkChar('man', 'tall'); mkChar('ji');
+
+/* 走位 / 缩放 / 旋转：T('mp', {x:.5, s:1.06}) ；snap = 立即到位 */
+function T(who, props, snap){
+    var c = CH[who]; if (!c) return;
+    for (var k in props){
+        c.tg[k] = props[k];
+        if (snap) c.st[k] = props[k];
+    }
+}
+function camT(x, z){ cam.tx = x; cam.tz = z; }
+function focusWho(w){
+    for (var k in CH) CH[k].el.classList.toggle('dim', !!w && k !== w);
+    if (!w) for (var k2 in CH) CH[k2].el.classList.remove('dim');
+}
+
+var bgc = document.getElementById('bgc'), bctx = bgc.getContext('2d');
+var curBg = 'room';
+function drawBg(name){
+    var W = innerWidth, H = innerHeight;
+    bctx.clearRect(0, 0, W, H);
+    bctx.fillStyle = '#07090b'; bctx.fillRect(0, 0, W, H);
+    if (name === 'room'){
+        var g = bctx.createRadialGradient(W * .5, -H * .15, 10, W * .5, H * .55, W * .7);
+        g.addColorStop(0, 'rgba(70,78,66,.34)'); g.addColorStop(.75, 'rgba(7,9,12,0)');
+        bctx.fillStyle = g; bctx.fillRect(0, 0, W, H);
+        bctx.strokeStyle = 'rgba(200,208,194,.10)'; bctx.lineWidth = 2;
+        bctx.strokeRect(W * .04, H * .1, W * .22, H * .42);
+        bctx.fillStyle = 'rgba(120,140,150,.045)';
+        bctx.fillRect(W * .04, H * .1, W * .22, H * .42);
+        bctx.strokeStyle = 'rgba(200,208,194,.14)'; bctx.lineWidth = 3;
+        bctx.strokeRect(W * .82, H * .12, W * .13, H * .62);
+        bctx.fillStyle = 'rgba(226,214,178,.10)';
+        bctx.fillRect(W * .855, H * .18, W * .06, H * .055);
+        bctx.fillStyle = 'rgba(200,208,194,.05)';
+        for (var i = 0; i < 5; i++) bctx.fillRect(W * (.1 + i * .15), H * .8, W * .07, H * .012);
+        bctx.fillStyle = 'rgba(200,208,194,.04)'; bctx.fillRect(0, H * .86, W, 2);
+    } else if (name === 'lab'){
+        var g2 = bctx.createRadialGradient(W * .5, H * .3, 10, W * .5, H * .6, W * .6);
+        g2.addColorStop(0, 'rgba(52,58,52,.3)'); g2.addColorStop(.8, 'rgba(7,9,12,0)');
+        bctx.fillStyle = g2; bctx.fillRect(0, 0, W, H);
+        bctx.fillStyle = '#1a1f26'; bctx.fillRect(W * .08, H * .66, W * .52, H * .04);
+        bctx.fillStyle = '#141920'; bctx.fillRect(W * .08, H * .7, W * .52, H * .16);
+        bctx.fillStyle = 'rgba(120,90,60,.08)';
+        bctx.fillRect(W * .14, H * .64, W * .2, H * .05);
+        bctx.strokeStyle = 'rgba(200,208,194,.1)'; bctx.lineWidth = 2;
+        bctx.strokeRect(W * .8, H * .18, W * .12, H * .58);
+        bctx.fillStyle = 'rgba(200,208,194,.03)'; bctx.fillRect(0, H * .86, W, 2);
+    }
+}
+function bgFit(){
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = innerWidth; H = innerHeight;
+    bgc.width = Math.round(W * dpr); bgc.height = Math.round(H * dpr);
+    bgc.style.width = W + 'px'; bgc.style.height = H + 'px';
+    bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawBg(curBg);
+}
+window.addEventListener('resize', bgFit);
+bgFit();
+
+/* 主循环：缓动 + 上屏（走位起伏 / 镜头 / 深度排序） */
+function frame(){
+    var now = Date.now();
+    for (var k in CH){
+        var c = CH[k], st = c.st, tg = c.tg;
+        for (var p in tg) st[p] += (tg[p] - st[p]) * .065;
+        var moving = Math.abs(tg.x - st.x) > .02;
+        var bob = moving ? Math.abs(Math.sin(now / 140)) * H * .007 : 0;
+        c.el.style.opacity = Math.max(0, Math.min(1, st.a)).toFixed(3);
+        c.el.style.transform =
+            'translateX(' + (st.x * W).toFixed(1) + 'px)' +
+            'translateY(' + (st.y * H - bob).toFixed(1) + 'px)' +
+            'translateX(-50%)' +
+            'scale(' + st.s.toFixed(3) + ')' +
+            'rotate(' + st.r.toFixed(2) + 'deg)';
+        c.el.style.zIndex = Math.round(10 + st.s * 30 + st.y * 120);
+    }
+    cam.x += (cam.tx - cam.x) * .05;
+    cam.z += (cam.tz - cam.z) * .05;
+    var shx = shakeT > 0 ? (Math.random() - .5) * 13 * shakeT : 0;
+    var shy = shakeT > 0 ? (Math.random() - .5) * 9 * shakeT : 0;
+    shakeT = Math.max(0, shakeT - .045);
+    world.style.transform =
+        'translate(' + (W / 2 + shx).toFixed(1) + 'px,' + (H * .55 + shy).toFixed(1) + 'px)' +
+        'scale(' + cam.z.toFixed(3) + ')' +
+        'translate(' + (-W * cam.x).toFixed(1) + 'px,' + (-H * .55).toFixed(1) + 'px)';
+    requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ---------------- 红章 / 白闪 / 震屏 / 停电 / 火光 ---------------- */
+function itv(n){
+    try {
+        var u = JSON.parse(localStorage.getItem('mp_unlock_v1') || '{}') || {};
+        if ((+u.itv_lv || 0) < n){
+            u.itv_lv = n;
+            localStorage.setItem('mp_unlock_v1', JSON.stringify(u));
+        }
+    } catch (e){}
+}
+
+/* ---------------- 解锁信号：写给主页面 / 采访页看 ----------------
+   'cut8'  = 这一页被打开过   → 主页面把 CUT8 那枚**网页按钮**补上（以前漏了这条）；
+   'cut8s' = 这一页演完了     → 主页面补「剧情」按钮（旁观者的复盘 NODES.st_cut8），
+                                采访页那枚小眼球也认这个标记，会自己开口说六句。 */
+function unlock(k){
+    try {
+        var u = JSON.parse(localStorage.getItem('mp_unlock_v1') || '{}') || {};
+        if (u[k]) return;
+        u[k] = 1;
+        localStorage.setItem('mp_unlock_v1', JSON.stringify(u));
+    } catch (e){}
+}
+unlock('cut8');          /* 页面一打开就写 —— 主页面那枚网页按钮从此就有 */
+
+var stamped = {};
+function stamp(word){
+    if (stamped[word]) return;
+    stamped[word] = 1;
+    var el = document.getElementById('stamp');
+    document.getElementById('stampw').textContent = word;
+    el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+    knock();
+}
+function flash(){
+    var f = document.getElementById('flash');
+    f.classList.remove('on'); void f.offsetWidth; f.classList.add('on');
+}
+function shake(){ shakeT = 1; }
+function knock(){ if (SFX && SFX.knock) SFX.knock(); }
+function dark8(v){ document.getElementById('dark8').classList.toggle('on', !!v); }
+function fire8(v){ document.getElementById('fire8').classList.toggle('on', !!v); }
+
+/* ---------------- 上半分屏：采访室 + 坠落（全部用对话立绘） ----------------
+   模式一「采访室」：她 + 记者（对话立绘），双线的另一条；
+   模式二「坠落」：幂偌的立绘栽下来，砸碎成碎片，再慢慢拼回去 ——
+   参考CUT4的「人」摔碎（clip-path 网格切片），原文写的是"她在慢慢重组"。
+   分屏只占上半屏，台词一直在下面，文本不会被盖住。 */
+var FB = (function(){
+    var panel = document.getElementById('fb');
+    var cap = document.getElementById('fbcap');
+    var mItv = document.getElementById('fmode-itv');
+    var mFall = document.getElementById('fmode-fall');
+    var fbox = document.getElementById('fbox');
+    var ffrags = document.getElementById('ffrags');
+    var fhit = document.getElementById('fhit');
+    var mode = '';
+    var anims = [], timers = [], SHARDS = null;
+
+    /* 采访室：注入两个对话立绘（只注入一次） */
+    var itvBuilt = false;
+    function itvBuild(){
+        if (itvBuilt) return; itvBuilt = true;
+        document.getElementById('fpcLq').innerHTML =
+            spriteSVG('lq') + '<div class="ftag">玻琳秋</div>';
+        document.getElementById('fpcJi').innerHTML =
+            spriteSVG('ji') + '<div class="ftag">本台记者</div>';
+    }
+
+    /* 碎片网格：把立绘的包围盒按网格切成三角（顶点共享，严丝合缝） */
+    function rndOf(k){ var x = Math.sin(k * 127.1) * 43758.5453; return x - Math.floor(x); }
+    function buildShards(cols, rows){
+        var pts = [], out = [], i, j;
+        for (j = 0; j <= rows; j++){
+            pts[j] = [];
+            for (i = 0; i <= cols; i++){
+                var jx = (i > 0 && i < cols) ? (rndOf(i * 31 + j * 7) - .5) * 8 : 0;
+                var jy = (j > 0 && j < rows) ? (rndOf(i * 17 + j * 53) - .5) * 8 : 0;
+                pts[j][i] = [ i / cols * 100 + jx, j / rows * 100 + jy ];
+            }
+        }
+        for (j = 0; j < rows; j++) for (i = 0; i < cols; i++){
+            var a = pts[j][i], b = pts[j][i + 1], c = pts[j + 1][i], d = pts[j + 1][i + 1];
+            out.push([a[0],a[1], b[0],b[1], d[0],d[1]]);
+            out.push([a[0],a[1], d[0],d[1], c[0],c[1]]);
+        }
+        return out;
+    }
+    function polyOf(p){
+        var s = [];
+        for (var k = 0; k < p.length; k += 2) s.push(p[k] + '% ' + p[k + 1] + '%');
+        return 'polygon(' + s.join(',') + ')';
+    }
+    function clearFall(){
+        anims.forEach(function(a){ try { a.cancel(); } catch (e){} }); anims = [];
+        timers.forEach(function(t){ clearTimeout(t); }); timers = [];
+        ffrags.innerHTML = '';
+        fbox.style.opacity = '1'; fbox.style.visibility = 'visible';
+        fbox.style.transform = 'translateX(-50%)';
+        fhit.style.opacity = '0';
+        var fc = document.getElementById('fcap');
+        if (fc){ fc.classList.remove('on'); fc.textContent = ''; }
+    }
+    function setMode(m){ mode = m; }
+
+    return {
+        /* 采访室 */
+        itv: function(caption){
+            itvBuild();
+            clearFall();
+            setMode('itv');
+            mItv.classList.add('on'); mFall.classList.remove('on');
+            cap.textContent = caption || '火灾之后 · 采访室';
+            panel.classList.add('on');
+        },
+        /* 坠落：立绘栽下来 → 砸扁（停住）。碎裂 / 重组另行触发（剧情节点）。 */
+        fall: function(caption){
+            setMode('fall');
+            clearFall();
+            this._shattered = false; this._reassembled = false;
+            fbox.innerHTML = spriteSVG('mp');          /* 坠落的是幂偌的立绘 */
+            SHARDS = buildShards(4, 3);
+            mFall.classList.add('on'); mItv.classList.remove('on');
+            cap.textContent = caption || '';
+            panel.classList.add('on');
+            /* 栽下来 */
+            var a = fbox.animate([
+                { transform:'translateX(-50%) translateY(-46vh) rotate(-5deg)' },
+                { transform:'translateX(-50%) translateY(0px) rotate(4deg)' }
+            ], { duration:680, easing:'cubic-bezier(.42,.02,.86,.34)', fill:'forwards' });
+            anims.push(a);
+            a.onfinish = function(){ this.impact(); }.bind(this);
+        },
+        impact: function(){
+            /* ★ 压扁之前把盒子量下来 —— 砸地那一下会把 fbox 压成一条线，
+               之后再量就会得到"几乎为零"的尺寸，碎片会碎成一片小灰点。 */
+            this._boxRect = fbox.getBoundingClientRect();
+            var Ww = Math.max(300, innerWidth * .4);
+            var ha = fhit.animate([
+                { width:'0px', opacity:0 },
+                { width:Ww + 'px', opacity:.85, offset:.3 },
+                { width:Ww + 'px', opacity:0 }
+            ], { duration:600, easing:'ease-out', fill:'both' });
+            anims.push(ha);
+            var ba = fbox.animate([
+                { transform:'translateX(-50%) scale(1,1)', offset:0 },
+                { transform:'translateX(-50%) translateY(10px) scale(1.2,.12)', offset:.45 },
+                { transform:'translateX(-50%) scale(1.05,.95)', offset:.72 },
+                { transform:'translateX(-50%) scale(1,1)', offset:1 }
+            ], { duration:300, easing:'cubic-bezier(.2,.8,.3,1)', fill:'forwards' });
+            anims.push(ba);
+            /* ★ 落地只做一下缓冲（压扁→立刻回弹到正常直立），不长期停在扁态；
+               碎裂留到剧情到"像碎了的镜子"由 SHATTER 指令触发，不在这里自动炸。 */
+        },
+        shatter: function(){
+            if (this._shattered) return; this._shattered = true;
+            /* 立绘的包围盒 → 每片一只 clip-path 过的立绘副本。
+               ★ 用压扁前量好的盒子（this._boxRect）；分屏只有 46% 高，
+                 崩飞要"横向铺开、纵向收着"，否则碎片会飞出分屏被裁掉。 */
+            var r = this._boxRect || fbox.getBoundingClientRect();
+            var pw = r.width, ph = r.height, sx = r.left, sy = r.top;
+            var Vw = innerWidth;
+            var Hf = document.getElementById('fb').getBoundingClientRect().height;
+            fbox.style.opacity = '0'; fbox.style.visibility = 'hidden';
+            SHARDS.forEach(function(p, k){
+                var d = document.createElement('div');
+                d.className = 'fp';
+                d.style.left = sx + 'px'; d.style.top = sy + 'px';
+                d.style.width = pw + 'px'; d.style.height = ph + 'px';
+                d.style.clipPath = polyOf(p);
+                d.style.webkitClipPath = polyOf(p);
+                d.innerHTML = spriteSVG('mp');
+                d.querySelector('svg').style.height = ph + 'px';
+                ffrags.appendChild(d);
+                var cx = (p[0] + p[2] + p[4]) / 3, cy = (p[1] + p[3] + p[5]) / 3;
+                var r1 = rndOf(k + 1), r2 = rndOf(k + 7), r3 = rndOf(k + 13);
+                var dx = (cx - 50) / 50 * (Vw * .30) + (r1 - .5) * (Vw * .20);   /* 横向大幅炸开 */
+                var dy = -(4 + r2 * Hf * .18) + (cy - 50) / 50 * (ph * .16);      /* 纵向只收一点点 */
+                var rt = (r3 - .5) * 360;
+                var a = d.animate([
+                    { transform:'translate(0px,0px) rotate(0deg)', opacity:1, offset:0 },
+                    { transform:'translate(' + (dx * .72) + 'px,' + dy + 'px) rotate(' + (rt * .6) + 'deg)', opacity:1, offset:.32 },
+                    { transform:'translate(' + dx + 'px,' + (dy * .35 + Hf * .08) + 'px) rotate(' + rt + 'deg) scale(.86)', opacity:1, offset:.62 },
+                    { transform:'translate(' + (dx * 1.02) + 'px,' + (Hf * .12) + 'px) rotate(' + (rt * 1.04) + 'deg) scale(.8)', opacity:.95, offset:1 }
+                ], { duration: 950 + Math.round(r2 * 380), easing:'cubic-bezier(.14,.55,.3,1)', fill:'forwards' });
+                anims.push(a);
+            });
+            /* 重组不在这里自动跑 —— 等剧情到"她在慢慢重组"由 REASSEMBLE 触发 */
+        },
+        reassemble: function(){
+            if (this._reassembled) return; this._reassembled = true;
+            var list = ffrags.querySelectorAll('.fp');
+            for (var k = 0; k < list.length; k++){
+                (function(d, k){
+                    var from = getComputedStyle(d).transform;
+                    var a = d.animate([
+                        { transform: from === 'none' ? 'translate(0,0)' : from, opacity:.92 },
+                        { transform:'translate(0px,0px) rotate(0deg)', opacity:1 }
+                    ], { duration: 1400, delay: k * 9, easing:'cubic-bezier(.3,.7,.25,1)', fill:'forwards' });
+                    anims.push(a);
+                })(list[k], k);
+            }
+        },
+        fallEnd: function(){
+            this.close();
+        },
+        /* 碎裂戏字幕：写进分屏，不挡底下的台词 */
+        fallCap: function(text){
+            var c = document.getElementById('fcap');
+            if (c){ c.textContent = text || ''; c.classList.add('on'); }
+        },
+        close: function(){
+            panel.classList.remove('on');
+            document.body.classList.remove('itv');
+            clearFall();
+            mItv.classList.remove('on'); mFall.classList.remove('on');
+            mode = '';
+        }
+    };
+})();
+window.CUT8FB = FB;
+
+/* ---------------- 调度表：cue 名 → 一串指令 ----------------
+   T:谁,x.5,y0,s1,r0,a1[,snap]   C:镜头焦点,变焦   K 敲/震   F 白闪
+   B 轰隆(闪+震+敲+停电)   D+/D- 停电开关   I+/I- 采访线   F8/F8- 火光 */
+function stage(str){
+    str.split(';').forEach(function(cmd){
+        cmd = cmd.trim(); if (!cmd) return;
+        var m;
+        if (m = /^T:(\w+),(.+)$/.exec(cmd)){
+            var who = m[1], props = {}, snap = false;
+            m[2].split(',').forEach(function(p){
+                p = p.trim();
+                if (p === 'snap'){ snap = true; return; }
+                var kv = /^([xysra])(-?\d*\.?\d+)$/.exec(p);
+                if (kv) props[kv[1]] = +kv[2];
+            });
+            T(who, props, snap);
+        } else if (m = /^C:(-?[\d.]+),(-?[\d.]+)$/.exec(cmd)){
+            camT(+m[1], +m[2]);
+        } else if (cmd === 'K'){ knock(); shake();
+        } else if (cmd === 'F'){ flash();
+        } else if (cmd === 'B'){ flash(); shake(); knock(); dark8(true);
+        } else if (cmd === 'D+'){ dark8(true);
+        } else if (cmd === 'D-'){ dark8(false);
+        } else if (cmd === 'I+'){ FB.itv(); document.body.classList.add('itv');
+        } else if (cmd === 'I-'){ FB.close(); document.body.classList.remove('itv');
+        } else if (cmd === 'F8'){ fire8(true);
+        } else if (cmd === 'F8-'){ fire8(false);
+        } else if (cmd === 'SH'){ shake();
+        } else if (cmd === 'FALL'){ FB.fall('二楼窗口 · 她跳了下去');
+        } else if (cmd === 'FALLEND'){ FB.fallEnd();
+        } else if (cmd === 'SHATTER'){ FB.shatter();
+        } else if (cmd === 'REASSEMBLE'){ FB.reassemble();
+        } else if (cmd.indexOf('bg:') === 0){ curBg = cmd.slice(3); drawBg(curBg); }
+    });
+}
+var STAGE = {
+    /* —— 播音教室：大爷跟幂偌过来 —— */
+    's-in':    'T:lq,x.28,a1;T:mp,x.62,a1;T:guard,x.8,a1;C:.55,1',
+    's-gd':    'T:guard,x.74,s1.08;C:.62,1.04',
+    's-pair':  'T:mp,x.52,s1.02;T:lq,x.3',
+    's-door':  'K',
+    /* —— 男人现身 —— */
+    's-man':   'T:man,x.84,a1,s1.12;C:.68,1.1',
+    's-nofind':'C:.72,1.16',
+    's-guardup':'T:guard,x.68,s1.12,r-2',
+    's-look':  'T:man,x.82;C:.75,1.14',
+    's-mp1':   'T:mp,x.5,s1.06;C:.5,1.08',
+    's-man2':  'T:man,s1.16;C:.75,1.12',
+    's-mp2':   'T:mp,x.48,s1.08;C:.48,1.1',
+    's-hbc':   'T:man,s1.2,r-3;C:.72,1.2',
+    's-shock': 'T:guard,s1.05;T:mp,s1;T:lq,s.98;C:.5,1.05',
+    's-guard2':'T:guard,x.7,s1.1',
+    's-mp3':   'T:mp,x.5,s1.06;C:.5,1.08',
+    's-man3':  'T:man,x.82,s1.14;C:.72,1.12',
+    's-gaze':  'C:.6,1.1',
+    's-mp4':   'T:mp,s1.05',
+    's-man4':  'T:man,s1.1',
+    's-manout':'T:man,x1.3,a0',
+    's-gdout': 'T:guard,x1.2,a0',
+    /* —— 往外撤：走廊上 —— */
+    's-flee':  'T:lq,x.2;T:mp,x.42;C:.35,1.05',
+    's-long':  'T:lq,x.16;T:mp,x.38;C:.3,1.08',
+    's-stop':  'T:lq,x.18;T:mp,x.4,s.98;C:.32,1.1',
+    's-mansil':'T:man,x.88,a1,s.9,snap',
+    's-yeh':   'T:lq,y-.015,snap',
+    's-yeh2':  'T:lq,y0;T:mp,y0',
+    /* —— 逃、躲进二楼化学实验室 —— */
+    's-run2':  'T:lq,x.3,a1;T:mp,x.55,a1;C:.45,1.05;bg:lab',
+    's-manyell':'T:man,x.9,a1,s.8,snap',
+    's-dash':  'T:lq,x.3;T:mp,x.52',
+    's-block': 'T:mp,x.62,s1.05',
+    's-door2': 'K',
+    's-push':  'T:man,x.9,a1,s1.08,snap;SH',
+    's-stack': 'T:mp,x.6',
+    's-crack': 'T:man,x.86,s1.05;C:.8,1.18',
+    's-said':  'C:.82,1.2',
+    's-manout2':'T:man,x1.25,a0',
+    's-shout': 'T:lq,x.36,s1.1;C:.4,1.1',
+    's-gdfar': 'T:guard,x.85,y.04,s.55,a1,snap',
+    's-gdfar2':'T:guard,a0',
+    's-wait':  'T:guard,a0;T:lq,x.4,s1;T:mp,x.6,s1;C:.5,1.08',
+    's-window':'T:lq,x.42,s1.04;C:.45,1.14',
+    's-wait2': 'C:.5,1.14',
+    /* —— 采访线一：停电（巨响把它砸断） —— */
+    'i1':      'I+',
+    's-boom1': 'B;I-;T:guard,x.86,y.04,s.55,a1,snap',
+    's-open':  'D-;T:guard,a0',
+    /* —— 采访线二：幂偌在哪 —— */
+    'i2':      'I+',
+    'i2off':   'I-',
+    /* —— 跳楼吧 —— */
+    's-approach':'T:mp,x.5,s1.08;C:.45,1.15',
+    's-close': 'T:mp,x.44,s1.12;T:lq,x.32;C:.42,1.22',
+    's-tiaolou':'C:.4,1.26',
+    'i3':      'I+',
+    'i3off':   'I-',
+    's-serious':'T:mp,x.44,s1.12;C:.4,1.24',
+    's-promise':'T:mp,x.42,s1.14;C:.4,1.28',
+    's-crash': 'K;T:man,x.88,a1,s1.1,snap;C:.75,1.2',
+    's-jump':  'T:mp,y-.06,a0;FALL',
+    's-fall':  'K',
+    'SHATTER': 'SHATTER',
+    'REASSEMBLE':'REASSEMBLE',
+    's-lean':  'T:lq,x.36,s1.06;C:.4,1.2',
+    /* —— 大黑屏卡两拍之后 —— */
+    's-crash2':'T:man,x.86,a1,s1.05,snap;C:.78,1.16',
+    's-thanks':'C:.8,1.18',
+    's-manout3':'T:man,x1.3,a0',
+    /* —— 楼下：我来接你 —— */
+    's-mpalive':'FALLEND;T:mp,x.5,y.06,s.62,a1,snap;bg:room;C:.5,1.1',
+    's-arms':  'T:mp,x.5,y.05,s.66',
+    's-over':  'T:lq,x.4,s.9;C:.45,1.15',
+    's-boom2': 'B',
+    's-world': 'C:.45,1.28',
+    's-drop':  'T:lq,y.75,a0,snap',
+    's-catch': 'T:lq,x.5,y.08,s.66,a1,snap;T:mp,x.5,y.08,s.66,a1,snap;K',
+    /* —— 杂物堆：谢谢你，让我死 —— */
+    's-mandrop':'K;T:man,x.8,y.02,r78,s.9,a1,snap',
+    's-flame': 'F8',
+    's-flee3': 'T:lq,x.15,a0;T:mp,x.3,a0;F8-',
+    /* —— 那个场面：采访收尾 —— */
+    'i5':      'I+',
+    's-fin':   'I-;D-;F8-;T:man,a0;T:guard,x1.3,a0;T:lq,x.3,y0,s1,a1,snap;T:mp,x.62,y0,s1,a1,snap;T:ji,x.82,s.95,a1,snap;C:.5,1.02',
+    's-goto':  'T:lq,x.5;T:mp,x.64;C:.55,1.08',
+    's-exit':  'T:lq,x.95,a0;T:mp,x1.05,a0;C:.6,1.05',
+    's-rep':   'T:ji,x.78,s1.02;C:.75,1.12'
+};
+
+function cue(name){
+    if (name.indexOf('bg:') === 0){ curBg = name.slice(3); drawBg(curBg); return; }
+    if (STAGE[name]) stage(STAGE[name]);
+}
+
+/* ---------------- 剧本：顺着原文往下演 ---------------- */
+var WHO = { narr:'', lq:'玻琳秋', mp:'幂偌', guard:'安保大爷', man:'那个男人', ji:'本台记者' };
+var SCRIPT = [
+    { w:'narr', cue:'s-in', t:'幂偌是跟着安保大爷过来的。' },
+    { w:'lq',   t:'幂偌！……' },
+    { w:'narr', t:'琳秋给他们开了门，交代了自己刚刚面对的事。' },
+    { w:'narr', cue:'s-gd', t:'一行人都聚集在播音教室里。' },
+    { w:'guard', t:'你们两个，快点出去。我通报一下，马上就去排查那个可疑分子的位置。' },
+    { w:'narr', cue:'s-pair', t:'她们两个点了点头。幂偌搀着琳秋，起身准备离开。' },
+    { w:'narr', cue:'s-door', t:'"当！——"的一声，门关了。' },
+    { w:'narr', cue:'s-man', t:'男人出现在他们三人面前。' },
+    { w:'man',  t:'不用找了。' },
+    { w:'narr', t:'他说。' },
+    { w:'narr', cue:'s-guardup', t:'保安大爷当场就掏出电击枪了。' },
+    { w:'guard', t:'别给我轻举妄动啊！' },
+    { w:'guard', t:'（打开对讲机）一队一队！实验楼3F播音一，来几个！有打架斗殴的！' },
+    { w:'narr', t:'"好嘞好嘞，一队收到。"对讲机回答。' },
+    { w:'narr', cue:'s-look', t:'可是男人只是看着玻琳秋。' },
+    { w:'man',  t:'我的东西呢？' },
+    { w:'narr', t:'玻琳秋又是一次大脑宕机，她听不懂啊，什么东西？' },
+    { w:'lq',   t:'什么东西？' },
+    { w:'narr', t:'男人没有回答，只是盯着她看。' },
+    { w:'man',  t:'今早上还在这里的。' },
+    { w:'narr', cue:'s-mp1', t:'琳秋看了看幂偌，幂偌看着她，也在疯狂回想到底有什么遗漏。' },
+    { w:'mp',   t:'我听说您不是先来的这儿……东西也不止一个？' },
+    { w:'narr', t:'没想到她表演的能力会在这里派上用场。' },
+    { w:'man',  cue:'s-man2', t:'实验室一个，西厅一个，这里一个。' },
+    { w:'narr', t:'这回他盯着幂偌。' },
+    { w:'narr', cue:'s-mp2', t:'是完全听不懂的信息，完全不知道他要的是什么东西。骑虎难下，根本就不知道怎么办了。幂偌只能试着继续套话。' },
+    { w:'mp',   t:'每个房间里，都有您要的东西吗？还是说，它是您特制的？' },
+    { w:'man',  cue:'s-hbc', st:'hbc', t:'（从裤兜里掏出一个黑板擦，举着给他们看）黑板擦。' },
+    { w:'narr', cue:'s-shock', t:'三个人都震惊了，这个人简直就是个精神病。' },
+    { w:'guard', cue:'s-guard2', t:'（对讲机）一队一队！对象疑似有精神疾病，最好不要和他周旋。' },
+    { w:'narr', t:'"一队收到，已经到达楼底。"对讲机回应。' },
+    { w:'narr', cue:'s-mp3', t:'想了想，幂偌打算接着套话。' },
+    { w:'mp',   t:'这个房间里，本来应该有的吗？' },
+    { w:'man',  cue:'s-man3', t:'本来就应该有，但我进门的时候没看见……我来之前，这儿就她一个人。' },
+    { w:'narr', cue:'s-gaze', t:'男人看着玻琳秋。' },
+    { w:'narr', t:'玻琳秋不知道怎么回应了。最关键的是她什么都没干啊，要是看见黑板擦了肯定看见了啊。' },
+    { w:'narr', cue:'s-mp4', t:'幂偌也在努力回想这里到底有没有黑板擦，她张嘴——' },
+    { w:'mp',   t:'那个……很抱歉哈，给您带来困扰了。它们一定对您来说很重要吧？' },
+    { w:'narr', cue:'s-man4', t:'男人不说话了，这句话没套出结果。' },
+    { w:'narr', cue:'s-manout', t:'听着越来越靠近的脚步声，他往后撤，打开门，跑了出去。' },
+    { w:'guard', cue:'s-gdout', t:'一队一队！可疑分子跑了，楼底派俩，楼上派俩。时刻准备报警。' },
+    { w:'narr', t:'安保大爷马上通报，甩开手追了上去。' },
+    { w:'narr', cue:'s-flee', t:'幂偌立马搀着琳秋往门外走。' },
+    { w:'narr', t:'这还是平生第一次，玻琳秋恨不得自己多长几条腿用。' },
+    { w:'lq',   t:'快点快点快点！——' },
+    { w:'mp',   t:'别那么着急，稳一点最好……' },
+    { w:'narr', t:'"你们两个最好快点出去！……"两个保安从她们身边跑了过去，提醒她们。' },
+    { w:'narr', t:'"二队二队，已上楼。"他们俩开对讲机通报。' },
+    { w:'narr', cue:'s-long', t:'这是玻琳秋这辈子走过最漫长的道路，每一步都像是灌了铅一样。' },
+    { w:'lq',   t:'幂偌……幂偌，扶好我啊……' },
+    { w:'mp',   t:'绝对会！——咱们快点出去……' },
+    { w:'narr', cue:'s-stop', t:'"嗒——嗒嗒——嗒——"支撑着身体，她在过道里向前。没走几步，"哒哒……"身后传来声响。' },
+    { w:'narr', t:'【不会吧？】她这样想。就这样，她回头注视铁门。' },
+    { w:'narr', cue:'s-mansil', t:'那个男人注视她们数秒。然后，进入播音教室。' },
+    { w:'lq',   cue:'s-yeh', t:'耶？' },
+    { w:'narr', cue:'s-yeh2', t:'琳秋和幂偌惊讶。' },
+    { w:'narr', t:'他，他到底来干嘛的？' },
+    { w:'narr', cue:'s-run2', t:'"走走走！……"玻琳秋连声提醒幂偌快点走，万一那个男人再发癫呢？' },
+    { w:'mp',   t:'好！——' },
+    { w:'narr', cue:'s-lab', t:'两个人互相搀扶着下楼，稳稳地下楼，为了防止发生什么意外。' },
+    { w:'man',  cue:'s-manyell', t:'到底去哪了？！——那一块！——就剩那一块能拿了！——' },
+    { w:'narr', cue:'s-dash', t:'远远地传过来靠近的脚步声和男人的喊声。吓得她们两个人都快要连滚带爬了。' },
+    { w:'narr', t:'二楼其他房间都没开放，就化学实验室因为爆炸坏了门锁，她们只能赶忙躲进二楼的化学实验室。' },
+    { w:'narr', t:'一进门，消毒水的刺鼻气味就扑面而来，一点也不好闻，但是也只能在这里躲着了。' },
+    { w:'lq',   cue:'s-block', t:'幂偌！……堵住门！……' },
+    { w:'narr', t:'琳秋指一指烧的有点焦的桌子，提醒她可以堵住门。' },
+    { w:'mp',   t:'没问题！' },
+    { w:'narr', t:'幂偌脱下外套，挽起袖子，用力推桌子。她的力气居然是这个时候派上用场的。' },
+    { w:'narr', t:'能听见男人哒哒哒哒下楼的声音，两个人躲在里面，大气都不敢出。只希望能快点吧……快点结束。' },
+    { w:'narr', cue:'s-door2', t:'"咔哒咔哒——"有人急急忙忙旋动把手，但是门没有打开。' },
+    { w:'narr', cue:'s-push', t:'对方发现门没开以后，又是一阵沉默，却没有吵闹，直接开始用蛮力推门。' },
+    { w:'narr', t:'这直接给琳秋吓懵逼了，她胡乱指着周围，让幂偌多推几个桌子过去。' },
+    { w:'mp',   t:'……！' },
+    { w:'narr', cue:'s-stack', t:'幂偌点点头，挽起袖子就是干，一下子推了好几个桌子过去堵门。' },
+    { w:'narr', cue:'s-crack', t:'纵使他再大的力气，也推不开这么多桌子。到最后，也只是留下了一条门缝，能看见他半边的脸和眼睛。' },
+    { w:'man',  cue:'s-said', t:'我跟你说了吧？……注意安全。' },
+    { w:'lq',   t:'哈？……' },
+    { w:'narr', t:'玻琳秋听不懂他在说什么。' },
+    { w:'narr', cue:'s-manout2', t:'注视着她们，男人后撤，马上离开了。' },
+    { w:'narr', t:'他离开是离开了，可是她们怎么出去呢？谁知道他会不会在这一层守着。' },
+    { w:'lq',   t:'卧槽……' },
+    { w:'narr', t:'琳秋意识到了这个。现在怎么办？' },
+    { w:'mp',   t:'我再把桌子拉开？' },
+    { w:'lq',   t:'万一他守着门口呢？' },
+    { w:'mp',   t:'那等他被抓以后我们再出去？' },
+    { w:'lq',   t:'这个可以。' },
+    { w:'narr', t:'她拉开窗户，对着上面喊——' },
+    { w:'lq',   cue:'s-shout', t:'保安大爷！！——您抓到人了跟我们说啊！！——' },
+    { w:'guard', cue:'s-gdfar', t:'你们怎么了？！——' },
+    { w:'mp',   t:'我们怕他在二楼！——把自己堵到化学实验室了！——他刚才来过这一层！——' },
+    { w:'narr', cue:'s-gdfar2', t:'对方打开对讲机说："三队三队，一人上楼排查。"' },
+    { w:'narr', cue:'s-wait', t:'等待的这一段时间也是如此的漫长，好像从来没有过这般高压和痛苦。' },
+    { w:'narr', cue:'s-window', t:'玻琳秋从窗户往下看，远远地，能看见三楼播音教室下方那堆杂物，能看见……看见那个黑色方块。' },
+    { w:'lq',   t:'黑板擦？' },
+    { w:'narr', t:'"啊？"幂偌不知道她在说什么。' },
+    { w:'lq',   t:'他要的东西在播音教室底下！' },
+    { w:'narr', t:'不论是他本人听见还是保安他们听见，总的来说都算好事。"一队一队！守在播音教室，对方可能持有管制刀具，注意安全。""一队收到，开始移动。"' },
+    { w:'narr', cue:'s-wait2', t:'接下来，只剩等待了。然而等待，是最令人痛苦的事。' },
+    { w:'narr', t:'每一分每一秒都是煎熬。刺鼻，难闻，化学实验室里还残留着烧焦的气味，没有一处可以使人安心。' },
+    /* —— 采访线第一条：停电（原文插在这里） —— */
+    { w:'ji',   cue:'i1', t:'那您和幂偌同学，是什么时候发现的火灾呢？' },
+    { w:'lq',   t:'停电的时候。' },
+    { w:'ji',   t:'为什么会停电呢？！为了处理化学实验室，校方当时还检修了电路！' },
+    { w:'lq',   t:'化学实验室一块，他手里有一块，楼底下有一块。' },
+    { w:'lq',   t:'不是很明显吗？……' },
+    { w:'lq',   st:'pdn', big:'他往配电箱里直接扔了一块。', bigEn:'He threw a piece into the distribution box.', t:'他往配电箱里直接扔了一块。' },
+    /* —— 巨响把采访线砸断（原文：一下子把两人吓清醒） —— */
+    { w:'narr', cue:'s-boom1', t:'"轰隆！！——"一阵巨响一下子把玻琳秋和幂偌吓清醒了，本来闻着消毒水昏昏沉沉的。' },
+    { w:'lq',   t:'配电箱直接炸了！我们在二楼都听得见！' },
+    { w:'narr', t:'这种失火情况，只能用干燥沙土处理。失火和爆炸是小问题，可是电力系统瘫痪导致了安保系统混乱 —— 大门锁死了。' },
+    { w:'guard', t:'（对讲机）二队二队！大门锁死了！我现在通知消防！等下试试砸窗户！' },
+    { w:'guard', t:'这兔崽子还真不傻……TM的……' },
+    { w:'lq',   t:'怎么又炸了？！——' },
+    { w:'narr', t:'怎么会发生这种事的，那个男的到底干了什么啊？！' },
+    { w:'mp',   t:'琳秋，咱们怎么办啊？……' },
+    { w:'lq',   t:'先把窗户开大点吧！……让烟散一散……' },
+    { w:'mp',   cue:'s-open', t:'哦哦！好！' },
+    { w:'narr', t:'幂偌马上把所有窗户都打开。' },
+    /* —— 采访线第二条：幂偌在哪 —— */
+    { w:'ji',   cue:'i2', t:'那么，幂偌同学现在怎么样了呢？您本来应该和她一起出来的吧？' },
+    { w:'lq',   t:'她有点事要忙，不能露面。' },
+    { w:'ji',   t:'她到底在哪里，你方便透露一下吗？玻琳秋同学？' },
+    { w:'lq',   t:'她忙着检查身体呢……本身就是个病号。' },
+    { w:'narr', cue:'i2off', t:'（记者追问是什么事。受访者摆了摆手，未再回答该问题。）' },
+    /* —— 回到事件：跳楼吧 —— */
+    { w:'narr', t:'"琳秋？"幂偌关切地看看她。玻琳秋愣在那里，想不出办法了。' },
+    { w:'lq',   t:'啊？我？我没事儿。' },
+    { w:'narr', t:'她强装镇定，笑着回应。' },
+    { w:'mp',   cue:'s-approach', t:'听我说，琳秋……' },
+    { w:'narr', t:'她的眼神一动不动。既不否认，也不答应。只是依然说不出话。' },
+    { w:'narr', t:'"嗯。……"她点点头。幂偌沉默着，在微风里看她。' },
+    { w:'narr', cue:'s-close', t:'面对着她，站立在她的窗前。长睫毛下的眸子烁出唯独的光。' },
+    { w:'narr', t:'这将是幂偌试图对抗自己的一大壮举。所以她开口——' },
+    { w:'mp',   cue:'s-tiaolou', big:'跳楼吧。', bigEn:'Jump.', t:'跳楼吧。' },
+    /* —— 采访线第三条：话筒簇拥而上 —— */
+    { w:'ji',   cue:'i3', t:'那么你当时又是怎么逃出去的呢？玻琳秋同学？——当时消防部门为了攻破安保系统也耗费了很长时间！——' },
+    { w:'narr', t:'记者的话筒簇拥而上，堵住了她的出路。' },
+	{ w:'lq',   t:'为什么？……' },
+    { w:'narr', cue:'i3off', t:'玻琳秋愣在原地，大脑发懵，完全无法理解幂偌在说什么东西。' },
+    { w:'mp',   cue:'s-serious', t:'我摔不死。' },
+    { w:'narr', t:'幂偌注视着她的双眼，无比认真。' },
+    { w:'lq',   t:'你在说什么啊？……' },
+    { w:'narr', t:'玻琳秋目瞪口呆，以为幂偌吸消毒水吸傻了，荒谬到极点，让她都不由自主地发笑。' },
+    { w:'lq',   t:'你搁这儿做梦呢幂偌？……底下都是杂物啊……' },
+	{ w:'narr', t:'幂偌没有笑，她真的很认真：' },
+    { w:'mp',   t:'我得的就是这个病。' },
+    { w:'lq',   t:'啊？……' },
+    { w:'narr', t:'玻琳秋难以置信，眼神乱飘，大脑完全放空。' },
+    { w:'mp',   cue:'s-promise', t:'没关系的！……我会接住你的。' },
+    { w:'narr', t:'幂偌看着她的双眼。' },
+    { w:'lq',   t:'要不还是把桌子推开……' },
+    { w:'narr', t:'琳秋还在试图找别的办法。' },
+    { w:'narr', cue:'s-crash', t:'"哐当！——"铁门被撞开一道缝隙，男人的脸从中出现。' },
+    { w:'narr', cue:'s-jump', t:'幂偌当机立断，嗖地一声跳下了楼。' },
+    { w:'lq',   cue:'s-fall', t:'幂偌！！！——' },
+    { w:'narr', cue:'s-lean', t:'玻琳秋趴在窗户边缘，伸手向下，眼睁睁地看着。' },
+    { w:'narr', t:'那一幕，那一幕令玻琳秋永生难忘。直到现在为止，依然是永生难忘。' },
+    { w:'narr', big:'目不转睛，前所未见。睁大眼睛，瞳孔收缩。', bigEn:'Unblinking. Never before seen — eyes wide, pupils shrunk.', t:'目不转睛，前所未见。睁大眼睛，瞳孔收缩。' },
+    { w:'narr', big:'头朝地摔，脑袋开花。碎片满地，四肢迸裂。眼珠也飞出好远。', bigEn:'Headfirst she fell, skull split. Shards everywhere, limbs torn, eyes flung far.', t:'头朝地摔，脑袋开花。碎片满地，四肢迸裂。眼珠也飞出好远。' },
+    { w:'narr', t:'可是，可是……为什么……' },
+    { w:'narr', t:'面对记者的问题，玻琳秋一时半会不知如何回答，可是她远远地，看见一个身影。一个熟悉的身影——' },
+    { w:'narr', t:'黑色的、四六分及肩长发。略显英气的眉毛，高鼻梁。薄薄的红唇。' },
+    { w:'narr', t:'她正向琳秋挥手，手里提着饭菜……好像是肉饼。' },
+    { w:'narr', cue:'SHATTER', t:'可是……为什么……像碎了的镜子？一丁点血都没有。' },
+    { w:'lq',   t:'啊？……' },
+    { w:'narr', t:'琳秋的一滴眼泪滑落。或者……也可能落在了楼底幂偌的那些碎片里。' },
+    { w:'narr', cue:'s-crash2', t:'"哐当！！——砰！——"男人撞开了一大道门缝，半个身子出现在那里，吓得琳秋马上回头看他，又看看幂偌。' },
+    { w:'narr', cue:'REASSEMBLE', t:'幂偌在？！……她在慢慢重组？！……可是……可是……琳秋回头看男人。' },
+    { w:'narr', t:'两人互相看着彼此。烟雾弥漫的教室，只剩她的背影。门那侧，是他的身影。' },
+    { w:'man',  cue:'s-thanks', t:'谢谢你。' },
+    { w:'lq',   t:'啊？' },
+    { w:'narr', t:'她不理解。' },
+    { w:'narr', cue:'s-manout3', t:'男人马上逃跑了，好像是径直冲向了三楼 —— 他到底要干嘛啊？！——' },
+    { w:'mp',   cue:'s-mpalive', t:'琳秋！！——' },
+    { w:'narr', t:'听见声音时，一股暖流传遍玻琳秋的周身，无比感动，悲喜交加。' },
+    { w:'narr', cue:'s-arms', t:'幂偌正推开杂物，扯好垫子，张开双臂望向她——' },
+    { w:'mp',   t:'我来接你！——' },
+    { w:'narr', cue:'s-over', t:'琳秋拄着拐杖的胳膊发抖，缓缓松开，丢掉拐杖……扶住窗沿，向外翻身。' },
+    { w:'narr', cue:'s-boom2', t:'"轰！！——"又是一声爆炸，火势蔓延得如此迅速。' },
+    { w:'narr', t:'灰绿色的雾景搅碎在视网膜里，天旋地转，无数贪婪的手将她向下拖拽。' },
+    { w:'narr', t:'有风，可是风也锋利。刮得她生疼。' },
+    { w:'narr', t:'她从来不曾觉得自己会跳楼，也不曾以为自己会坠落。' },
+    { w:'narr', t:'可是……可是……' },
+    { w:'mp',   cue:'s-world', big:'砸到我身上也没关系！', bigEn:'It’s fine if you land on me!', t:'砸到我身上也没关系！' },
+    { w:'narr', t:'听见幂偌的这句话，琳秋大脑嗡的一声，世界都安静了。' },
+    { w:'narr', cue:'s-drop', t:'她放开了双手，任凭自己坠落。' },
+    { w:'narr', t:'虽然只有浅浅两层楼，但她感觉漫长无比。幂偌她……还有这种病啊……' },
+    { w:'narr', cue:'s-catch', t:'"哐当！——啪啦啦——"果不其然，直接砸到幂偌的身上，把她砸得东一块西一块的。' },
+    { w:'lq',   t:'对不起哇对不起哇！——呜呜呜呜我吃的太多太沉了……给你砸碎了都……' },
+    { w:'narr', t:'一边道歉一边还捡起身边的碎片往里拼。' },
+    { w:'narr', t:'幂偌的肺没装回去所以说不了话，但是她的手来回摆了摆，意思大概是无所谓，她都习惯了。' },
+    { w:'narr', t:'那应该是玻琳秋迄今为止哭得最响的一次了，抱着完整的幂偌一直哭。' },
+    { w:'lq',   t:'你也是神吗？……' },
+    { w:'mp',   t:'哈哈哈，我不是，最起码我不记得我是。' },
+    { w:'narr', t:'幂偌被她逗笑了。' },
+    { w:'narr', t:'她们途径播音教室底下的那堆杂物处。那个黑板擦还安安稳稳躺在那里。' },
+    { w:'narr', big:'咚！！——噗呲！！——', bigEn:'THUD!!——BUCI!!——', t:'重物砸在了那一堆杂物上。吓得二人回头。' },
+    { w:'narr', t:'是那个男人……' },
+	{ w:'narr', t:'扭曲的躯体。浑身是血，遍体鳞伤，四肢扭曲……眼球掉出。和之前那次一模一样。' },
+	{ w:'narr', t:'眼球盯着她们。' },
+    { w:'man',  t:'谢……谢……谢谢你……' },
+    { w:'narr', t:'他拼尽全力，颤颤巍巍，握住那块黑板擦，用带血的手指抠开夹层。' },
+    { w:'narr', t:'取出包裹在油里的钠块，含在嘴里。' },
+    { w:'man',  t:'谢谢你……让我死。' },
+    { w:'narr', cue:'s-flame', t:'火焰迅速地在他嘴里蔓延。' },
+    { w:'narr', cue:'s-flee3', t:'根本就不敢接着再看，两个人哭爹喊娘一般，互相拖拖拽拽地往外走。' },
+    { w:'narr', t:'一边走一边还能听见不绝于耳的惨叫声，呻吟声，灼烧声，挣扎爬动的声音。' },
+	{ w:'narr', t:'于是她们没有看见那串关键的东西……' },
+	{ w:'narr', t:'他胸前别着的那块金属工牌，从烧焦的衣襟上掉了下来，落在杂物堆上。' },
+	{ w:'narr', big:'EMP-2011-0473', bigEn:'EMP-2011-0473', t:'火没有烧掉它。' },
+    /* —— 那个场面：采访收尾 —— */
+    { w:'narr', cue:'i5', t:'后来，记者们整理了录音。那一段，是这样的——' },
+    { w:'narr', t:'【我……】' },
+    { w:'narr', t:'【我当时……】' },
+    { w:'lq',   big:'我当时把幂偌打碎了。', bigEn:'I was the one who shattered Mirra.', t:'我当时把幂偌打碎了。' },
+    { w:'narr', t:'玻琳秋笑着回答记者的问题。他们满脸懵逼，一头雾水。' },
+    { w:'narr', cue:'s-fin', t:'"幂偌！！——"玻琳秋向幂偌挥手。' },
+    { w:'narr', t:'众人都向那边看去，仍然是无法理解。' },
+    { w:'narr', cue:'s-goto', t:'琳秋推开众人，拄着拐杖，径直走了过去。' },
+    { w:'narr', cue:'s-exit', t:'她们与幂偌有说有笑，越走越远。只留下记者们愣在原地。' },
+    { w:'narr', cue:'s-rep', t:'回过神来时，他们终于想起来去采访那支神勇无比的保安队了。' },
+    { w:'narr', t:'他们不仅逃了出去，还疏散了其他所有留在实验楼的学生。' },
+    { w:'narr', t:'那个男人的尸体仍然下落不明，没有人知道他是被烧成了灰还是又复了活。' },
+    { w:'narr', t:'不过这些……对于玻琳秋来说都已经不再重要。' },
+    { w:'narr', t:'她知道，她知道那一天，那一天的结局……到底有多么烂。' },
+    { w:'narr', t:'虽然这个故事很烂，但是她仍然觉得有趣。' },
+    { w:'narr', t:'因为她多了一个可以无话不谈的好朋友。多了一段……即便会摔碎，却仍然能修补的关系。' },
+    { w:'narr', t:'她也不再害怕坠落，哪怕自己曾经受伤。' },
+    { w:'narr', big:'因为这次，有人接她。', bigEn:'Because this time, someone caught her.', t:'因为这次，有人接她。' }
+];
+
+/* ---------------- 台词驱动：cue / 红章 / 打光 ---------------- */
+function onLine(it){
+    if (it.cue) cue(it.cue);                 /* 先调度，再打光 —— 顺序别反 */
+    focusWho(it.w);
+    if (it.cap) FB.fallCap(it.cap);          /* 碎裂戏：狠话写进分屏，不挡底下台词 */
+    if (it.st){
+        if (it.st === 'hbc') stamp('黑板擦'), itv(2);
+        /* 配电箱那句走黑屏大字，卡上只留那一行字，红章就不砸上去了（红章留给场景用） */
+        if (it.st === 'pdn'){ itv(3); if (!it.big) stamp('配电箱'); }
+    }
+}
+
+/* ---------------- 收尾：末行黑屏大字（"因为这次，有人接她。"）由剧本负责 ----------------
+   不叠那两张莫名其妙的黑卡，结束直接过渡到入口（index.html）。 */
+function endSeq(){
+    document.getElementById('dbox').classList.add('off');   /* 收掉尾巴上可能闪出的空对话框 */
+    unlock('cut8s');                                        /* 演完了 → 主页面补剧情按钮 / 采访页小眼球开口 */
+    setTimeout(function(){ location.href = 'index.html'; }, 450);
+}
+
+/* ---------------- 开演 ---------------- */
+var began = false;
+var titleEl = document.getElementById('title8');
+function begin(){
+    if (began) return;
+    began = true;
+    itv(1);                                    /* 能站在这里，钠那一档就算过了 */
+    titleEl.classList.add('off');
+    setTimeout(function(){ titleEl.style.display = 'none'; }, 950);
+    setTimeout(function(){
+        document.getElementById('dbox').classList.remove('start-hidden');
+        window.CUT7Dialog.play(SCRIPT, {
+            who: WHO,
+            sink: false,
+            onLine: function(i, it){ onLine(it); },
+            onEnd: endSeq,
+            onExit: function(){ location.href = 'index.html'; }
+        });
+    }, 750);
+}
+titleEl.addEventListener('click', begin);
+document.addEventListener('keydown', function(e){
+    if (!began && (e.key === 'z' || e.key === 'Z' || e.key === 'Enter')){ e.preventDefault(); begin(); }
+});
+})();
+</script>
+</body>
+</html>

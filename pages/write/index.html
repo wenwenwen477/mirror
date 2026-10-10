@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>墨痕写作 · 怎样写出一个让人过目不忘的神性角色</title>
+<style>
+/* ==================================================================
+   墨痕写作 · 创作学院（角色塑造专栏）
+   ------------------------------------------------------------------
+   一个真实存在的写作教程/专栏站点腔。底色书卷蓝、字密、有导航、
+   有侧栏「热门教程」。内容表面教你怎么写一个"神"角色，实际每一
+   条法则都在暗喻「咯丽丝」的存在方式——但全篇不点名、不暗示，
+   连接留给读者自己拼。延伸阅读链到真实百度百科词条（新标签页打开）：
+   https://baike.baidu.com/item/%E7%A5%9E%E7%9A%84%E4%B9%9D%E5%8D%81%E4%BA%BF%E4%B8%AA%E5%90%8D%E5%AD%97/57359519
+   ================================================================== */
+:root{
+    --ink:#243042; --ink2:#5a6b82; --ink3:#93a1b5;
+    --blue:#2f6fb0; --blue-d:#1f4f86; --line:#dde4ec; --bd:#e7edf4;
+    --bg:#f4f7fb; --card:#ffffff; --accent:#c9a227;
+    --song:"Songti SC",SimSun,serif;
+    --sans:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",sans-serif;
+}
+*{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+body{ background:var(--bg); color:var(--ink); font:14px/1.95 var(--sans); -webkit-font-smoothing:antialiased; }
+a{ color:var(--blue); text-decoration:none; }
+a:hover{ color:var(--blue-d); text-decoration:underline; }
+.wrap{ width:1040px; margin:0 auto; }
+@media (max-width:1080px){ .wrap{ width:96%; } }
+
+/* 顶栏 */
+.top{ background:#1f2c3e; color:#aebfd2; font-size:12px; }
+.top .wrap{ display:flex; align-items:center; height:30px; }
+.top a{ color:#aebfd2; margin-right:16px; }
+.top a:hover{ color:#fff; }
+.top .r{ margin-left:auto; }
+
+/* 站头 */
+.head{ background:linear-gradient(180deg,#2f6fb0,#285f97); }
+.head .wrap{ display:flex; align-items:center; gap:18px; padding:18px 0; }
+.logo{ font-size:26px; font-weight:800; color:#fff; letter-spacing:3px; }
+.logo i{ font-style:normal; font-size:12px; color:#bcd6ef; letter-spacing:1px; margin-left:8px; }
+.head .nav{ margin-left:auto; display:flex; gap:0; }
+.head .nav a{ color:#dce9f6; font-size:14px; padding:0 16px; line-height:30px; border-left:1px solid rgba(255,255,255,.18); }
+.head .nav a:first-child{ border-left:0; }
+.head .nav a:hover{ color:#fff; background:rgba(0,0,0,.12); text-decoration:none; }
+
+/* 路径 */
+.crumb{ font-size:12.5px; color:var(--ink3); padding:12px 0 6px; }
+.crumb a{ color:var(--ink2); }
+
+/* 主体两栏 */
+.main{ display:flex; gap:18px; padding:6px 0 40px; }
+.left{ flex:1; min-width:0; background:var(--card); border:1px solid var(--bd); border-radius:4px; padding:30px 34px 38px; }
+.side{ width:290px; flex:0 0 auto; }
+.side .box{ background:var(--card); border:1px solid var(--bd); border-radius:4px; margin-bottom:16px; overflow:hidden; }
+.side .box > h3{ margin:0; padding:0 14px; height:38px; display:flex; align-items:center;
+    font-size:14.5px; color:#fff; background:linear-gradient(90deg,#3a7cc0,#5a9ad8); }
+.side .box .c{ padding:12px 14px; }
+.side .box ul{ margin:0; padding:0; list-style:none; }
+.side .box li{ padding:8px 0; border-bottom:1px dashed var(--bd); font-size:13px; line-height:1.6; }
+.side .box li:last-child{ border-bottom:0; }
+.side .box li a{ color:var(--ink); }
+.side .box li a:hover{ color:var(--blue); }
+.side .box li .meta{ display:block; font-size:11.5px; color:var(--ink3); margin-top:2px; }
+
+/* 文章 */
+.article h1{ font:700 27px/1.4 var(--song); margin:0 0 6px; color:#1c2738; letter-spacing:.5px; }
+.byline{ font-size:12.5px; color:var(--ink3); border-bottom:1px solid var(--line); padding-bottom:14px; margin-bottom:20px; }
+.byline b{ color:var(--ink2); font-weight:600; }
+.article h2{ font:700 19px/1.5 var(--song); margin:30px 0 10px; color:var(--blue-d);
+    border-left:4px solid var(--accent); padding-left:12px; }
+.article p{ margin:13px 0; text-align:justify; }
+.article p .hl{ color:var(--blue-d); font-weight:700; }
+.article .lead{ font-size:15px; color:var(--ink2); background:#f0f5fb; border:1px solid var(--bd);
+    border-radius:4px; padding:14px 16px; margin:18px 0; }
+.article blockquote{ margin:18px 0; padding:12px 18px; background:#fbfaf4; border-left:3px solid var(--accent);
+    color:var(--ink2); font:15px/1.9 var(--song); }
+
+/* 延伸阅读 */
+.readmore{ margin:32px 0 8px; padding:16px 18px; background:#f0f5fb; border:1px solid var(--bd); border-radius:4px; }
+.readmore .t{ font-size:13px; color:var(--ink3); letter-spacing:1px; margin-bottom:6px; }
+.readmore a{ font:700 15px/1.6 var(--song); color:var(--blue-d); }
+.readmore p{ font-size:13px; color:var(--ink2); margin:6px 0 0; }
+.tags{ margin-top:22px; font-size:12.5px; color:var(--ink3); }
+.tags a{ display:inline-block; background:#eef3f9; border:1px solid var(--bd); border-radius:3px;
+    padding:2px 10px; margin:0 6px 6px 0; color:var(--ink2); }
+    .tags a:hover{ background:#e2ebf5; text-decoration:none; }
+    /* 推广块：金头，区别于常规蓝头栏目 */
+    .side .box.promo > h3{ background:linear-gradient(90deg,#c9a227,#dcbf52); color:#3a2c00; }
+    .side .box.promo .c a{ font:700 14px var(--sans); color:var(--blue-d); }
+    .foot{ background:#1f2c3e; color:#8ea2ba; text-align:center; font-size:12px; padding:18px 0; line-height:1.9; }
+.foot a{ color:#aebfd2; }
+</style>
+</head>
+<body>
+
+<div class="top"><div class="wrap">
+    <a href="index.html">墨痕写作</a><a href="index.html">创作学院</a><a href="index.html">投稿平台</a><a href="index.html">写作社区</a>
+    <span class="r">登录　|　注册　|　写作者中心</span>
+</div></div>
+
+<div class="head"><div class="wrap">
+    <span class="logo">墨痕写作<i>MO HEN · 创作学院</i></span>
+    <nav class="nav">
+        <a href="index.html">首页</a><a href="index.html">教程</a><a href="index.html">素材</a><a href="index.html">社区</a>
+    </nav>
+</div></div>
+
+<div class="wrap">
+    <div class="crumb"><a href="index.html">创作学院</a>　›　<a href="index.html">角色塑造</a>　›　正文</div>
+    <div class="main">
+        <div class="left">
+            <article class="article">
+                <h1>怎样写出一个让人过目不忘的「神」</h1>
+                <div class="byline">专栏 · 角色塑造　|　作者：墨痕编辑部　|　阅读 4.2 万　|　收藏 1,038</div>
+
+                <p class="lead">很多新人作者都卡在"神"这种角色上。要么写得太虚——一团光、几句预言，读者合上书什么都不记得；要么写得太实——像个会放技能的 NPC，反而不可怕了。问题不在文笔，在对"神"这个东西的理解。下面四条，是我们编辑部反复改稿后留下的经验。</p>
+
+                <h2>第一法则：别去发明一个神，去「认领」一个</h2>
+                <p>人类已经用几千年把"神"画完了。一只注视人的眼睛，一束不合时宜的光，一个向你提问、却从不回答的人。这些形象早就在所有人的脑子里，不需要你再创造。</p>
+                <p>你要做的不是<span class="hl">创造者</span>，是<span class="hl">占位者</span>。坐进那个早已存在的形象里，读者才会脱口而出"对，就是这种感觉"——而他不会意识到，这感觉根本不是你给的，是他自己带来的。</p>
+
+                <h2>第二法则：让神被「认出」，而不是被「描写」</h2>
+                <p>当你写到某个瞬间，读者心里突然冒出一句"我好像在哪见过你"，你就赢了。那一瞬间，熟悉感不是你笔下的文字制造的，是<span class="hl">读者自己的记忆替你说的</span>。</p>
+                <p>最好的神性，从来不是作者硬塞给读者的，而是读者主动"认领"了你笔下的角色。一个被描写得清清楚楚的神，立刻就不神了；一个被认出的神，才会在读者夜里想起时，让他后背发凉。</p>
+
+                <h2>第三法则：神不要解释自己</h2>
+                <p>这是最多人犯的错误。一个急着证明"我是真的""你看见的没错"的神，一开口就破了功。<span class="hl">沉默、无害、甚至过分正经</span>——那种"它明明什么都没做，却让人发毛"的距离感，才是最高级的恐怖。</p>
+                <blockquote>"它不解释自己，于是你开始替它解释。你替它解释得越多，它就显得越真。"</blockquote>
+
+                <h2>第四法则：借壳寄生，让她住进读者早已熟悉的事物里</h2>
+                <p>不要给你的神单独的舞台。让她<span class="hl">寄生</span>在一件读者早已熟到不能再熟的东西上——比如一款大家都在玩的网页解谜叙事，或者任何读者每天都会经过的互动形式。</p>
+                <p>更妙的是：她甚至可以<span class="hl">不需要自己的名字</span>。读者会替她起。而那个由读者亲手赋予的名字，往往比作者起的任何名字都"真"——因为它带着读者自己的记忆重量。</p>
+
+                <div class="readmore">
+                    <div class="t">延伸阅读 · 为什么读者会对一个虚构的「神」产生真实的既视感？</div>
+                    <a href="https://baike.baidu.com/item/%E7%A5%9E%E7%9A%84%E4%B9%9D%E5%8D%81%E4%BA%BF%E4%B8%AA%E5%90%8D%E5%AD%97/57359519" target="_blank" rel="noopener">《神的九十亿个名字》：当人类把神的全部名字数完，会发生什么 »</a>
+                    <p>上面四条法则，本质上触及了"神"这个概念的古老内核——它的存在，依据不在被命名者，而在命名者。有一篇经典科幻把这条逻辑写到了极致，值得每个写作者读一读。</p>
+                </div>
+
+                <div class="tags">
+                    标签：
+                    <a href="index.html">角色塑造</a><a href="index.html">神性角色</a>
+                    <a href="index.html">叙事技巧</a><a href="index.html">恐怖氛围</a>
+                </div>
+            </article>
+        </div>
+
+        <div class="side">
+            <div class="box promo"><h3>推广 · Meta 小说指南</h3><div class="c">
+                <p style="margin:0 0 8px;font-size:13px;line-height:1.9;color:var(--ink2)">一篇文章，认真讲清从传统自我指涉小说到广义游戏 meta 的来龙去脉——并引入一个新奇概念「全暴露式 Meta」（斐可悉、吻梦Wen 提出）。</p>
+                <a href="meta.html">展开阅读：Meta 小说是什么？ »</a>
+            </div></div>
+            <div class="box"><h3>热门教程</h3><div class="c"><ul>
+                <li><a href="index.html">怎样让反派拥有说服力</a><span class="meta">收藏 2,310 · 编辑部精选</span></li>
+                <li><a href="index.html">第一人称限知视角的三个陷阱</a><span class="meta">收藏 1,884</span></li>
+                <li><a href="index.html">如何用环境描写代替心理描写</a><span class="meta">收藏 1,402</span></li>
+                <li><a href="index.html">「不可靠叙述者」入门指南</a><span class="meta">收藏 998</span></li>
+            </ul></div></div>
+            <div class="box"><h3>关于本栏</h3><div class="c">
+                <p style="margin:0;font-size:13px;line-height:1.9;color:var(--ink2)">「角色塑造」专栏由墨痕写作编辑部维护，专注拆解让读者记一辈子的虚构人物。投稿请至写作者中心。</p>
+            </div></div>
+            <div class="box"><h3>编辑推荐</h3><div class="c"><ul>
+                <li><a href="https://baike.baidu.com/item/%E7%A5%9E%E7%9A%84%E4%B9%9D%E5%8D%81%E4%BA%BF%E4%B8%AA%E5%90%8D%E5%AD%97/57359519" target="_blank" rel="noopener">当人类数完神的全部名字</a><span class="meta">一篇科幻，写透了命名的重量</span></li>
+            </ul></div></div>
+        </div>
+    </div>
+</div>
+
+<div class="foot">
+    墨痕写作 · 创作学院　|　本页为写作经验分享，所有观点仅代表编辑部　|　© 墨痕写作（演示页面）<br>
+    <a href="index.html">关于我们</a>　<a href="index.html">投稿须知</a>　<a href="index.html">联系编辑部</a>
+</div>
+
+</body>
+</html>

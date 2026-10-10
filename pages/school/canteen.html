@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学生食堂 - 客丽市第一中学</title>
+<link rel="stylesheet" href="site.css">
+<style>
+/* ==================================================================
+   CUT2 · 学生食堂
+   一个正常的、很长的官网子页：从上往下正常滚动就是全部操作。
+
+   两个人不进网页布局，而是贴着视口左右两端一路跟着往下走。
+   台词也不占正文的位置：谁开口，话就在她头顶的气泡里冒出来；
+   不留名的旁白 / 别人的插话，走屏幕下方那个跟着滚的提词器框。
+
+   所以正文区始终是干净的网页内容，两人之间的对话像浮在页面两侧说话。
+   往回滚，就是往回看。
+
+   ★ 全程不出现人物姓名：这是单独的一条线索，靠「左 / 右」的位置和配色
+     分辨谁在说话。改台词动下面的 STOPS；加正文直接写 HTML 即可。
+   ================================================================== */
+
+html{ scroll-behavior:smooth; }
+
+/* ---- 标题头 ---- */
+.chd{ padding:22px 24px 0; display:flex; align-items:baseline; gap:12px; }
+.chd h2{ margin:0; font-size:22px; font-weight:700; color:var(--blue-d); letter-spacing:2px; }
+.chd .cut{ font-size:12px; font-weight:700; letter-spacing:1px; color:#fff; background:var(--red);
+    padding:3px 9px; border-radius:3px; }
+.cmeta{ padding:6px 24px 0; font-size:12.5px; color:var(--tx3); }
+.cmeta b{ color:var(--tx2); font-weight:normal; }
+.cont .pp{ margin:14px 0; font-size:14.5px; line-height:2.15; color:var(--tx); text-indent:2em; }
+.cont .pp.ni{ text-indent:0; }
+
+/* ---- 正文里的小表格 ---- */
+.tbox{ margin:18px 0; border:1px solid var(--bd); }
+.tbox h4{ margin:0; padding:9px 14px; font-size:14.5px; font-weight:700; color:var(--blue-d);
+    background:var(--blue-w); border-bottom:1px solid var(--bd); letter-spacing:1px; }
+.tbox table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+.tbox th, .tbox td{ padding:8px 14px; text-align:left; border-bottom:1px solid var(--line); }
+.tbox th{ font-weight:normal; color:var(--tx2); background:#fafbfc; }
+.tbox tr:last-child td{ border-bottom:0; }
+.tbox td.mid{ text-align:center; color:var(--tx2); }
+.tips{ margin:14px 0; padding:12px 16px 12px 30px; font-size:13.5px; line-height:2.1;
+    color:var(--tx2); background:#fafbfc; border:1px solid var(--line); }
+.tips li{ margin:3px 0; }
+
+/* ==================================================================
+   台词节拍点：正文里只留一列极淡的小圆点，每颗点 = 一句等着说的话。
+   台词本身不写在页面上，滚到哪颗点，那句话就冒出来。
+   ================================================================== */
+.scene{ margin:18px 0 22px; padding:14px 0 4px; border-top:1px dashed var(--line); }
+.scene .pin{ display:inline-block; font-size:11.5px; letter-spacing:3px; color:var(--tx3);
+    border:1px solid var(--line); border-radius:2px; padding:3px 10px; margin-bottom:2px;
+    background:#fafbfc; }
+.beat{ display:grid; grid-template-columns:1fr 46px 1fr; align-items:center;
+    height:22vh; min-height:152px; padding:5px 24px; }
+.beat .dot{ display:flex; align-items:center; justify-content:center; }
+.beat .dot::after{ content:""; display:block; width:5px; height:5px; border-radius:50%;
+    background:#dde3ea; transition:background .4s ease, box-shadow .4s ease, width .4s ease, height .4s ease; }
+.beat.done .dot::after{ background:#c6d0dc; }
+.beat.cur .dot::after{ width:11px; height:11px; background:var(--blue-l);
+    box-shadow:0 0 0 4px rgba(47,111,189,.13); }
+
+/* ---- 触发点两侧的菜品卡：图占位 + 详细介绍，把这页撑成真像回事的食堂网页 ---- */
+.dcard{ display:flex; gap:10px; padding:9px 11px; border:1px solid var(--line); border-radius:8px;
+    background:#fdfdfe; overflow:hidden; transition:border-color .4s ease, background .4s ease; }
+.dcard .pic{ flex:0 0 auto; width:74px; height:62px; display:flex; align-items:center;
+    justify-content:center; background:#f4f7fa; border:1px solid var(--line); border-radius:5px; }
+.dcard .pic svg{ display:block; width:100%; height:100%; }
+.dcard .info{ min-width:0; }
+.dcard .nm{ font-size:13.5px; font-weight:700; color:var(--tx); line-height:1.5; }
+.dcard .sub{ font-size:11.5px; color:var(--tx3); margin:1px 0 3px; }
+.dcard .sub b{ color:var(--red); font-weight:700; }
+.dcard .ds{ font-size:12px; line-height:1.75; color:var(--tx2); }
+/* 右边那张镜像过来：图在右、字在右对齐，整行看着更稳 */
+.dcard.rt{ flex-direction:row-reverse; }
+.dcard.rt .info{ text-align:right; }
+/* 当前正说到的一行，两侧的菜也跟着亮一点 */
+.beat.cur .dcard{ border-color:#c9dcf0; background:#fbfdff; }
+@media (max-width:1230px){
+    .beat{ padding:5px 10px; grid-template-columns:1fr 34px 1fr; }
+    .dcard .ds{ display:none; }
+    .dcard .pic{ width:56px; height:48px; }
+}
+
+/* ==================================================================
+   两侧陪着走的她们 + 头顶的气泡
+   ================================================================== */
+.rail{ position:fixed; bottom:0; z-index:40; width:170px; pointer-events:none;
+    display:flex; flex-direction:column; align-items:center;
+    opacity:.22; filter:grayscale(.7); transform:translateY(16px);
+    transition:opacity .55s ease, filter .55s ease, transform .55s ease; }
+.rail.on{ opacity:1; filter:none; transform:translateY(0); }
+.rail .fg{ width:100%; }
+.rail .fg svg{ display:block; width:100%; height:auto; }
+#aMira{ left:calc(50% - 690px); }
+#aLin { right:calc(50% - 690px); }
+
+/* 气泡：立在头顶，宽出人物一节，可能不圧到正文 */
+.bub{ position:relative; width:250px; max-height:38vh; overflow:hidden;
+    margin:0 0 12px; padding:11px 15px; border-radius:14px; background:#fff;
+    border:1px solid var(--bd); box-shadow:0 3px 12px rgba(20,50,90,.08);
+    font-size:14.5px; line-height:1.95; color:var(--tx);
+    opacity:0; transform:translateY(8px) scale(.96);
+    transition:opacity .36s ease, transform .36s ease; }
+.bub.on{ opacity:1; transform:translateY(0) scale(1); }
+#aMira .bub{ border-left:3px solid #c76a92; }
+#aLin  .bub{ border-right:3px solid #c08552; }
+/* 小尾巴，指向各自的人 */
+.bub::after{ content:""; position:absolute; bottom:-7px; left:50%; margin-left:-6px;
+    width:11px; height:11px; background:#fff; border:1px solid var(--bd);
+    transform:rotate(45deg); }
+#aMira .bub::after{ border-top:0; border-left:0; }
+#aLin  .bub::after{ border-top:0; border-right:0; }
+
+/* ==================================================================
+   提词器：不留名的旁白 / 别人的插话，浮在画面正中，跟着往下滚
+   ================================================================== */
+#tele{ position:fixed; left:50%; top:50%; z-index:60; width:min(620px, 86vw);
+    padding:16px 30px; text-align:center; pointer-events:none;
+    background:rgba(255,255,255,.96); border:1px solid var(--bd); border-radius:12px;
+    box-shadow:0 10px 34px rgba(20,50,90,.18);
+    font-family:var(--song); font-size:16.5px; font-weight:700;
+    line-height:2; letter-spacing:.6px; color:var(--tx);
+    opacity:0; transform:translate(-50%,-50%) scale(.96);
+    transition:opacity .4s ease, transform .4s ease; }
+#tele.on{ opacity:1; transform:translate(-50%,-50%) scale(1); }
+
+/* ==================================================================
+   右上角那枚小眼球：不属于这个官网，它从别处渗了进来。
+   食堂这一段滚完 → 它亮起来，把「新剧情已解锁」写进 localStorage，
+   旁边滑出一条提示，让玩家知道该回主页面去看（脚本在页面末尾）。
+   ================================================================== */
+#seye{ position:fixed; right:22px; top:118px; z-index:80;
+    padding:8px 12px 6px; border-radius:3px;
+    background:rgba(8,12,10,.9); box-shadow:0 0 0 1px rgba(120,180,150,.22), 0 6px 26px rgba(0,0,0,.45);
+    opacity:0; transform:translateY(-8px); pointer-events:none; cursor:pointer;
+    transition:opacity .9s ease, transform .9s ease, box-shadow .6s ease; }
+#seye.on{ opacity:1; transform:translateY(0); pointer-events:auto; }
+#seye.hot{ box-shadow:0 0 0 1px rgba(150,220,180,.55), 0 6px 30px rgba(0,60,30,.55); }
+#seye:hover{ box-shadow:0 0 0 1px rgba(150,220,180,.4), 0 6px 30px rgba(0,60,30,.5); }
+#seye .eyeb{ margin:0; font:15px/1.02 "Sarasa Mono SC","Sarasa Term SC","Noto Sans Mono CJK SC",Consolas,"Courier New",monospace;
+    color:#cfe6d6; text-shadow:0 0 7px rgba(160,220,180,.55), 0 0 16px rgba(120,200,150,.28);
+    white-space:pre; user-select:none; }
+/* 台词条：跟保安队专访页（pages/interview/guard.html）同一套 ——
+   一句一小盒，贴着眼球往下排；上面那条收回去时下面的自动往上补位。
+   位置不用 CSS 排（行高、换行都会变），由脚本按每条真实高度算好写进 transform。
+   .tl 必须绝对定位，否则天然高度 + translateY 会叠加 → 两条之间凭空多出一条的高度。 */
+#eye-tip{ position:absolute; right:0; top:100%; margin-top:8px; white-space:nowrap; pointer-events:none; }
+#eye-tip .tl{ position:absolute; right:0; top:0; white-space:nowrap; transition:transform .6s ease; }
+#eye-tip .tl.in{ transition:transform .2s ease; }      /* 新条落位：快 */
+#eye-tip .tl.gone{ display:none; }                     /* 收完了：彻底不占位 */
+#eye-tip .tl span{ display:block; padding:6px 12px; font-size:12px; line-height:1.75;
+    color:#dff0e4; background:rgba(8,12,10,.94); border-left:2px solid #6fbf8f;
+    box-shadow:0 4px 16px rgba(0,0,0,.4);
+    opacity:0; transform:translateX(10px);
+    transition:opacity .75s ease, transform .75s ease; }
+#eye-tip .tl.on span{ opacity:1; transform:translateX(0); }
+#eye-tip .tl.in span{ transition:opacity .2s ease, transform .2s ease; }
+
+/* 屏幕不够宽时把人缩小、气泡收窄，别压住正文 */
+@media (max-width:1400px){
+    .rail{ width:124px; }
+    #aMira{ left:calc(50% - 645px); }
+    #aLin { right:calc(50% - 645px); }
+    .bub{ width:210px; font-size:13.5px; }
+}
+@media (max-width:1230px){
+    #seye{ right:6px; top:76px; padding:6px 9px 4px; }
+    #seye .eyeb{ font-size:12px; }
+    /* 窄屏放不下整行不换行的台词盒 → 定宽换行，跟保安页一致 */
+    #eye-tip .tl{ white-space:normal; width:176px; }
+    #eye-tip .tl span{ font-size:11px; }
+    .rail{ width:92px; opacity:.16; }
+    .rail.on{ opacity:.5; }
+    #aMira{ left:4px; }
+    #aLin { right:4px; }
+    .bub{ width:170px; font-size:12.5px; }
+}
+
+/* 让最后一句也能滚到屏幕中间 —— 不给尾巴留白它就永远停在底部 */
+.tailpad{ height:52vh; }
+
+/* 侧栏目录：在地标之间跳，当前所在的那段点上色 */
+#stops li a .no{ font-size:11px; color:#b9bec6; margin-right:6px; }
+#stops li a.on{ color:var(--blue-l); font-weight:700; border-left-color:var(--blue-l); }
+</style>
+</head>
+<body>
+
+<div class="top"><div class="wrap">
+    <div class="l" id="today">—</div>
+    <div class="r">
+        <a href="#">设为首页</a><span class="sep">|</span><a href="#">加入收藏</a><span class="sep">|</span>
+        <a href="contact.html">联系我们</a><span class="sep">|</span><a href="old.html">旧版入口</a>
+    </div>
+</div></div>
+
+<div class="head"><div class="wrap">
+    <a href="index.html" class="logo" style="text-decoration:none"><b>一中</b><i>SINCE 1953</i></a>
+    <div class="name">
+        <h1><a href="index.html">客丽市第一中学</a></h1>
+        <div class="en">KELI NO.1 MIDDLE SCHOOL</div>
+        <div class="mot">守常　知止　见微　笃行</div>
+    </div>
+    <div class="right">
+        <div class="tel">新闻热线　<b>0𓂀73-8824 6130</b><br>
+            校长信箱　<a href="sys.html?s=%E6%A0%A1%E9%95%BF%E4%BF%A1%E7%AE%B1">xzb@klyz.example</a></div>
+        <div class="search"><input id="q" type="text" placeholder="站内搜索…"><button id="qs">搜索</button></div>
+    </div>
+</div></div>
+
+<div class="nav"><div class="wrap">
+    <a href="index.html">首页</a><a href="about.html">学校概况</a><a href="news.html">新闻中心</a>
+    <a href="notice.html">通知公告</a><a href="org.html">管理机构</a>
+    <a href="sys.html?s=%E6%95%99%E8%82%B2%E6%95%99%E5%AD%A6">教育教学</a>
+    <a href="sys.html?s=%E6%8B%9B%E7%94%9F%E5%85%A5%E5%AD%A6">招生入学</a>
+    <a href="culture.html">校园文化</a>
+    <a href="sys.html?s=%E6%A0%A1%E5%8F%8B%E4%B9%8B%E5%AE%B6">校友之家</a>
+    <a href="contact.html">联系我们</a>
+</div></div>
+
+<div class="crumb"><div class="wrap">当前位置：<a href="index.html">首页</a> &gt; <b>后勤保障</b> &gt; <b>学生食堂</b></div></div>
+
+<!-- 陪着走完这一整段路的两个人（台词就在她们头顶，不占正文的位） -->
+<div class="rail" id="aMira"><div class="bub"></div><div class="fg"></div></div>
+<div class="rail" id="aLin"><div class="bub"></div><div class="fg"></div></div>
+
+<!-- 提词器：不留名的旁白跟着往下滚 -->
+<div id="tele"></div>
+
+<!-- 右上角那枚小眼球：不属于这个官网，它从别处渗了进来 -->
+<div id="seye" aria-hidden="true" title="……">
+    <pre class="eyeb"></pre>
+    <div id="eye-tip"></div>   <!-- 台词由脚本挂进来（词儿在末尾 EYE_LINES 里改） -->
+</div>
+
+<div class="wrap"><div class="layout">
+
+    <div class="side">
+        <div class="snav">
+            <h3>本站栏目</h3>
+            <ul id="stops"></ul>
+        </div>
+        <div class="snav">
+            <h3>快速通道</h3>
+            <ul>
+                <li><a href="class.html">高二（3）班教室</a></li>
+                <li><a href="lab.html">实验楼 · 楼层与功能用房</a></li>
+                <li><a href="lib.html">图书馆书目检索</a></li>
+                <li><a href="notice.html">通知公告</a></li>
+                <li><a href="org.html">管理机构</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="cont">
+        <div class="chd">
+            <h2>学生食堂</h2>
+            <span class="cut">CUT2</span>
+        </div>
+        <div class="cmeta">后勤保障处　|　更新时间：—　|　<b>往下滚动浏览本页</b></div>
+
+        <p class="pp">第一学生食堂位于校园生活区东侧，紧邻三号学生公寓与运动场。食堂于 1998 年随校舍改造同期建成，2019 年完成内部改造并更换全部灶具，现有两层，设常规窗口 21 个、风味窗口 8 个，一次性可容纳约 1200 人同时就餐。</p>
+        <p class="pp">食堂现有从业人员 46 人，其中持证厨师 11 人。每日食材由定点供应商统一配送，留样、检疫、索证等环节由后勤保障处逐日登记，欢迎全校师生监督。</p>
+
+        <!-- 教学楼前 -->
+        <div class="scene" id="scene-0" data-stop="0"></div>
+
+        <div class="tbox">
+            <h4>窗口分布</h4>
+            <table>
+                <tr><th>楼层</th><th>区域</th><th>窗口号</th><th>主要供应</th></tr>
+                <tr><td>一层</td><td>东区</td><td class="mid">01 – 07</td><td>米饭、家常炒菜、免费汤</td></tr>
+                <tr><td>一层</td><td>西区</td><td class="mid">08 – 12</td><td>面食、米线、馒头花卷</td></tr>
+                <tr><td>二层</td><td>东区</td><td class="mid">13 – 18</td><td>盖饭、砂锅、风味小吃</td></tr>
+                <tr><td>二层</td><td>西侧</td><td class="mid">19 – 21</td><td>清真窗口、教工窗口</td></tr>
+            </table>
+        </div>
+
+        <!-- 林荫道 -->
+        <div class="scene" id="scene-1" data-stop="1"></div>
+
+        <div class="tbox">
+            <h4>参考价目（部分）</h4>
+            <table>
+                <tr><th>品类</th><th>规格</th><th>参考价</th></tr>
+                <tr><td>米饭</td><td class="mid">二两 / 三两</td><td class="mid">0.60 元 / 0.90 元</td></tr>
+                <tr><td>家常炒菜</td><td class="mid">份</td><td class="mid">3.50 – 6.00 元</td></tr>
+                <tr><td>牛肉面</td><td class="mid">碗</td><td class="mid">6.00 元</td></tr>
+                <tr><td>肉饼（加卷）</td><td class="mid">份</td><td class="mid">4.00 元</td></tr>
+                <tr><td>豆浆</td><td class="mid">杯</td><td class="mid">1.00 元</td></tr>
+                <tr><td>免费汤</td><td class="mid">碗</td><td class="mid">凭餐盘取用</td></tr>
+            </table>
+        </div>
+
+        <!-- 岔路口 -->
+        <div class="scene" id="scene-2" data-stop="2"></div>
+
+        <div class="tbox">
+            <h4>就餐须知</h4>
+            <ol class="tips">
+                <li>供餐时间：早餐 06:30–08:00　午餐 11:40–13:00　晚餐 17:30–19:00，其余时段谢绝入内。</li>
+                <li>请自觉排队，禁止代占、并排占位及插队，队伍一律自窗口左侧起、右侧出。</li>
+                <li>用餐完毕后，请将餐具送至一层东侧回收处，残渣入桶、餐盘归类。</li>
+                <li>为保证就餐区秩序，除 01 号外带窗口外，其余窗口食品原则上不外带。</li>
+                <li>发现菜品、价格、卫生等问题，可拨后勤保障处监督电话，或投入一层门厅意见箱。</li>
+            </ol>
+        </div>
+
+        <!-- 食堂门口 -->
+        <div class="scene" id="scene-3" data-stop="3"></div>
+
+        <p class="pp">午餐时段人流集中于 11:50–12:20。若 01 号外带窗口排队较长，建议绕行西侧 08–12 号面食窗口，或错峰至 12:25 之后就餐。</p>
+        <p class="pp ni">本周值班：一层 张师傅；二层 李师傅。食材采购与检疫公示张贴于一层东侧公告栏，每周一更新。</p>
+
+        <!-- 打饭窗口 -->
+        <div class="scene" id="scene-4" data-stop="4"></div>
+
+        <!-- 食堂内部 -->
+        <div class="scene" id="scene-5" data-stop="5"></div>
+
+        <p class="pp">午餐结束后请从一层东侧出口有序离场，餐具送至回收处，餐余分类入桶。除 01 号外带窗口外，其余窗口食品原则上不得带入教学区。</p>
+        <p class="pp ni">生活区主干道两侧设有休息长椅与直饮水处，由后勤保障处与学生会共同维护；午休期间实行安静管理，请勿在食堂周边追逐喧哗。</p>
+
+        <!-- 回教室路上 -->
+        <div class="scene" id="scene-6" data-stop="6"></div>
+
+        <div class="rel"><span class="lb">下一站</span>
+            <a href="class.html">教学楼 · 高二（3）班教室（教学区）</a>
+            <span class="dt">教务处　|　更新：—</span>
+        </div>
+
+        <p class="pp ni" style="color:var(--tx3);font-size:13px">注：本页所列窗口、价格、值班安排如有调整，以现场公示为准。</p>
+    </div>
+
+</div></div>
+
+<div class="tailpad"></div>
+
+<div class="foot"><div class="wrap">
+    <b>客丽市第一中学</b>　版权所有　|　地址：客丽市西城区槐荫路 7 号　|　邮编：5𓂀1000　|　电话：0𓂀73-8824 6130<br>
+    <span class="b">客ICP备 00000000 号-1　|　本站今日访问量：000123　|　建议使用 1024×768 及以上分辨率浏览</span><br>
+    <span class="b"><a href="contact.html">联系我们</a>　|　<a href="old.html">旧版入口</a>　|　
+    <a href="sys.html?s=%E6%A0%A1%E9%95%BF%E4%BF%A1%E7%AE%B1">校长信箱</a>　|　<a href="search.html">站内搜索</a></span>
+</div></div>
+
+<script>
+/* ==================================================================
+   CUT2 · 学生食堂 —— 剧本
+   取材：F:\网页游戏\幂偌0.2\原文.txt 第 38~52 段
+   sp 四种：'幂偌'（左，头顶气泡） / '玻琳秋'（右，头顶气泡） /
+            '旁白' / '同学'（都走下方提词器）。
+   页面上不显示任何人名，只按左右位置和配色区分。
+   ================================================================== */
+var STOPS = [
+    { name:'教学楼前', lines:[
+        { sp:'旁白',   t:'她们二人慢慢前往食堂。为了确认买点什么吃的好，琳秋先开了口。' },
+        { sp:'玻琳秋', t:'「其实这个时候食堂容易排不上号……卖饼的可能方便一点儿——你吃吗？」' },
+        { sp:'幂偌',   t:'「欸？我吗？」' },
+        { sp:'玻琳秋', t:'「不喜欢吃吗？」' }
+    ]},
+    { name:'林荫道', lines:[
+        { sp:'幂偌',   t:'「我一般都吃的少……」不好意思地笑笑。' },
+        { sp:'玻琳秋', t:'「怪不得瘦啊。」' },
+        { sp:'幂偌',   t:'「其实也没看上去那么瘦。」' },
+        { sp:'玻琳秋', t:'「还有这事儿？」' },
+        { sp:'幂偌',   t:'「吃太少身体也遭不住嘛，所以我也锻炼，还有点儿肌肉嘞——就是少。」' },
+        { sp:'玻琳秋', t:'「卧槽……真看不出来……」' }
+    ]},
+    { name:'岔路口', lines:[
+        { sp:'同学',   t:'「琳秋！」' },
+        { sp:'玻琳秋', t:'「诶！」' },
+        { sp:'旁白',   t:'路上行人学生若有若无，有的走向寝室，有的走向食堂，她挥手的模样便与这画面融为一体。' },
+        { sp:'玻琳秋', t:'招呼打过，慢慢放下手：「咱们走吧……幂偌。」' },
+        { sp:'幂偌',   t:'「嗯。」她点点头。' }
+    ]},
+    { name:'食堂门口', lines:[
+        { sp:'旁白',   t:'学生们排着队各自在食堂窗口买饭，有的队长，有的队短。男生结伴，女生结伴。' },
+        { sp:'旁白',   t:'站在原地，幂偌望着来往的人发呆。或许是她衣着的缘故，来往的人也好奇地看她——毕竟只有她不穿校服。' }
+    ]},
+    { name:'打饭窗口', lines:[
+        { sp:'旁白',   t:'来往的人越来越少。看到了她等的人，欣喜无比，幂偌向那人……向玻琳秋挥了挥手。' },
+        { sp:'旁白',   t:'回应她的，是对方高高挥舞的拐杖。见状，幂偌小跑着赶了过去。' },
+        { sp:'旁白',   t:'安定以后，她从琳秋手里接过一大卷肉饼。' },
+        { sp:'玻琳秋', t:'「可惜没买到更实在的……不过肉饼方便外带，也就不用站在桌子前吃了。」' },
+        { sp:'幂偌',   t:'把手放在嘴边，偷笑着。' },
+        { sp:'玻琳秋', t:'笑一笑，指了指门口，示意离开。' },
+        { sp:'幂偌',   t:'笑着点点头。' }
+    ]},
+    { name:'食堂内部', lines:[
+        { sp:'旁白',   t:'刚一转身，玻琳秋的拐杖就绊到了门口的桌子。' },
+        { sp:'玻琳秋', t:'她张大嘴说了两个字：「W」「O」……「C」「A」「O」……' },
+        { sp:'旁白',   t:'大概是这个口型。' },
+        { sp:'旁白',   t:'不过，这次有人猛然扶住了她。' },
+        { sp:'玻琳秋', t:'（睁大了眼睛，看着脸前的人。）' },
+        { sp:'旁白',   t:'黑色的、四六分及肩长发。' },
+        { sp:'旁白',   t:'略显英气的眉毛，高鼻梁。' },
+        { sp:'旁白',   t:'薄薄的红唇。' },
+        { sp:'旁白',   t:'她们注视彼此。' },
+        { sp:'玻琳秋', t:'（张了张嘴，似乎在道谢。）' }
+    ]},
+    { name:'回教室路上', lines:[
+        { sp:'旁白',   t:'安顿好心情，整理好惊慌，她们终于出了食堂大门。' },
+        { sp:'旁白',   t:'告别了一路的多灾多难，重返回到教室的路上。' }
+    ]}
+];
+
+/* ================= 立绘占位（沿用 CUT1 的造型，配色改成白底友好） ================= */
+function actorSVG(type){
+    var isMira = (type === 'mira');
+    var st     = '#48525e';            /* 深灰描边：白底上看得清 */
+    var sw     = 1.5;
+    var hair   = isMira ? '#2c2622' : '#3a2f2a';
+    var skin   = isMira ? '#f0dcc4' : '#e9d9c7';
+    var cloth  = isMira ? '#e6dfd1' : '#6f7d6a';
+    var eye    = '#23201c';
+    /* 幂偌：黑色四六分及肩长发；另一位：框脸短发 */
+    var hairPath = isMira
+        ? 'M46 110 C44 42 156 42 154 110 L158 176 C158 198 140 206 140 206 L132 206 L132 150 C132 116 68 116 68 150 L68 206 L60 206 C60 206 42 198 42 176 Z'
+        : 'M48 100 C48 38 152 38 152 100 L154 158 C154 188 100 196 100 196 C100 196 46 188 46 158 Z';
+    var bodyPath = isMira
+        ? 'M62 188 C70 176 130 176 138 188 L150 314 C122 332 78 332 50 314 Z'
+        : 'M60 188 C70 172 130 172 140 188 L156 326 C122 344 78 344 44 326 Z';
+    /* 幂偌多一件半截夹克 */
+    var extra = isMira
+        ? '<path d="M58 184 C70 170 130 170 142 184 L150 256 C122 270 78 270 50 256 Z" fill="#b89a72" stroke="'+st+'" stroke-width="'+sw+'"/>'
+        : '';
+    /* 不留嘴：整张脸只剩两个圆点眼睛，跟 CUT1 里那几个白边小人一个路子 */
+    return ''
+    + '<svg viewBox="0 0 200 340" xmlns="http://www.w3.org/2000/svg">'
+    +   '<path d="'+hairPath+'" fill="'+hair+'" stroke="'+st+'" stroke-width="'+sw+'"/>'
+    +   '<circle cx="100" cy="108" r="42" fill="'+skin+'" stroke="'+st+'" stroke-width="'+sw+'"/>'
+    +   '<circle cx="86" cy="108" r="4.5" fill="'+eye+'" stroke="'+st+'" stroke-width="0"/>'
+    +   '<circle cx="114" cy="108" r="4.5" fill="'+eye+'" stroke="'+st+'" stroke-width="0"/>'
+    +   '<path d="'+bodyPath+'" fill="'+cloth+'" stroke="'+st+'" stroke-width="'+sw+'"/>'
+    +   extra
+    + '</svg>';
+}
+
+var aMira  = document.getElementById('aMira');
+var aLin   = document.getElementById('aLin');
+var bubM   = aMira.querySelector('.bub');
+var bubL   = aLin.querySelector('.bub');
+var teleEl = document.getElementById('tele');
+
+aMira.querySelector('.fg').innerHTML = actorSVG('mira');
+aLin.querySelector('.fg').innerHTML  = actorSVG('heroine');
+
+/* ================= 每个 scene 里铺一排「节拍点」，一颗点 = 一句台词 ================= */
+var SIDE = { '幂偌':'L', '玻琳秋':'R' };
+var BEATS = [];          /* 展平成一句一句，供滚动时挑出「当前那句」 */
+
+/* ==================================================================
+   触发点两侧的菜品卡：装出「这真是个食堂网页」的样子。
+   k = 盘子 / 碗 / 杯 / 包子 / 笼屉 / 饼，六种线稿图标轮着用。
+   想换真照片：把 iconSVG() 的返回值换成 <img src="……"> 就行。
+   ================================================================== */
+var DISHES = [
+    { n:'红烧狮子头', w:'01 号窗口', p:'6.00 元', k:'plate', d:'猪前腿手打上劲，掺马蹄粒增脆，慢炖两小时入味。' },
+    { n:'番茄炒蛋',   w:'01 号窗口', p:'3.50 元', k:'plate', d:'本地沙瓤番茄配散养鸡蛋，酸甜口，午餐时段出锅最快。' },
+    { n:'土豆炖牛腩', w:'02 号窗口', p:'6.00 元', k:'bowl',  d:'牛腩提前一晚焯水，与土豆小火同炖，汤汁可免费添一次。' },
+    { n:'鱼香肉丝',   w:'02 号窗口', p:'5.00 元', k:'plate', d:'笋丝、木耳丝同炒，酸甜微辣，配米饭窗口销量第一。' },
+    { n:'宫保鸡丁',   w:'03 号窗口', p:'5.50 元', k:'plate', d:'鸡腿肉丁先腌后炸，花生米出锅前才下锅，保证脆。' },
+    { n:'麻婆豆腐',   w:'03 号窗口', p:'3.50 元', k:'bowl',  d:'嫩豆腐配牛肉末，花椒现磨，可选微辣或重辣。' },
+    { n:'酸辣土豆丝', w:'04 号窗口', p:'2.50 元', k:'plate', d:'手切细丝，猛火快炒，醋分两次下。' },
+    { n:'清炒时蔬',   w:'04 号窗口', p:'2.50 元', k:'plate', d:'按当日采购轮换，多为油菜、菠菜、油麦菜。' },
+    { n:'蒜蓉西兰花', w:'05 号窗口', p:'4.00 元', k:'plate', d:'西兰花先焯后炒，蒜蓉现炸，颜色不变黄。' },
+    { n:'冬瓜排骨汤', w:'05 号窗口', p:'4.00 元', k:'bowl',  d:'每日限量一百份，汤底吊足四小时。' },
+    { n:'牛肉拉面',   w:'08 号窗口', p:'6.00 元', k:'bowl',  d:'一细二细可选，牛骨汤底，另加牛肉需加价。' },
+    { n:'炸酱面',     w:'08 号窗口', p:'5.50 元', k:'bowl',  d:'黄酱慢炸四十分钟，配黄瓜丝与焯过水的豆芽。' },
+    { n:'阳春面',     w:'09 号窗口', p:'3.00 元', k:'bowl',  d:'清汤细面，加一小把青葱，胃口不好时的首选。' },
+    { n:'砂锅米线',   w:'09 号窗口', p:'6.00 元', k:'bowl',  d:'砂锅直上火，配鹌鹑蛋与木耳，离火后仍烫口。' },
+    { n:'当日馒头',   w:'10 号窗口', p:'0.50 元', k:'steam', d:'当日现蒸，中午十一点半头屉出笼。' },
+    { n:'葱油花卷',   w:'10 号窗口', p:'0.80 元', k:'steam', d:'本地小香葱剁碎卷进去，趁热最好。' },
+    { n:'豆沙包',     w:'11 号窗口', p:'1.20 元', k:'bun',   d:'红豆沙自炒，甜度调得较低，女生那边口碑不错。' },
+    { n:'韭菜盒子',   w:'11 号窗口', p:'2.00 元', k:'cake',  d:'韭菜鸡蛋馅，现烙现卖，一出锅就排队。' },
+    { n:'卤肉饭',     w:'13 号窗口', p:'6.50 元', k:'plate', d:'台式做法，肉燥配溏心蛋，可免费添饭一次。' },
+    { n:'咖喱鸡饭',   w:'13 号窗口', p:'6.50 元', k:'plate', d:'日式咖喱块炖鸡腿，微甜偏稠，配胡萝卜与土豆。' },
+    { n:'砂锅丸子',   w:'14 号窗口', p:'7.00 元', k:'steam', d:'猪肉丸混荸荠粒，砂锅端上桌还在滚。' },
+    { n:'猪肉白菜饺', w:'15 号窗口', p:'5.00 元', k:'steam', d:'一两六只，现包现煮，蘸碟自取。' },
+    { n:'烫面蒸饺',   w:'15 号窗口', p:'5.50 元', k:'steam', d:'皮薄，馅是猪肉芹菜，一笼八只。' },
+    { n:'小笼包',     w:'16 号窗口', p:'4.50 元', k:'bun',   d:'皮薄汁多，需趁热吃，凉了不补。' },
+    { n:'现磨豆浆',   w:'17 号窗口', p:'1.00 元', k:'cup',   d:'非浓缩还原，早六点半起供应。' },
+    { n:'小米粥',     w:'17 号窗口', p:'1.00 元', k:'bowl',  d:'慢熬一小时，米油厚，配咸菜另单点。' },
+    { n:'茶叶蛋',     w:'18 号窗口', p:'1.50 元', k:'cake',  d:'八角桂皮卤足一夜，蛋白上色均匀。' },
+    { n:'蒸玉米',     w:'18 号窗口', p:'2.00 元', k:'cake',  d:'本地甜玉米，按节令轮换糯玉米。' },
+    { n:'炸鸡排',     w:'19 号窗口', p:'5.00 元', k:'cake',  d:'现炸现切，可刷番茄酱或辣椒粉。' },
+    { n:'大卷肉饼',   w:'01 号窗口', p:'4.00 元', k:'cake',  d:'外带的首选，面饼卷入卤肉与生菜，方便边走边吃。' }
+];
+
+/* 六款简笔线稿，纯粹占位 —— 你有真照片就把它们换掉 */
+function iconSVG(k){
+    var s = '#8a97a6', f = '#eef2f6', f2 = '#f6f8fa', h = '#b7c2ce';
+    var w = ' stroke-width="1.6"';
+    var g = '<g fill="none" stroke="'+h+'"'+w+'>'
+          +   '<path d="M32 26 q5 -6 0 -12"/><path d="M44 24 q5 -7 0 -14"/><path d="M56 26 q5 -6 0 -12"/>'
+          + '</g>';   /* 三缕热气，各款共用 */
+    var body =
+      (k === 'bowl')  ? '<path d="M16 40 Q44 70 72 40 Z" fill="'+f+'" stroke="'+s+'"'+w+'/>'
+                      + '<ellipse cx="44" cy="40" rx="28" ry="8" fill="'+f2+'" stroke="'+s+'"'+w+'/>' + g
+    : (k === 'plate') ? '<path d="M14 40 Q44 66 74 40 Z" fill="'+f+'" stroke="'+s+'"'+w+'/>'
+                      + '<ellipse cx="44" cy="40" rx="30" ry="10" fill="'+f2+'" stroke="'+s+'"'+w+'/>'
+                      + '<circle cx="34" cy="36" r="6" fill="'+f2+'" stroke="'+s+'" stroke-width="1.2"/>'
+                      + '<circle cx="49" cy="34" r="7" fill="'+f2+'" stroke="'+s+'" stroke-width="1.2"/>'
+                      + '<circle cx="62" cy="37" r="5" fill="'+f2+'" stroke="'+s+'" stroke-width="1.2"/>'
+                      + '<path d="M36 22 q4 -5 0 -10 M52 22 q4 -5 0 -10" stroke="'+h+'"'+w+'/>'
+    : (k === 'cup')   ? '<path d="M30 26 L36 62 Q44 67 52 62 L58 26 Z" fill="'+f+'" stroke="'+s+'"'+w+'/>'
+                      + '<ellipse cx="44" cy="26" rx="14" ry="4" fill="'+f2+'" stroke="'+s+'"'+w+'/>'
+                      + '<path d="M47 21 L47 10" stroke="'+s+'"'+w+'/>'
+    : (k === 'bun')   ? '<path d="M18 58 Q18 30 44 30 Q70 30 70 58 Z" fill="'+f+'" stroke="'+s+'"'+w+'/>'
+                      + '<path d="M18 58 Q44 66 70 58" fill="none" stroke="'+s+'"'+w+'/>'
+                      + '<path d="M44 30 L44 58 M32 32 L36 58 M56 32 L52 58" stroke="'+h+'" stroke-width="1.3"/>'
+    : (k === 'steam') ? '<rect x="20" y="36" width="48" height="12" rx="3" fill="'+f+'" stroke="'+s+'"'+w+'/>'
+                      + '<rect x="20" y="50" width="48" height="12" rx="3" fill="'+f2+'" stroke="'+s+'"'+w+'/>' + g
+    : /* cake */        '<ellipse cx="44" cy="42" rx="27" ry="18" fill="'+f+'" stroke="'+s+'"'+w+'/>'
+                      + '<path d="M26 38 q9 -6 18 0 t18 0" stroke="'+h+'" stroke-width="1.3"/>'
+                      + '<path d="M26 48 q9 -6 18 0 t18 0" stroke="'+h+'" stroke-width="1.3"/>';
+    return '<svg viewBox="0 0 88 72" xmlns="http://www.w3.org/2000/svg">' + body + '</svg>';
+}
+
+function dishCard(d, rt){
+    return '<div class="dcard' + (rt ? ' rt' : '') + '">'
+        +   '<div class="pic">' + iconSVG(d.k) + '</div>'
+        +   '<div class="info">'
+        +     '<div class="nm">' + d.n + '</div>'
+        +     '<div class="sub">' + d.w + '　<b>' + d.p + '</b></div>'
+        +     '<div class="ds">' + d.d + '</div>'
+        +   '</div>'
+        + '</div>';
+}
+var beatNo = 0;   /* 全局第几句：两侧各取一道菜，7 为与 30 互质，走完一轮前不重样 */
+
+Array.prototype.forEach.call(document.querySelectorAll('.scene'), function(sec){
+    var si   = parseInt(sec.getAttribute('data-stop'), 10);
+    var node = STOPS[si];
+    if (!node) return;
+
+    var pin = document.createElement('div');
+    pin.className = 'pin';
+    pin.textContent = node.name;
+    sec.appendChild(pin);
+
+    node.lines.forEach(function(l){
+        var side = SIDE[l.sp] || '';
+        var b = document.createElement('div');
+        b.className = 'beat';
+        var left  = DISHES[beatNo % DISHES.length];
+        var right = DISHES[(beatNo * 7 + 11) % DISHES.length];
+        b.innerHTML = dishCard(left, false)
+                    + '<div class="dot"></div>'
+                    + dishCard(right, true);
+        beatNo++;
+        sec.appendChild(b);
+        BEATS.push({ el:b, si:si, side:side, t:l.t });
+    });
+});
+
+/* ================= 说某一句：角色→头顶气泡；留名的以外→提词器 ================= */
+var curIdx = -1, maxSeen = -1;
+var navItems = [];
+
+/* ------------------------------------------------------------------
+   换句时的「两段式」：先把当前这句送下去，再让下一句从零淡进来。
+
+   坑在这儿：提词器/气泡都是同一个元素反复用。旧写法是 remove('on') →
+   reflow → add('on')，指望它重新播一次过渡；但过渡被打断时是从「此刻的
+   透明度」接着走的 —— 上一句还没淡下去，此刻还是 1，目标又是 1，
+   于是整段过渡等于没发生，只有文字被瞬间换掉了。连着两句旁白、或同一个人
+   连着说两句，就一定撞上这个。
+   所以这里先把 transition 关掉，硬把透明度拖回 0，再开起来淡入。
+   ------------------------------------------------------------------ */
+var POP_OUT = 220;          /* 上一句淡出用多久（毫秒），换字就在这个空隙里做 */
+
+function swapIn(el, text){          /* 归零 → 换字 → 淡入 */
+    el.style.transition = 'none';
+    el.textContent = text;
+    el.classList.remove('on');
+    void el.offsetWidth;            /* 这一下：透明度被硬拖回 0，不带动画 */
+    el.style.transition = '';
+    el.classList.add('on');
+}
+
+function pop(el, text){
+    if (el._popT){ clearTimeout(el._popT); el._popT = 0; }
+    el.style.transitionDuration = '';
+    if (!el.classList.contains('on')){ swapIn(el, text); return; }   /* 还没亮着 → 直接出 */
+    el.style.transitionDuration = POP_OUT + 'ms';
+    el.classList.remove('on');      /* 当前这句先退下去 */
+    el._popT = setTimeout(function(){
+        el._popT = 0;
+        el.style.transitionDuration = '';
+        swapIn(el, text);
+    }, POP_OUT);
+}
+
+function hide(el){                  /* 收起：连排队中的换句一起取消 */
+    if (el._popT){ clearTimeout(el._popT); el._popT = 0; }
+    el.style.transitionDuration = '';
+    el.classList.remove('on');
+}
+
+function showBeat(i){
+    if (i === curIdx) return;
+    curIdx = i;
+
+    if (i < 0){                     /* 视野里没有台词：收起气泡和提词器，两人都淡下去 */
+        hide(bubM);
+        hide(bubL);
+        hide(teleEl);
+        aMira.classList.remove('on');
+        aLin.classList.remove('on');
+        BEATS.forEach(function(b){ b.el.classList.remove('cur'); });
+        navItems.forEach(function(a){ a.className = ''; });
+        return;
+    }
+
+    var b = BEATS[i];
+    if (b.side === 'L'){
+        hide(teleEl); hide(bubL); pop(bubM, b.t);
+    } else if (b.side === 'R'){
+        hide(teleEl); hide(bubM); pop(bubL, b.t);
+    } else {
+        hide(bubM); hide(bubL); pop(teleEl, b.t);
+    }
+    aMira.classList.toggle('on', b.side === 'L');
+    aLin.classList.toggle('on', b.side === 'R');
+
+    if (i > maxSeen) maxSeen = i;   /* 走过的地方点就留在那儿 */
+    BEATS.forEach(function(it, k){
+        it.el.classList.toggle('cur', k === i);
+        it.el.classList.toggle('done', k < maxSeen && k !== i);
+    });
+
+    navItems.forEach(function(a, k){ a.className = (k === b.si) ? 'on' : ''; });
+
+    /* 走到最后一句（或最后一段）→ 食堂这一段就算看完了 → 右上角那只小眼睛亮起来、
+       自己开口说话并解锁（见页面末尾那段脚本里的 MP_EYE）。
+       这里两个条件取"或"：最后一段有多句时，碰到它的第一句就算数，不用非得滚到最后一句。 */
+    if (window.MP_EYE && (b.si === STOPS.length - 1 || i === BEATS.length - 1)) window.MP_EYE.see();
+}
+
+/* ================= 谁在说话：离屏幕中线最近的那个节拍点 ================= */
+function updateActive(){
+    var vh  = window.innerHeight;
+    var mid = vh * 0.52;
+    var best = -1, bestD = Infinity;
+
+    for (var i = 0; i < BEATS.length; i++){
+        var r = BEATS[i].el.getBoundingClientRect();
+        if (r.bottom < 0 || r.top > vh) continue;      /* 不在视野里 */
+        var d = Math.abs(r.top + r.height / 2 - mid);
+        if (d < bestD){ bestD = d; best = i; }
+    }
+    showBeat(best);
+
+    /* 兜底：已经滚到页面最底下了 → 同样算看完（有些屏高下最后一句够不到中线） */
+    var dH = document.documentElement.scrollHeight;
+    if (window.MP_EYE && (window.scrollY + vh >= dH - 90)) window.MP_EYE.see();
+}
+
+var ticking = false;
+function onScroll(){
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function(){ ticking = false; updateActive(); });
+}
+window.addEventListener('scroll', onScroll, { passive:true });
+window.addEventListener('resize', onScroll);
+
+/* ================= 侧栏目录：在地标之间跳 ================= */
+(function(){
+    var ul = document.getElementById('stops');
+    STOPS.forEach(function(s, i){
+        var li = document.createElement('li');
+        var a  = document.createElement('a');
+        a.href = '#scene-' + i;
+        a.innerHTML = '<span class="no">' + (i + 1) + '</span>' + s.name;
+        li.appendChild(a);
+        ul.appendChild(li);
+        navItems.push(a);
+    });
+})();
+
+/* ================= 开场 ================= */
+(function(){
+    var d = new Date();
+    document.getElementById('today').textContent =
+        d.getFullYear() + ' 年 ' + (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日';
+})();
+updateActive();
+</script>
+
+<script>
+/* ==================================================================
+   "捡到"这一页 = 解锁 CUT2
+   ------------------------------------------------------------------
+   食堂这一段是**碎片**，不是 CUT1 看完白送的：玩家得自己翻学校官网、
+   在快速通道里点进「学生食堂」，进来这一下才把 mp_unlock_v1.cut2 写上，
+   主页面轮询到 → 飘出 CUT2 那枚网页按钮（回主页面才看得见那句提示）。
+   至于 CUT2 的「剧情」按钮，仍要等把这一页滚到最后（那边写 cut2s）。
+   ================================================================== */
+(function(){
+'use strict';
+var UNLOCK_KEY = 'mp_unlock_v1', MY_KEY = 'cut2';
+try {
+    var u = JSON.parse(localStorage.getItem(UNLOCK_KEY) || '{}') || {};
+    if (!u[MY_KEY]){ u[MY_KEY] = 1; localStorage.setItem(UNLOCK_KEY, JSON.stringify(u)); }
+} catch (e){}
+})();
+</script>
+
+<script>
+/* ==================================================================
+   右上角那枚小眼球
+   ------------------------------------------------------------------
+   它不属于这个官网——是主页面那只眼睛渗进来的。
+   进页面约一秒后它就悄悄浮在右上角（只是"有东西在看着"），
+   等玩家把食堂这一段滚完（进入最后一段「回教室路上」，或滚到页面最底下），它才真正"亮"起来：
+   **自己开口说两句**（不用点它），同时把标记写进 localStorage（键 mp_unlock_v1 的 cut2s），
+   主页面轮询到就会给 CUT2 补一枚「剧情」按钮。
+   解锁标记只写第一次；台词每次滚到最后都会说一遍（重进页面也看得见）。
+   点眼球 = 重听一遍。
+   眼球是字符画的（跟主页面同一套语言）：外框固定，瞳孔按鼠标方向挪，偶尔眨一次。
+   ================================================================== */
+(function(){
+'use strict';
+var UNLOCK_KEY = 'mp_unlock_v1', MY_KEY = 'cut2s';
+/* 写解锁标记。**返回 true = 这次是第一次解锁**（之前没写过）；已经解锁过就返回 false，
+   提示条照着这个返回值决定出不出场 —— 只在第一次露一次。 */
+function writeUnlock(k){
+    var u = {};
+    try { u = JSON.parse(localStorage.getItem(UNLOCK_KEY) || '{}') || {}; } catch (e){ u = {}; }
+    if (u[k]) return false;
+    u[k] = 1;
+    try { localStorage.setItem(UNLOCK_KEY, JSON.stringify(u)); } catch (e){}
+    return true;
+}
+function eyeFrame(col, row, closed){
+    var a = [' .-"""""-. ',
+             '/         \\',
+             '|         |',
+             '|         |',
+             '\\         /',
+             ' `-.....-` '];
+    if (closed){ a[3] = '|  ─────  |'; }
+    else {
+        var line = '         '.split('');
+        line[col] = '●';
+        a[2 + row] = '|' + line.join('') + '|';
+    }
+    return a.join('\n');
+}
+var wrap = document.getElementById('seye');
+var pre  = wrap && wrap.querySelector('.eyeb');
+var tip  = document.getElementById('eye-tip');
+if (!wrap || !pre) return;
+
+var col = 4, row = 0, closed = false;
+function draw(){ pre.textContent = eyeFrame(col, row, closed); }
+draw();
+
+window.addEventListener('mousemove', function(e){
+    var w = window.innerWidth || 1, h = window.innerHeight || 1;
+    var dx = (e.clientX / w - 0.72) * 2, dy = (e.clientY / h - 0.14) * 2;
+    var nc = Math.max(1, Math.min(7, 4 + Math.round(dx * 3)));
+    var nr = (dy > 0.25) ? 1 : 0;
+    if (nc !== col || nr !== row){ col = nc; row = nr; if (!closed) draw(); }
+}, { passive:true });
+(function blink(){
+    setTimeout(function(){
+        closed = true; draw();
+        setTimeout(function(){ closed = false; draw(); blink(); }, 150);
+    }, 3500 + Math.random() * 4500);
+})();
+
+/* ---- 台词：食堂这一段看完时，它自己开口说的两句。改词儿只动这里 ---- */
+var EYE_LINES = [
+    '这一段，你已经看完了。',
+    '回到主页面去吧 —— 那儿会多出一枚新的按钮。'
+];
+/* 节奏：与保安队专访页一致（一句接一句往下续 → 叠成一整条 → 读完再逐条抽走） */
+var STEP = 750, HOLD = 3000, REC = 170, GAP = 4, OUT_MS = 780;
+var lineEls = [], timers = [], playing = false;
+
+function buildLines(){
+    if (!tip) return;
+    tip.innerHTML = '';
+    lineEls = EYE_LINES.map(function(s){
+        var d = document.createElement('div');
+        d.className = 'tl gone';
+        var b = document.createElement('span');
+        b.textContent = s;
+        d.appendChild(b);
+        tip.appendChild(d);
+        return d;
+    });
+}
+function clearTimers(){ timers.forEach(function(t){ clearTimeout(t); }); timers = []; }
+function layout(){
+    var y = 0;
+    lineEls.forEach(function(el){
+        if (el.classList.contains('gone')) return;
+        el.style.transform = 'translateY(' + y + 'px)';
+        var box = el.firstChild;
+        y += (box ? box.offsetHeight : 0) + GAP;
+    });
+}
+function say(){
+    if (!lineEls.length || playing) return;
+    playing = true;
+    clearTimers();
+    lineEls.forEach(function(el){ el.classList.remove('on', 'in', 'gone'); });
+    layout();
+    var n = lineEls.length;
+    lineEls.forEach(function(el, i){
+        timers.push(setTimeout(function(){
+            el.classList.add('in', 'on');
+            timers.push(setTimeout(function(){ el.classList.remove('in'); }, 220));
+            layout();
+        }, i * STEP));
+        var off = (n - 1) * STEP + HOLD + i * REC;
+        timers.push(setTimeout(function(){
+            el.classList.remove('on');
+            timers.push(setTimeout(function(){
+                el.classList.add('gone');
+                layout();
+            }, OUT_MS));
+        }, off));
+    });
+    var end = (n - 1) * STEP + HOLD + (n - 1) * REC + OUT_MS;
+    timers.push(setTimeout(function(){ playing = false; }, end + 300));
+}
+buildLines();
+
+/* 食堂这段看完了 → 眼球亮起来 + 写解锁 + **自己开口说那两句**（不用点它）
+   解锁标记只写第一次；台词每次滚到最后都会说一遍（重进页面也能看见）。 */
+var autoFired = false;      /* 自动那一遍只说一次：不然停在页面底部会一遍遍重播 */
+function see(){
+    wrap.classList.add('on', 'hot');
+    writeUnlock(MY_KEY);
+    if (!autoFired){ autoFired = true; say(); }
+}
+/* 点一下：重听一遍（会把正在放的打断掉） */
+wrap.addEventListener('click', function(){
+    closed = true; draw();
+    setTimeout(function(){ closed = false; draw(); }, 200);
+    wrap.classList.add('on', 'hot');
+    writeUnlock(MY_KEY);
+    clearTimers(); playing = false; say();
+});
+
+/* 进页面约一秒后它就浮出来（先只是静静看着，不说话也不解锁） */
+setTimeout(function(){ wrap.classList.add('on'); }, 1100);
+
+window.MP_EYE = { see: see, say: say };
+})();
+</script>
+
+</body>
+</html>
