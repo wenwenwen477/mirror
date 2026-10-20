@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CUT7 · 第二段　门厅里的消毒水味</title>
+<link rel="stylesheet" href="cut7.css">
+</head>
+<body>
+<div id="ptag">C U T 7 ／ 第 二 段 ／ 一 层</div>
+<div id="rpghint"><b>↑ ↓ ← →</b> 走　　<b>Z</b> 调查 / 说话　　<b>C</b> 记录　　<b>X</b> 取消　　<b>M</b> 音效</div>
+
+<div id="world"><canvas id="cv"></canvas></div>
+
+<div id="dbox" class="rpg">
+    <div id="dname"></div>
+    <div id="dtext"></div>
+    <div id="dnext">▶</div>
+</div>
+
+<div id="bag">
+    <div class="bgh">随 身 · 记 下 的</div>
+    <ul id="baglist"></ul>
+    <div class="bgf"><b>C</b> / <b>X</b> 合上</div>
+</div>
+
+<div id="veil"><div class="vm"></div></div>
+
+<script src="levels.js" charset="utf-8"></script>
+<script src="sfx.js" charset="utf-8"></script>
+<script src="big.js" charset="utf-8"></script>
+<script src="dialog.js" charset="utf-8"></script>
+<script src="rpg.js" charset="utf-8"></script>
+<script src="floor1.js" charset="utf-8"></script>
+<script>
+/* ==================================================================
+   CUT7 · 第二段「一层 · 门厅」—— 页面只干四件事
+   ------------------------------------------------------------------
+   1) 把 floor1.js 那份地图交给 rpg.js 去跑（走位 / 碰撞 / 调查 / 背包）；
+   2) 进门那几句（scripts.intro）由引擎自动播，播完交回操作权；
+   3) 走到中楼梯按 Z = 上楼 → 停引擎 → 压暗画面 → 播 scripts.end（打照面）；
+   4) 收尾：框下沉 → 压黑 → 写 mp_unlock_v1.cut7b → 回选关（第三段就亮了）。
+   ★ 地图、台词、物品一个字都不写在这里 —— 改剧情只动 floor1.js。
+   ★ 打字音在 sfx.js：guard 是给安保大爷新加的一条嗓子（低沉沙哑）。
+   ================================================================== */
+(function(){
+'use strict';
+
+var veil = document.getElementById('veil');
+var vm   = veil.querySelector('.vm');
+var box  = document.getElementById('dbox');
+var going = false;
+
+function writeUnlock(){
+    try {
+        var u = JSON.parse(localStorage.getItem(LAB_UNLOCK_KEY) || '{}') || {};
+        if (!u.cut7b){ u.cut7b = 1; localStorage.setItem(LAB_UNLOCK_KEY, JSON.stringify(u)); }
+    } catch (e){}
+}
+function back(){
+    if (going) return;
+    going = true;
+    location.href = 'index.html';
+}
+function veilTo(text, then, wait){
+    vm.textContent = text || '';
+    veil.classList.add('on');
+    setTimeout(function(){ if (then) then(); }, wait || 1500);
+}
+
+var RPG = window.CUT7RPG.start({
+    canvas:  document.getElementById('cv'),
+    data:    FLOOR1,
+    who:     P2_WHO,
+    box:     box,
+    name:    document.getElementById('dname'),
+    text:    document.getElementById('dtext'),
+    next:    document.getElementById('dnext'),
+    bag:     document.getElementById('bag'),
+    bagList: document.getElementById('baglist'),
+    intro:   FLOOR1.scripts.intro,
+    /* 走上中楼梯：这一段到这儿为止，剩下的交给第三段 */
+    onExit:  function(){ runEnd(); }
+});
+
+function runEnd(){
+    RPG.stop();
+    box.classList.remove('off');                             /* 收尾这段要把框叫回来 */
+    document.getElementById('world').classList.add('dim');   /* 镜头交给对话，画面压暗 */
+    window.CUT7Dialog.play(FLOOR1.scripts.end, {
+        who:  P2_WHO,
+        box:  box,
+        name: document.getElementById('dname'),
+        text: document.getElementById('dtext'),
+        next: document.getElementById('dnext'),
+        onEnd: function(){
+            writeUnlock();
+            veilTo('第 二 段 · 完', back, 2600);
+            /* 压黑之后也可以直接按 Z 早走一步 */
+            document.addEventListener('keydown', function(e){
+                if (e.key === 'z' || e.key === 'Z' || e.key === 'Enter') back();
+            });
+        }
+    });
+}
+})();
+</script>
+</body>
+</html>

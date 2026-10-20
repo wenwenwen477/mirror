@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>就医研究专页　|　启明公众认知健康中心</title>
+<style>
+:root{
+    --ink:#1d4f4a; --tx:#262b2a; --tx2:#4f5a58; --tx3:#848d8b;
+    --gn:#1d6b62; --gnl:#2a887e; --gnw:#eef5f4;
+    --or:#e07a3f; --red:#c0392b; --line:#dde6e4; --bd:#c8d6d3;
+    --bg:#fff; --bgf:#f4f7f7;
+    --font:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",SimSun,sans-serif;
+}
+*{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
+@media (prefers-reduced-motion: reduce){ html{ scroll-behavior:auto; } }
+body{ margin:0; background:var(--bgf); color:var(--tx); font:15px/1.9 var(--font); }
+a{ color:#1a4a8a; text-decoration:none; }
+a:hover{ color:var(--or); text-decoration:underline; }
+.wrap{ width:1000px; max-width:96%; margin:0 auto; }
+.ihd{ background:var(--ink); color:#bfd4d1; font-size:12px; }
+.ihd .wrap{ display:flex; justify-content:space-between; align-items:center; min-height:32px; }
+.ihd a{ color:#bfd4d1; margin-left:14px; }
+.ihd a:hover{ color:#fff; }
+.brand{ background:#fff; border-bottom:3px solid var(--gn); }
+.brand .wrap{ display:flex; align-items:center; gap:18px; padding:20px 0 18px; }
+.brand .mark{ flex:0 0 auto; width:58px; height:58px; }
+.brand b{ font-size:23px; letter-spacing:2px; color:var(--gn); display:block; }
+.brand i{ display:block; font-style:normal; font-size:11.5px; color:var(--tx3); letter-spacing:1.5px; }
+.brand .no{ margin-left:auto; text-align:right; font-size:12px; color:var(--tx3); line-height:1.8; }
+.brand .no b{ display:block; font-size:15px; color:var(--or); letter-spacing:1px; }
+.eye{ font-family:"Segoe UI Historic","Noto Sans Egyptian Hieroglyphs",var(--font); }
+.from{ background:var(--gnw); border-bottom:1px solid var(--line); font-size:12.5px; color:var(--tx2); }
+.from .wrap{ padding:9px 0; }
+.nav{ background:var(--gn); position:sticky; top:0; z-index:90; box-shadow:0 2px 0 rgba(0,0,0,.06); }
+.nav .wrap{ display:flex; flex-wrap:wrap; }
+.nav a{ color:#e2efed; font-size:14.5px; padding:11px 20px; letter-spacing:1px; }
+.nav a:hover{ background:var(--gnl); text-decoration:none; }
+.nav a.on{ background:#fff; color:var(--gn); font-weight:700; box-shadow:inset 0 -3px 0 var(--or); }
+.main{ display:flex; gap:20px; padding:18px 0 10px; align-items:flex-start; }
+.left{ flex:1 1 auto; min-width:0; }
+.right{ flex:0 0 268px; }
+.box{ background:#fff; border:1px solid var(--line); padding:20px 26px 24px; margin-bottom:18px; }
+.box[id]{ scroll-margin-top:64px; }
+h3{ margin:0 0 14px; font-size:19px; color:var(--gn); letter-spacing:1px; padding-bottom:10px; border-bottom:1px solid var(--line); }
+h3 .sub{ float:right; font-size:12px; color:var(--tx3); font-weight:400; letter-spacing:0; }
+.doc p{ margin:9px 0; font-size:14.5px; line-height:2.05; color:var(--tx2); }
+.doc .dt{ font-size:21px; color:var(--tx); font-weight:700; letter-spacing:1px; }
+.doc .dno{ font-size:12.5px; color:var(--tx3); margin:4px 0 16px; line-height:1.9; }
+.doc h4{ margin:22px 0 8px; font-size:15.5px; color:var(--gn); letter-spacing:1px; }
+.doc ul{ margin:9px 0; padding-left:22px; font-size:14.5px; color:var(--tx2); line-height:2.05; }
+.doc ul li{ margin:4px 0; }
+.tip{ margin-top:18px; padding:12px 15px; background:#fdf6f5; border-left:3px solid var(--red); font-size:13px; color:var(--tx2); line-height:1.95; }
+.tip b{ color:var(--red); }
+.more{ margin-top:18px; padding:14px 16px; background:var(--gnw); border-left:3px solid var(--gn); font-size:13.5px; color:var(--tx2); line-height:1.95; }
+.more b{ color:var(--gn); }
+.more .big{ font-size:15px; color:var(--gn); font-weight:700; }
+.more a{ font-weight:700; }
+.sig{ margin-top:26px; padding-top:14px; border-top:1px dashed var(--line); font-size:12.5px; color:var(--tx3); line-height:2; }
+.sbox{ background:#fff; border:1px solid var(--line); padding:16px 18px 18px; margin-bottom:18px; }
+.sbox h4{ margin:0 0 12px; font-size:15px; letter-spacing:1px; color:var(--gn); padding-bottom:9px; border-bottom:1px solid var(--line); }
+.sbox p{ margin:6px 0; font-size:13px; color:var(--tx2); line-height:1.95; }
+.sbox ul{ margin:6px 0; padding-left:18px; font-size:13px; color:var(--tx2); line-height:2; }
+.foot{ background:var(--ink); color:#a3c0bc; font-size:12px; padding:22px 0; text-align:center; line-height:2.1; }
+.foot .ad{ color:#7fa09c; }
+#deny{ display:none; }
+body.lock #deny{ display:block; }
+body.lock #app{ display:none; }
+.deny{ width:620px; max-width:92%; margin:0 auto; padding:132px 0 60px; text-align:center; }
+.deny .dn1{ font-size:78px; font-weight:700; color:var(--bd); letter-spacing:8px; line-height:1; }
+.deny .dn2{ margin-top:12px; font-size:21px; color:var(--tx); letter-spacing:5px; }
+.deny p{ margin:22px 0 0; font-size:14px; color:var(--tx2); line-height:2.1; }
+.deny .dn3{ margin-top:30px; font-size:13px; }
+.deny .dn3 a{ margin:0 8px; }
+@media (max-width:900px){ .main{ flex-direction:column; } .right{ flex:1 1 auto; width:100%; } }
+</style>
+</head>
+<body class="lock">
+<div id="deny"><div class="deny">
+    <div class="dn1">404</div><div class="dn2">页面不存在</div>
+    <p>您访问的页面不存在，或已被移除。<br>请检查地址是否输入正确。</p>
+    <p class="dn3"><a href="percept.html">感知觉科普</a><a href="index.html">返回旅行社</a></p>
+</div></div>
+<div id="app">
+<div class="ihd"><div class="wrap"><div>启明公众认知健康中心　|　研究专页　|　凭编号取阅</div><div><a href="percept.html">感知觉科普</a><a href="bot.html">返回助手</a></div></div></div>
+<div class="brand"><div class="wrap">
+    <svg class="mark" viewBox="0 0 58 58" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="29" cy="29" r="28" fill="none" stroke="#1d6b62" stroke-width="2"/><circle cx="29" cy="29" r="17" fill="none" stroke="#2a887e" stroke-width="1.5" stroke-dasharray="3 3"/><circle cx="29" cy="29" r="6" fill="#1d6b62"/></svg>
+    <div><b>研究专页</b><i>RESEARCH NOTE　仅列材料　不作结论</i></div>
+    <div class="no">编号　<b>R-MED-01</b>　|　2013 年 3 月</div>
+</div></div>
+<div class="from"><div class="wrap">本页为研究专页　|　未公开发表　|　凭邀请编号取阅　|　不得公开引用</div></div>
+<div class="nav"><div class="wrap">
+    <a href="#m1" class="on">材料里写到的情形</a>
+    <a href="bot.html">返回助手</a><a href="cope.html">返回上一页</a>
+</div></div>
+<div class="wrap"><div class="main"><div class="left">
+<div class="box" id="m1">
+    <h3>关于就医<span class="sub">研究专页　|　第 1 篇</span></h3>
+    <div class="doc">
+        <div class="dt">就医：材料里列过的、建议留意的情形</div>
+        <div class="dno">启明公众认知健康中心　|　编号 R-MED-01　|　2013 年 3 月<br>记录人　<span class="eye">𓂀𓂀𓂀𓂀𓂀</span>　（该栏在原件中为空）</div>
+        <h4>一、材料里反复记下的几类情形</h4>
+        <ul>
+            <li><b>频率明显升高</b>：从一年几次，到一周数次，或几乎每天出现；</li>
+            <li><b>伴随其他感知变化</b>：同时出现视幻觉、被注视感，并且让你不安；</li>
+            <li><b>影响日常功能</b>：记忆、注意力、情绪或睡眠出现了新的、持续的变化；</li>
+            <li><b>与明确诱因同时发生</b>：严重睡眠剥夺、头部外伤、或正在使用的药物发生变化之后出现；</li>
+            <li><b>本人或身边人觉得"和以前不一样了"</b>：这一条在材料里被反复列为最该重视的信号。</li>
+        </ul>
+        <h4>二、关于"去哪里"</h4>
+        <p>本专页不推荐任何具体医院、科室或医师。材料里反复给出的建议是：先到综合医院的
+           神经内科或精神科做基础评估，由专业人员判断是否需要进一步。<b>本专页本身不提供诊疗。</b></p>
+        <div class="tip">本专页只列情形，<b>不替你判断是否就医，也不替代任何专业判断</b>。是否就医，请以专业人员的评估为准。</div>
+        <div class="more"><b>延伸阅读</b><br><span class="big">回到感知觉自测助手，可以继续就具体情形发问。</span><br><a href="bot.html">返回《感知觉自测助手》　→</a></div>
+        <div class="sig">启明公众认知健康中心　|　编号 R-MED-01<br>原件存于本中心，凭邀请编号取阅</div>
+    </div>
+</div>
+</div>
+<div class="right">
+    <div class="sbox"><h4>关于本专页</h4><p>编号　<b>R-MED-01</b></p><p>研究专页　|　凭编号取阅</p></div>
+    <div class="sbox"><h4>本栏目不做的事</h4><ul><li>不给出结论</li><li>不推荐任何药品</li><li>不介绍任何医疗机构或医师</li><li>不公开任何记录人姓名</li></ul></div>
+    <div class="sbox"><h4>其他提示</h4><ul><li><a href="bot.html">感知觉自测助手</a></li><li><a href="cope.html">应对研究专页</a></li><li><a href="percept.html">感知觉科普</a></li></ul></div>
+</div></div></div>
+<div class="foot">启明公众认知健康中心　|　研究专页　|　凭编号取阅<br><span class="ad">本站为公众科普栏目，不提供诊疗服务</span></div>
+</div>
+<script>
+(function(){'use strict';var INV_KEY='mp_bot_invite',INV_RE=/^INV-[0-9]{6}-[0-9]{4}$/;
+function fromUrl(){var m=location.search.match(/[?&]inv=([^&]+)/);return m?decodeURIComponent(m[1]):'';}
+function stored(){try{return localStorage.getItem(INV_KEY)||'';}catch(e){return '';}}
+var inv=fromUrl()||stored();if(!INV_RE.test(inv)){document.title='404 页面不存在';return;}
+document.body.classList.remove('lock');try{localStorage.setItem(INV_KEY,inv);}catch(e){}})();
+</script>
+</body>
+</html>

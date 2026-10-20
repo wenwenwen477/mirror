@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>案例 AQ-130812-1　器材复检记录缺失｜青麓旅行社</title>
+<style>
+/* ==================================================================
+   反面案例 AQ-130812-1：**打得开的那一页**。
+   它把两件事交代给玩家：① 编号怎么编（AQ-年月日-当日第几起）；
+   ② 当日另有一起来自参团学生的受伤事件，编号**接续本起**。
+   → 推得出 AQ-130812-2 → 拿这个编号回站内检索 → 才搜得到那起的处理情况。
+   ================================================================== */
+:root{
+    --ink:#1f2a24; --tx:#2b2b2b; --tx2:#5c5c5c; --tx3:#8a8a8a;
+    --gr:#1f6b52; --grl:#2f8f68; --grw:#eef6f2;
+    --or:#e07a3f; --red:#c0392b; --line:#e0e6e2; --bd:#cdd8d2;
+    --bg:#fff; --bgf:#f5f7f6;
+    --font:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",SimSun,sans-serif;
+}
+*{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
+@media (prefers-reduced-motion: reduce){ html{ scroll-behavior:auto; } }
+body{ margin:0; background:var(--bgf); color:var(--tx); font:15px/1.9 var(--font); }
+a{ color:#1a4a8a; text-decoration:none; }
+a:hover{ color:var(--or); text-decoration:underline; }
+.wrap{ width:1000px; max-width:96%; margin:0 auto; }
+
+.topbar{ background:var(--ink); color:#cfd8d2; font-size:12px; }
+.topbar .wrap{ display:flex; justify-content:space-between; align-items:center; height:32px; }
+.topbar a{ color:#cfd8d2; margin-left:14px; }
+.topbar a:hover{ color:#fff; }
+
+.logo{ background:#fff; border-bottom:1px solid var(--line); }
+.logo .wrap{ display:flex; align-items:center; gap:18px; padding:16px 0 14px; }
+.logo .mark{ flex:0 0 auto; width:46px; height:46px; }
+.logo b{ font-size:24px; letter-spacing:3px; color:var(--gr); }
+.logo i{ display:block; font-style:normal; font-size:11.5px; color:var(--tx3); letter-spacing:1.5px; }
+.logo .tel{ margin-left:auto; text-align:right; font-size:12.5px; color:var(--tx2); line-height:1.7; }
+.logo .tel b{ display:block; font-size:19px; color:var(--or); letter-spacing:.5px; }
+
+/* 题头常驻：点栏目往下滚时导航不会跟着滚出视口，否则高亮看不见 */
+.nav{ background:var(--gr); position:sticky; top:0; z-index:90;
+      box-shadow:0 2px 0 rgba(0,0,0,.06); }
+.nav .wrap{ display:flex; flex-wrap:wrap; }
+.nav a{ color:#eaf3ee; font-size:14.5px; padding:11px 20px; letter-spacing:1px; }
+.nav a:hover{ background:var(--grl); text-decoration:none; }
+.nav a.on{ background:#fff; color:var(--gr); font-weight:700;
+             box-shadow:inset 0 -3px 0 var(--or); }
+.nav a.on:hover{ background:#fff; color:var(--gr); text-decoration:none; }
+.nav a.off{ color:#a9c4b6; cursor:default; }
+.nav a.off:hover{ background:transparent; }
+
+.sbar{ background:#fff; border-bottom:1px solid var(--line); padding:14px 0 12px; }
+.sbar .wrap{ display:flex; align-items:center; gap:14px; }
+.sbar form{ display:flex; flex:0 0 auto; }
+.sbar input{ width:260px; height:36px; padding:0 12px; font:14px var(--font); color:var(--tx);
+             border:2px solid var(--gr); border-right:0; border-radius:2px 0 0 2px; outline:none; }
+.sbar button{ height:36px; padding:0 22px; font:14px var(--font); letter-spacing:2px; cursor:pointer;
+              color:#fff; background:var(--gr); border:2px solid var(--gr); border-radius:0 2px 2px 0; }
+.sbar button:hover{ background:var(--grl); border-color:var(--grl); }
+.sbar .hot{ font-size:12.5px; color:var(--tx3); }
+.sbar .hot a{ margin:0 8px; }
+
+.crumb{ font-size:12.5px; color:var(--tx3); padding:14px 0 0; }
+.crumb a{ margin:0 4px; }
+
+.main{ display:flex; gap:20px; padding:18px 0 10px; align-items:flex-start; }
+.left{ flex:1 1 auto; min-width:0; }
+.right{ flex:0 0 268px; }
+.box{ background:#fff; border:1px solid var(--line); padding:20px 26px 24px; margin-bottom:18px; }
+
+.doc{ border:1px solid var(--bd); background:#fcfdfc; padding:18px 22px 20px; }
+.doc .dt{ text-align:center; font-size:16.5px; letter-spacing:1px; color:var(--ink); }
+.doc .dno{ text-align:center; font-size:12.5px; color:var(--tx3);
+           padding-bottom:12px; border-bottom:1px solid var(--line); }
+.doc p{ margin:12px 0; font-size:14px; line-height:2.1; text-indent:2em; }
+.doc p.sign{ text-align:right; text-indent:0; color:var(--tx2); font-size:13px; }
+
+.meta{ border:1px solid var(--line); background:var(--grw); padding:12px 16px; margin:14px 0 4px;
+       font-size:13px; color:var(--tx2); line-height:1.95; }
+.meta b{ color:var(--gr); }
+.meta .no{ font-family:Consolas,"Courier New",monospace; font-size:14px; color:var(--ink); }
+
+/* 这一句是给玩家的梯子：当日第 1 起 + 另有一起来自参团学生 → 编号接上去 */
+.next{ margin-top:16px; padding:14px 16px; border:1px dashed var(--bd); background:#fffdf7;
+       font-size:13.5px; line-height:2; color:var(--tx2); }
+.next b{ color:var(--or); }
+.howto{ margin-top:12px; font-size:12.5px; color:var(--tx3); line-height:1.9; }
+
+.sbox{ background:#fff; border:1px solid var(--line); padding:16px 18px 18px; margin-bottom:18px; }
+.sbox h4{ margin:0 0 12px; font-size:15px; letter-spacing:1px; color:var(--gr);
+          padding-bottom:9px; border-bottom:1px solid var(--line); }
+.sbox p{ margin:6px 0; font-size:13px; color:var(--tx2); line-height:1.95; }
+.sbox ul{ margin:6px 0; padding-left:18px; font-size:13px; color:var(--tx2); line-height:2; }
+
+.foot{ background:var(--ink); color:#a9b5ae; font-size:12px; padding:22px 0; text-align:center; line-height:2.1; }
+.foot a{ color:#c9d5ce; margin:0 6px; }
+.foot .eye{ font-family:"Segoe UI Historic","Noto Sans Egyptian Hieroglyphs",var(--font); }
+
+@media (max-width:900px){
+    .main{ flex-direction:column; }
+    .right{ flex:1 1 auto; width:100%; }
+    .sbar .wrap{ flex-wrap:wrap; }
+    .sbar input{ width:190px; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+    <div>青麓旅行社　|　客丽市本地出行服务　·　周边游 / 研学 / 团队拓展</div>
+    <div><a href="index.html">门店查询</a><a href="index.html">在线客服</a><a href="index.html">投诉建议</a></div>
+</div></div>
+
+<div class="logo"><div class="wrap">
+    <svg class="mark" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="1" y="1" width="46" height="46" rx="6" fill="#1f6b52"/>
+        <path d="M8 34 L18 20 L26 30 L32 24 L40 34 Z" fill="#eef6f2"/>
+        <circle cx="34" cy="13" r="5" fill="#e07a3f"/>
+    </svg>
+    <div><b>青麓旅行社</b><i>QINGLU TRAVEL · SINCE 2004</i></div>
+    <div class="tel">报名热线　<b>0<span class="eye">𓂀</span>73-8826 4471</b>　|　08:30–18:00 节假日不休</div>
+</div></div>
+
+<div class="nav"><div class="wrap">
+    <a href="index.html" data-nav="index">网站首页</a>
+    <a href="lines.html#cat1" data-nav="cat1">周边线路</a>
+    <a href="lines.html#cat2" data-nav="cat2">国内游</a>
+    <a href="lines.html#cat3" data-nav="cat3">研学 · 学生团</a>
+    <a href="lines.html#cat4" data-nav="cat4">团队拓展</a>
+    <a href="notice.html" data-nav="notice">警情通知</a>
+    <a class="off">关于我们</a>
+    <a class="off">联系方式</a>
+</div></div>
+
+<div class="sbar"><div class="wrap">
+    <form action="index.html" method="get" autocomplete="off">
+        <input type="text" name="q" placeholder="站内检索：线路 / 目的地 / 通知 / 案例编号…">
+        <button type="submit">站内搜索</button>
+    </form>
+    <div class="hot"><a href="index.html?q=%E9%9D%92%E9%BE%99%E5%B3%A1">青龙峡</a><a href="index.html?q=%E7%99%BD%E9%B9%89%E6%B9%96">白鹭湖</a><a href="index.html?q=%E7%A0%94%E5%AD%A6">研学</a><a href="index.html?q=%E5%AE%89%E5%85%A8">安全</a></div>
+</div></div>
+
+<div class="wrap">
+    <div class="crumb">当前位置：<a href="index.html">网站首页</a> &gt; <a href="safe.html">安全操作告知书</a> &gt; 反面案例 AQ-130812-1</div>
+
+    <div class="main">
+        <div class="left">
+            <div class="box">
+                <div class="meta">
+                    <b>事发日期</b>2013 年 8 月 12 日　|　<b>项目</b>高空速降　|　<b>地点</b>青龙峡户外拓展基地
+                    <span class="no">案例编号 AQ-130812-1</span>
+                </div>
+
+                <div class="doc">
+                    <div class="dt">户外项目安全操作反面案例（器材复检记录缺失）</div>
+                    <div class="dno">青麓旅安〔2013〕14 号　|　安委办　|　2013 年 8 月 17 日整理</div>
+
+                    <p>2013 年 8 月 12 日，我社组织的“秋日近郊两日游”学生团在青龙峡户外拓展基地参加高空速降体验项目。项目开始前，当值安全员未按《户外拓展项目安全操作规程》第 11 条完成二次复检，亦未在《器材领用与检查记录表》“复检”栏签字；该批次器材的领用、初检与挂设，均由其一人完成。</p>
+
+                    <p>现场领队虽已在“初检”栏签字，但未对复检情况予以确认，未执行“双人双检”。当日 15 时 20 分，基地管理方在例行巡查中发现该记录缺失，当批次器材全部停用封存。</p>
+
+                    <p>本起事件<b>未造成人身伤害</b>，亦未造成器材损坏。经研究：对当值安全员予以通报批评并扣发当月绩效，对现场领队予以诫勉谈话；相关器材封存送检。</p>
+
+                    <p class="sign">青麓旅行社安全生产委员会<br>2013 年 8 月 17 日</p>
+                </div>
+
+                <!-- 这一句是给玩家的梯子：当日第 1 起 + 另有一起来自参团学生 → 编号接上去 -->
+                <div class="next">
+                    <b>关于编号</b>　本起为 2013 年 8 月 12 日<b>第 1 起</b>安全操作事件。同日同一项目<b>另有一起来自参团学生的受伤事件</b>，已另行整理通报，<b>编号接续本起</b>。
+                </div>
+                <div class="howto">
+                    案例编号规则：AQ - 事发年月日 - 当日第几起（例：AQ-130812-1，即 2013 年 8 月 12 日第 1 起）。
+                </div>
+
+                <p style="margin:14px 0 0;font-size:13px">
+                    <a href="safe.html">« 返回安全操作告知书</a>　|　<a href="index.html">返回站内检索</a>
+                </p>
+            </div>
+        </div>
+
+        <div class="right">
+            <div class="sbox">
+                <h4>器材“双人双检”</h4>
+                <p>一、领队初检：器材出库时核对数量、外观与检验有效期；</p>
+                <p>二、安全员复检：项目开始前逐件复检并签字；</p>
+                <p>三、两栏齐全方可启用，缺一视为未检。</p>
+            </div>
+            <div class="sbox">
+                <h4>报名热线</h4>
+                <p>0<span class="eye">𓂀</span>73-8826 4471</p>
+                <p>08:30–18:00　节假日不休</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="foot">
+    青麓旅行社　版权所有　|　旅游业务经营许可证 L-𓂀𓂀-000000　|　电话　0<span class="eye">𓂀</span>73-8826 4471<br>
+    地址：客丽市西城区槐荫路 12 号　|　青ICP备 00000000 号-2<br>
+    <a href="index.html">网站首页</a><a href="lines.html">线路大全</a><a href="notice.html">警情通知</a><a href="lines.html#contact">联系我们</a>
+</div>
+
+
+
+
+
+
+
+<script>
+/* ==================================================================
+   导航高亮
+   ------------------------------------------------------------------
+   高亮该亮谁，由三件事决定，优先级从高到低：
+     1. 刚刚点过某个栏目（意图明确）→ 亮它
+     2. 带 #catN 进来还没滚到位 → 亮 hash 指的那个
+     3. 视口滚到哪 → 亮哪个栏目
+   页面级项（网站首页 / 警情通知）按文件名判断，不参与栏目逻辑。
+   ================================================================== */
+(function(){
+'use strict';
+
+function fileOf(u){
+    var s = String(u || '').split('#')[0].split('?')[0];
+    return s.split('/').pop().toLowerCase();
+}
+
+var hereFile = fileOf(location.pathname);
+var onLines  = (hereFile === 'lines.html');
+var boxes    = onLines ? Array.prototype.slice.call(document.querySelectorAll('.box[id^="cat"]')) : [];
+var links    = Array.prototype.slice.call(document.querySelectorAll('.nav a[data-nav]'));
+var cats     = links.filter(function(a){ return /^cat[0-9]+$/.test(a.getAttribute('data-nav') || ''); });
+
+/* 当前意图：'cat1' | 'cat2' ... ；空 = 交给视口判断 */
+var intent = '';
+/* 意图的有效期：从最后一次点击/进入算起，超时就交还给视口 */
+var INTENT_MS = 1200;
+var intentAt = 0;
+
+/* 进入时 hash 表达的初始意图 */
+var h0 = (location.hash || '').replace(/^#/, '');
+if (/^cat[0-9]+$/.test(h0)){ intent = h0; intentAt = Date.now(); }
+
+/* 视口里"我在这里"的栏目 */
+function visibleCat(){
+    if (!boxes.length) return '';
+    var line = window.scrollY + window.innerHeight * 0.3;
+    var cur = '';
+    for (var i = 0; i < boxes.length; i++){
+        if (boxes[i].offsetTop <= line) cur = boxes[i].id;
+    }
+    return cur;
+}
+
+function paint(){
+    /* 意图过期 → 交还给视口 */
+    if (intent && (Date.now() - intentAt) > INTENT_MS) intent = '';
+    var cat = (intent && document.getElementById(intent)) ? intent : visibleCat();
+
+    var picked = null;
+    links.forEach(function(a){
+        var key = a.getAttribute('data-nav') || '';
+        var on;
+        if (/^cat[0-9]+$/.test(key)){
+            /* 栏目项：只有 lines 页能亮，且同一时刻只亮一个 */
+            on = onLines && (key === cat);
+        } else {
+            /* 页面级项：文件对上就亮 */
+            on = (fileOf(a.getAttribute('href') || '') === hereFile);
+        }
+        if (on){ a.classList.add('on'); picked = a; }
+        else a.classList.remove('on');
+    });
+
+    /* lines 页若一个栏目都没命中，点亮第一个，题头永远有一项是亮的 */
+    if (onLines && !picked && cats.length) cats[0].classList.add('on');
+
+    /* 右栏栏目导航同步 */
+    var n2 = document.querySelectorAll('.nav2 a[data-c]');
+    for (var i = 0; i < n2.length; i++){
+        n2[i].className = (onLines && n2[i].getAttribute('data-c') === cat) ? 'on' : '';
+    }
+}
+
+/* ---- 点栏目 = 立意图，不等滚动 ---- */
+cats.forEach(function(a){
+    a.addEventListener('click', function(){
+        intent = a.getAttribute('data-nav');
+        intentAt = Date.now();
+        paint();
+    });
+});
+/* 页内「栏目导航」右栏点了也一样 */
+document.querySelectorAll('.nav2 a[data-c]').forEach(function(a){
+    a.addEventListener('click', function(){
+        var c = a.getAttribute('data-c');
+        if (/^cat[0-9]+$/.test(c)){ intent = c; intentAt = Date.now(); }
+    });
+});
+
+window.addEventListener('scroll', paint, { passive:true });
+window.addEventListener('resize', paint);
+window.addEventListener('hashchange', function(){
+    var h = (location.hash || '').replace(/^#/, '');
+    if (/^cat[0-9]+$/.test(h)){ intent = h; intentAt = Date.now(); }
+    paint();
+});
+window.addEventListener('load', paint);
+paint();
+setTimeout(paint, 300);
+})();
+</script>
+</body>
+</html>

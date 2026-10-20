@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>谜径 Puzzlepath　|　ARG 与 WIG：当谜题走出屏幕，又退回屏幕</title>
+<style>
+:root{
+    --ink:#2a2350; --tx:#23203a; --tx2:#4a4668; --tx3:#8a86a8;
+    --ac:#6c5ce7; --ac2:#a29bfe; --acw:#f1eefe;
+    --or:#e07a3f; --line:#e4e0f2; --bd:#d2cdec;
+    --bg:#fff; --bgf:#f6f5fb;
+    --font:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",SimSun,sans-serif;
+}
+*{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
+body{ margin:0; background:var(--bgf); color:var(--tx); font:15px/1.95 var(--font); }
+a{ color:var(--ac); text-decoration:none; }
+a:hover{ color:var(--or); text-decoration:underline; }
+.wrap{ width:860px; max-width:96%; margin:0 auto; }
+
+.ihd{ background:var(--ink); color:#c9c3e8; font-size:12px; }
+.ihd .wrap{ display:flex; justify-content:space-between; align-items:center; min-height:32px; }
+.ihd a{ color:#c9c3e8; margin-left:14px; }
+.ihd a:hover{ color:#fff; }
+
+.brand{ background:#fff; border-bottom:3px solid var(--ac); }
+.brand .wrap{ display:flex; align-items:center; gap:16px; padding:18px 0 16px; }
+.brand .mark{ flex:0 0 auto; width:50px; height:50px; }
+.brand b{ font-size:23px; letter-spacing:2px; color:var(--ink); display:block; }
+.brand i{ display:block; font-style:normal; font-size:11.5px; color:var(--tx3); letter-spacing:1.5px; }
+.brand .tag{ margin-left:auto; font-size:12px; color:#fff; background:var(--ac); padding:5px 13px; letter-spacing:1px; }
+
+.main{ padding:24px 0 14px; }
+.box{ background:#fff; border:1px solid var(--line); padding:26px 32px 30px; margin-bottom:20px; border-radius:4px; }
+.box h1{ margin:0 0 6px; font-size:26px; line-height:1.5; color:var(--ink); letter-spacing:1px; }
+.byline{ font-size:12.5px; color:var(--tx3); border-bottom:1px solid var(--line); padding-bottom:14px; margin-bottom:20px; }
+.byline b{ color:var(--tx2); font-weight:600; }
+.box .lead{ font-size:16px; color:var(--tx); line-height:2.1; background:var(--acw); border:1px solid var(--line);
+    border-radius:4px; padding:15px 17px; margin:0 0 18px; }
+.box h2{ margin:28px 0 10px; font-size:20px; color:var(--ac); letter-spacing:1px;
+    padding-bottom:9px; border-bottom:1px solid var(--line); }
+.box h3{ margin:18px 0 6px; font-size:16px; color:var(--ink); }
+.box p{ margin:11px 0; font-size:14.5px; line-height:2.05; color:var(--tx2); text-align:justify; }
+.box p .hl{ color:var(--ac); font-weight:700; }
+.box p b{ color:var(--ink); font-weight:700; }
+.qt{ margin:16px 0; padding:14px 18px; background:var(--acw); border-left:3px solid var(--ac); font-size:14px; line-height:2; color:var(--tx); }
+.who{ background:#fbf8f1; border:1px solid var(--line); border-left:3px solid var(--or);
+    border-radius:4px; padding:15px 19px; margin:16px 0; }
+.who .nm{ font-weight:700; font-size:15px; color:var(--ink); letter-spacing:.5px; }
+.who p{ margin:9px 0 0; }
+.tags{ margin-top:24px; font-size:12.5px; color:var(--tx3); }
+.tags a{ display:inline-block; background:var(--acw); border:1px solid var(--line); border-radius:3px;
+    padding:2px 10px; margin:0 6px 6px 0; color:var(--tx2); }
+.tags a:hover{ background:#e7e0fb; text-decoration:none; }
+
+.foot{ background:var(--ink); color:#b7b2d8; font-size:12px; padding:22px 0; text-align:center; line-height:2.1; }
+.foot a{ color:#cfcaf0; margin:0 6px; }
+</style>
+</head>
+<body>
+<div class="ihd"><div class="wrap"><div>谜径 Puzzlepath　|　只推荐能在浏览器里打开的解谜游戏</div><div><a href="games.html">返回推荐站</a></div></div></div>
+
+<div class="brand"><div class="wrap">
+    <svg class="mark" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="6" y="6" width="38" height="38" rx="8" fill="none" stroke="#6c5ce7" stroke-width="3"/>
+        <path d="M16 25 H34 M25 16 V34" stroke="#6c5ce7" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="25" cy="25" r="4" fill="#e07a3f"/>
+    </svg>
+    <div><b>谜径 Puzzlepath</b><i>PUZZLEPATH　网页解谜游戏推荐与研究</i></div>
+    <div class="tag">研究笔记</div>
+</div></div>
+
+<div class="wrap"><div class="main">
+<div class="box">
+    <h1>ARG 与 WIG：当谜题走出屏幕，又退回屏幕</h1>
+    <div class="byline">研究 · 谜径编辑部　|　分类：网页解谜理论　|　阅读 0.9 万</div>
+
+    <p class="lead">我们在这个站里反复用到两个词——<b>ARG</b> 与 <b>WIG</b>。它们听起来像近亲，却指向两种不太一样的"把人带进谜"的方式。这篇不推荐具体游戏，只把这两个词讲清楚，并聊一个由写作者 <b>斐可悉</b> 与 <b>吻梦Wen</b> 提出、我们觉得很值得玩味的新疑问：能不能完全不靠跨平台、多媒介，仅凭网页本身，就做出 ARG 那种"现实被侵入"的感觉？举的例子，是他们常提到的 <b>喀丽丝</b>。</p>
+
+    <h2>一、ARG 是什么</h2>
+    <p><b>ARG</b>，全称 <span class="hl">Alternate Reality Game（替代现实游戏）</span>。它的核心，不是"做一个可以进入的游戏空间"，而是把一段虚构故事"织"进真实世界里，让游戏与现实的边界主动模糊起来——玩家常常不是"进入了游戏"，而是"发现游戏好像渗进了我的日常"。</p>
+    <p>它的手段通常是<span class="hl">跨平台、多媒介</span>的：除了一个专属网站，还可能有电子邮件、电话、社交账号、乃至线下实物（信封、报纸广告、公共场所的标记）。它的设计信条常被称为 <b>"This Is Not A Game"（这不是一个游戏，TINAG）</b>——尽量不提醒你"这只是游戏"，好让沉浸与不安更真。</p>
+    <p>常被引用的源头，是 2001 年为电影《A.I.》宣传、由 42 Entertainment 制作的 <b>The Beast</b>，它普遍被视为现代 ARG 的起点；此后 <b>I Love Bees</b>（2004，Halo 2 宣传）、<b>Perplex City</b>（2005）等延续了这套范式。它最招牌的体验，玩家和研究者常叫它"现实入侵"——你明明知道自己在上网、在玩游戏，却忍不住觉得"它好像真的摸到了我的现实生活"。</p>
+    <p>本站推荐里，像《我的秘密花园》就带有这种"线索不只藏在页面里，也散落在文字、图片、链接甚至现实网络的角落"的 ARG 气质。</p>
+
+    <h2>二、WIG 是什么</h2>
+    <p><b>WIG</b>，全称 <span class="hl">Web Interactive Game（网页互动游戏）</span>，也常被笼统称为"网页解谜"。它与 ARG 的最大区别很干脆：它基本<span class="hl">只活在网页里</span>。一个链接、一套页面、一个搜索框、一台被模拟出来的"电脑桌面"或"论坛"，就够了。</p>
+    <p>它不靠邮件、电话、线下投放，而是把"上网这件事本身"变成玩法：改地址栏、翻页脚、点侧栏、搜关键词、猜下一个 URL——这些是当代人本来就有的肌肉记忆，WIG 只是把它们变成线索。本站推荐列表里绝大多数作品（大学生登山失踪事件、魔法兔兔、Type Help、寻找陈雨彤……）都属于这一支：纯网页、单平台、开链接即玩。</p>
+    <div class="qt">一句话：如果说 ARG 是"把谜题撒进整个世界"，WIG 就是"把整个世界，收进一个网页里"。</div>
+
+    <h2>三、一个新疑问：纯网页，能做到 ARG 的"现实入侵"吗？</h2>
+    <p>顺着上面的区分，有一种很自然的传统看法：ARG 那种"现实被侵入"的战栗感，来自它的<span class="hl">跨平台、多媒介</span>——当你接到一个陌生来电、收到一封"不该存在"的邮件，现实与虚构的界线才真正发烫。于是顺理成章地，很多人默认：只靠网页（WIG 的方式），大概做不到那么"侵入"。顶多算精巧的解谜，缺了那一下"它碰到了我真实生活"的惊悚。</p>
+    <div class="who">
+        <div class="nm">一个新疑问　·　由 斐可悉 / 吻梦Wen 提出（创作命题，非定论）</div>
+        <p style="margin:9px 0 0">但两位写作者——<b>斐可悉</b> 与 <b>吻梦Wen</b>——提出了一个相反的、也更挑衅的新疑问：如果手法足够纯熟，是否可能<span class="hl">完全不借助跨平台、多媒介，仅凭网页自身</span>，就复现出 ARG 标志性的"现实入侵"体验？</p>
+        <p style="margin:9px 0 0">他们的主张（作为创作层面的命题，而非已证实的结论）是：网页本身已经足够"真实"——它本来就是玩家每天生活的一部分。一个藏得足够深、编排得足够密、且敢于直接对"正在看屏幕的你"说话的网页谜题，未必需要电话与邮件，就能让玩家产生"边界正在溶解"的恍惚。换句话说，他们把"现实入侵"的来源，从"媒介的数量（跨了多少平台）"，重新归结到"网页自身的完成度与对玩家的直视"上。</p>
+    </div>
+    <p>这是一个开放的问题，不是定论。我们把它原样摆在这里，供创作者与玩家一起想：也许"现实入侵"的关键，从来不只是"用了多少种媒介"，而是"它有多像本来就长在你生活里，又有多敢直视你"。</p>
+
+    <h2>四、例子：喀丽丝（Chaolis）</h2>
+    <p>在讨论这个疑问时，两位写作者常以 <b>喀丽丝</b> 作为例子。据他们描述，喀丽丝是一款几乎只依靠<span class="hl">网页自身</span>来完成叙事的网页解谜：它以单文件网页呈现，靠改地址栏抵达隐藏页、靠页面与页面之间的嵌套呼应、靠一个会直接对玩家开口的叙事者，把"你正在亲自查、亲自走"这件事本身变成沉浸的来源。</p>
+    <p>它没有邮件、没有电话、没有线下投放——在媒介意义上，它是纯粹的 WIG。但据参与讨论者的说法，它在体验上却试图逼近 ARG 的"现实入侵"：当叙事者开始像是在对你本人说话，当隐藏页像是从你自己的浏览习惯里长出来，那种"这和我的真实上网之间，边界在哪里"的错觉就被调动了起来。</p>
+    <p>而喀丽丝最被反复讨论的<b>独特性</b>，恰好落在它"怎么让人信"上：它在叙事里引用了大量<b>真实的文献、研究与例子</b>——从科学论文、哲学著作，到真实存在的作品与可检索的资料，密密麻麻地铺在故事周围；可与此同时，它又<b>从头到尾反复强调"这些统统是虚构的、请勿当真"</b>。正是这种"一边堆满真实依据、一边不停免责"的拧巴姿态，让参与的玩家在潜移默化里反而觉得：它讲的，好像很有道理，好像超级真实、可信。当一个人一边被明确告知"这是假的"，一边又被如此密实的真实材料包围，"虚构"与"可信"之间的界线就会悄悄发软——而这，正是喀丽丝用来逼近"现实入侵"的另一种纯网页手法：它不靠媒介的数量，而靠"真实感"本身的密度。</p>
+    <p>顺带一提，两位写作者自己也吐槽过：那条用来揭示喀丽丝"本质"的隐藏线路，藏得有点<b>过于崎岖</b>了。他们的本意，是希望玩家出于自己的好奇，主动点开一个又一个不同的网页去观察、去探索；在他们看来，让玩家"跑神"、顺着线索歪出去，本身就是一件很有趣的事——互联网的"兔子洞"（rabbit hole）体验，正类似于此。只是，线路太过崎岖也带来一个意外效果：当玩家冷不丁撞见某些重要信息时（比如您现在看到的这些内容），会产生和他们当初找朋友测试时几乎一模一样的惊呼——"这里也是主线的信息吗？！"</p>
+    <div class="qt">需要说明：喀丽丝在这里只是作为"纯网页能否达成 ARG 式体验"的一个被引用的例子，而非定论的证据。它是否成立、能在多大程度上成立，仍是可以继续争的开放命题。</div>
+
+    <h2>五、结语：一个开放的问题</h2>
+    <p>ARG 与 WIG，一个向外撒网、一个向内收束，却都指向同一件事——让玩家从"接收者"变成"亲自在场调查的人"。斐可悉 与 吻梦Wen 的新疑问提醒我们：也许"现实入侵"的关键，从来不只是"用了多少种媒介"，而是"它有多像本来就长在你生活里，又有多敢直视你"。</p>
+    <p>本页只做概念梳理与命题记录，不站队、不主张任何结论，也不构成对任何作品的评价或推荐。</p>
+
+    <div class="tags">
+        标签：
+        <a href="games.html">ARG</a><a href="games.html">WIG</a><a href="games.html">网页解谜</a>
+        <a href="games.html">现实入侵</a><a href="games.html">创作理论</a>
+    </div>
+</div>
+</div></div>
+
+<div class="foot">
+    谜径 Puzzlepath　|　网页解谜游戏推荐与研究　|　民间个人维护，非官方站点<br>
+    <a href="games.html">返回网页解谜推荐</a>　<a href="games.html">关于我们</a>　<a href="games.html">联系编辑部</a>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>感知觉自测助手　|　启明公众认知健康中心</title>
+<!--
+  ==================================================================
+  从 qcheck.html 末尾那个链接进来的 bot。
+
+  它是全站第一个**会把玩家说的话留在本机**的东西：
+    · 提问按顺序存档（localStorage），问一轮存一轮
+    · 存档有上限 CAP = 20 条，满了之后**归档最早的那些**
+      （归档 = 从列表里消失，但在存档里还留着，能在"已归档"里翻到）
+      → 玩到最后它会"忘"掉你最早问过什么，而你自己还记得
+    · 回复的积极程度跟问题的研究价值挂钩（见 VALUE 表）：
+      问得越贴近"那个存在"，它越热情、越主动、越像在跟你合作
+    · **一整排预设问题**（GUIDE）：历史 / 现象 / 成因 / 频率 / 应对 / 就医，
+      点一下填进输入框。问这几个它**不当面答**，而是给一条**关键提示 +
+      一个独立研究页的链接**（PAGES 表）—— 玩家顺着链接着的页面往外查，
+      越查越深、越查越发散。其余（眼睛 / 名字）才是解谜要素。
+    · 研究页（hist / phenom / cause / freq / cope / medical / soc / wisdom …）
+      也都是隐藏页，邀请制，跟本页、report1 同一套门禁；冷访问是 404。
+    · **说出那个名字**（NAME_KEYS）就不再是问答了：它调档案、推报告
+      （REPORT 数组，条目内容待填；url 留空显示"暂不开放"，不出死链）
+    · 全程客服腔，不诊断、不给药、不转介具体医院
+
+  它是一张**隐藏页**：不在任何菜单里，也没有任何页面链得到它。
+  只有 qcheck 算出"相似度偏高"之后，那一页才会**现发一份邀请**
+  （编号 INV-130331-xxxx，存在 localStorage['mp_bot_invite']）。
+  凭编号才进得来 —— 没被邀请直接敲地址，整页就是一个 404，
+  连站点头尾都不给它（body 默认带 .lock，#app 不渲染）。
+
+  为什么要让它存档：这页是支线的终点，玩家在这里花的时间最长。
+  一个会记住你问过什么的机器，比一个会消失的页脚有用得多。
+  ================================================================== -->
+<style>
+:root{
+    --ink:#1d4f4a; --tx:#262b2a; --tx2:#4f5a58; --tx3:#848d8b;
+    --gn:#1d6b62; --gnl:#2a887e; --gnw:#eef5f4;
+    --or:#e07a3f; --red:#c0392b; --line:#dde6e4; --bd:#c8d6d3;
+    --bg:#fff; --bgf:#f4f7f7;
+    --font:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",SimSun,sans-serif;
+    --mono:"Sarasa Mono SC","Sarasa Term SC","Noto Sans Mono CJK SC","Microsoft YaHei",monospace;
+}
+*{ box-sizing:border-box; }
+body{ margin:0; background:var(--bgf); color:var(--tx); font:15px/1.9 var(--font); }
+a{ color:#1a4a8a; text-decoration:none; }
+a:hover{ color:var(--or); text-decoration:underline; }
+.wrap{ width:1000px; max-width:96%; margin:0 auto; }
+
+.ihd{ background:var(--ink); color:#bfd4d1; font-size:12px; }
+.ihd .wrap{ display:flex; justify-content:space-between; align-items:center; min-height:32px; }
+.ihd a{ color:#bfd4d1; margin-left:14px; }
+.ihd a:hover{ color:#fff; }
+
+.brand{ background:#fff; border-bottom:3px solid var(--gn); }
+.brand .wrap{ display:flex; align-items:center; gap:18px; padding:20px 0 18px; }
+.brand .mark{ flex:0 0 auto; width:58px; height:58px; }
+.brand b{ font-size:24px; letter-spacing:3px; color:var(--gn); display:block; }
+.brand i{ display:block; font-style:normal; font-size:11.5px; color:var(--tx3); letter-spacing:1.5px; }
+.brand .tel{ margin-left:auto; text-align:right; font-size:12.5px; color:var(--tx2); line-height:1.75; }
+.brand .tel b{ display:block; font-size:19px; color:var(--or); letter-spacing:.5px; }
+.eye{ font-family:"Segoe UI Historic","Noto Sans Egyptian Hieroglyphs",var(--font); }
+
+.from{ background:var(--gnw); border-bottom:1px solid var(--line); font-size:12.5px; color:var(--tx2); }
+.from .wrap{ padding:9px 0; }
+.from a{ color:var(--gn); }
+
+.nav{ background:var(--gn); position:sticky; top:0; z-index:90; box-shadow:0 2px 0 rgba(0,0,0,.06); }
+.nav .wrap{ display:flex; flex-wrap:wrap; }
+.nav a{ color:#e2efed; font-size:14.5px; padding:11px 20px; letter-spacing:1px; }
+.nav a:hover{ background:var(--gnl); text-decoration:none; }
+.nav a.on{ background:#fff; color:var(--gn); font-weight:700; box-shadow:inset 0 -3px 0 var(--or); }
+.nav a.off{ color:#8fb5b1; cursor:default; }
+.nav a.off:hover{ background:transparent; text-decoration:none; }
+
+.main{ display:flex; gap:20px; padding:18px 0 10px; align-items:flex-start; }
+.left{ flex:1 1 auto; min-width:0; }
+.right{ flex:0 0 268px; }
+.box{ background:#fff; border:1px solid var(--line); padding:20px 26px 24px; margin-bottom:18px; }
+.box[id]{ scroll-margin-top:64px; }
+h3{ margin:0 0 14px; font-size:19px; color:var(--gn); letter-spacing:1px;
+    padding-bottom:10px; border-bottom:1px solid var(--line); }
+h3 .sub{ float:right; font-size:12px; color:var(--tx3); font-weight:400; letter-spacing:0; }
+.doc p{ margin:9px 0; font-size:14.5px; line-height:2.05; color:var(--tx2); }
+.doc .dt{ font-size:20px; color:var(--tx); font-weight:700; }
+.doc .dno{ font-size:12.5px; color:var(--tx3); margin:2px 0 14px; }
+.doc ul{ margin:9px 0; padding-left:22px; font-size:14.5px; color:var(--tx2); line-height:2.05; }
+.tip{ margin-top:16px; padding:12px 15px; background:var(--gnw); border-left:3px solid var(--gn);
+      font-size:13px; color:var(--tx2); line-height:1.95; }
+
+/* ── 聊天区：像客服工单系统，一问一答往下堆 ── */
+.log{ margin-top:4px; }
+.q{ margin:0 0 14px; }
+.q .qq{ display:inline-block; padding:2px 10px; margin-bottom:7px; font-size:11.5px;
+        letter-spacing:1px; color:#fff; background:var(--gn); border-radius:2px; }
+.q .qt{ display:block; margin-bottom:12px; padding:11px 15px; border:1px solid var(--bd);
+        background:#fbfdfd; font-size:14.5px; line-height:1.9; color:var(--tx); }
+.a{ margin:0 0 18px; padding-left:16px; border-left:3px solid var(--gnl); }
+.a .at{ font-size:14.5px; line-height:1.95; color:var(--tx2); }
+.a .meta{ margin-top:5px; font-size:11.5px; color:var(--tx3); }
+.a.warm{ border-left-color:var(--or); }
+.a.warm .at{ color:var(--tx); }
+/* 说出那个名字之后的那一条回复，不该再长得像客服回执 */
+.a.file{ border-left-color:var(--red); }
+.a.file .at{ color:var(--tx); font-weight:700; }
+
+/* 档案调取：说出名字之后，它开始"发报告" */
+.rpt{ margin-top:14px; padding:13px 15px; border:1px solid var(--bd); background:#f6fbfa; }
+.rpt .rh{ font-size:13px; letter-spacing:1px; color:var(--gn); font-weight:700; margin-bottom:8px; }
+.rpt ol{ margin:0; padding-left:22px; font-size:13px; color:var(--tx2); line-height:1.95; }
+.rpt li{ margin:5px 0; }
+.rpt li b{ color:var(--tx); }
+.rpt .rs{ color:var(--tx3); }
+.rpt .rn{ font-size:12px; color:var(--tx3); }
+.rpt a{ font-size:13px; }
+
+/* ── 预设问题 ─────────────────────────────────────────
+   一整排"正常提问"，点一下填进输入框。
+   它们看起来是 FAQ，实际上也是这页唯一**问得出东西**的地方：
+   问历史、问现象，它会真的讲清楚；讲着讲着，偶尔会多说一句不该说的。 */
+.guide{ margin-top:20px; padding:13px 15px 15px; background:var(--gnw); border:1px solid var(--line); }
+.guide .gh{ font-size:13px; color:var(--gn); font-weight:700; letter-spacing:1px; margin-bottom:10px; }
+.guide .gtag{ display:inline-block; margin:0 8px 8px 0; padding:6px 14px; border:1px solid var(--bd);
+              background:#fff; font:inherit; font-size:13px; color:var(--tx2); cursor:pointer;
+              letter-spacing:.5px; }
+.guide .gtag:hover{ border-color:var(--gnl); color:var(--tx); background:#fff; }
+.guide .gtag b{ color:var(--gn); font-weight:700; margin-right:5px; }
+.guide .gn{ font-size:11.5px; color:var(--tx3); line-height:1.8; }
+
+/* 打偏了的时候，回复里直接给出可点的主题词 —— 说得出就得答得出 */
+.qtag{ display:inline-block; margin:0 8px 7px 0; padding:5px 13px; border:1px solid var(--bd);
+        background:#fff; font:inherit; font-size:12.5px; color:var(--tx2); cursor:pointer;
+        letter-spacing:.5px; }
+.qtag:hover{ border-color:var(--gnl); color:var(--tx); }
+
+/* 输入区 */
+.ask{ margin-top:22px; padding-top:18px; border-top:1px dashed var(--line); }
+.ask label{ display:block; font-size:14px; color:var(--gn); font-weight:700; margin-bottom:8px; letter-spacing:1px; }
+.ask .hint{ font-size:12px; color:var(--tx3); font-weight:400; margin-left:10px; letter-spacing:0; }
+.ask textarea{ width:100%; min-height:74px; padding:11px 13px; border:1px solid var(--bd);
+               background:#fbfdfd; font:14.5px/1.85 var(--font); color:var(--tx); resize:vertical; }
+.ask textarea:focus{ outline:none; border-color:var(--gnl); background:#fff; }
+.ask .row{ display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap; }
+.ask button{ padding:9px 26px; font:inherit; font-size:14.5px; letter-spacing:2px;
+             color:#fff; background:var(--gn); border:none; cursor:pointer; }
+.ask button:hover{ background:var(--gnl); }
+.ask button:disabled{ background:#c3cfcd; cursor:default; }
+.ask .cnt{ font-size:12px; color:var(--tx3); margin-left:auto; }
+
+/* 容量条：让它一直在玩家眼前。上限逼近时颜色变。 */
+.cap{ margin-top:12px; }
+.cap .bar{ height:6px; background:#e6eceb; position:relative; }
+.cap .bar i{ position:absolute; left:0; top:0; bottom:0; background:var(--gnl); transition:width .3s; }
+.cap.warn .bar i{ background:var(--or); }
+.cap.full .bar i{ background:var(--red); }
+.cap .t{ margin-top:6px; font-size:11.5px; color:var(--tx3); }
+.cap.warn .t{ color:var(--or); }
+.cap.full .t{ color:var(--red); }
+
+/* 存档一览：把 bot 记着的东西全摊开给玩家看 */
+.arc{ margin-top:20px; padding-top:16px; border-top:1px dashed var(--line); }
+.arc summary{ cursor:pointer; font-size:14px; color:var(--gn); font-weight:700; letter-spacing:1px; }
+.arc summary:hover{ color:var(--or); }
+.arc ol{ margin:12px 0 0; padding-left:24px; font-size:13px; color:var(--tx2); line-height:1.9; }
+.arc ol li{ margin:4px 0; }
+.arc ol li.gone{ color:var(--tx3); text-decoration:line-through; }
+.arc ol li b{ color:var(--tx); }
+.arc .none{ margin:12px 0 0; font-size:13px; color:var(--tx3); }
+.arc .clr{ margin-top:12px; font-size:12.5px; }
+.arc .clr a{ color:var(--red); }
+
+/* 清档确认框：页内自绘，样式跟这页一致 */
+.wipeask{ margin-top:12px; padding:14px 16px; border:1px solid var(--red); background:#fdf6f5; }
+.wipeask .wt{ font-size:14.5px; color:var(--red); font-weight:700; margin-bottom:6px; }
+.wipeask .wn{ font-size:12.5px; color:var(--tx2); line-height:1.85; }
+.wipeask .wr{ margin-top:12px; display:flex; gap:10px; }
+.wipeask button{ padding:7px 20px; font:inherit; font-size:13.5px; letter-spacing:1px;
+                 color:#fff; background:var(--red); border:none; cursor:pointer; }
+.wipeask button.no{ color:var(--tx2); background:#e6eceb; }
+.wipeask button:hover{ opacity:.88; }
+
+.sbox{ background:#fff; border:1px solid var(--line); padding:16px 18px 18px; margin-bottom:18px; }
+.sbox h4{ margin:0 0 12px; font-size:15px; letter-spacing:1px; color:var(--gn);
+          padding-bottom:9px; border-bottom:1px solid var(--line); }
+.sbox p{ margin:6px 0; font-size:13px; color:var(--tx2); line-height:1.95; }
+.sbox .big{ font-size:17px; color:var(--or); font-weight:700; letter-spacing:.5px; }
+.sbox ul{ margin:6px 0; padding-left:18px; font-size:13px; color:var(--tx2); line-height:2; }
+
+/* 侧栏广告位：AI 研究专页（机构外链，区别于普通提示；与 bot 主色一致） */
+.sbox.ad{ border-color:var(--gn); }
+.sbox.ad h4{ color:var(--gn); }
+.sbox.ad .thumb{ height:60px; border-radius:3px; background:linear-gradient(120deg,#1d6b62,#2a887e);
+      display:flex; align-items:center; padding:0 14px; color:#fff; font-size:13px; letter-spacing:1px; margin-bottom:12px; }
+.sbox.ad p{ font-size:12.5px; color:var(--tx2); line-height:1.9; }
+.sbox.ad .go{ display:inline-block; margin-top:11px; padding:7px 18px; background:var(--gn); color:#fff;
+      font-size:13.5px; letter-spacing:1px; }
+.sbox.ad .go:hover{ background:var(--gnl); text-decoration:none; }
+.sbox.ad .note{ font-size:11.5px; color:var(--tx3); margin-top:9px; }
+
+
+.foot{ background:var(--ink); color:#a3c0bc; font-size:12px; padding:22px 0; text-align:center; line-height:2.1; }
+.foot a{ color:#c3d7d4; margin:0 6px; }
+.foot .ad{ color:#7fa09c; }
+
+/* ── 邀请制 ───────────────────────────────────────────
+   这一页**不是站点里的一栏**，它没有入口：菜单里没有，页脚没有，
+   任何页面都不会链到它。它只在核对清单判定"相似度偏高"之后，
+   由那一页**现发一份邀请**才存在。
+
+   没有邀请直接敲地址进来 → 连站点外壳都不给，整页就是一个 404。
+   （body 默认带 .lock，#app 直接不渲染；脚本验过邀请才摘掉）
+   ────────────────────────────────────────────────── */
+#deny{ display:none; }
+body.lock #deny{ display:block; }
+body.lock #app{ display:none; }
+.deny{ width:620px; max-width:92%; margin:0 auto; padding:132px 0 60px; text-align:center; }
+.deny .dn1{ font-size:78px; font-weight:700; color:var(--bd); letter-spacing:8px; line-height:1; }
+.deny .dn2{ margin-top:12px; font-size:21px; color:var(--tx); letter-spacing:5px; }
+.deny p{ margin:22px 0 0; font-size:14px; color:var(--tx2); line-height:2.1; }
+.deny .dn3{ margin-top:30px; font-size:13px; }
+.deny .dn3 a{ margin:0 8px; }
+
+@media (max-width:900px){
+    .main{ flex-direction:column; }
+    .right{ flex:1 1 auto; width:100%; }
+}
+</style>
+</head>
+<body class="lock">
+
+<!-- 没有邀请时看到的就是这个，也只有这个 -->
+<div id="deny"><div class="deny">
+    <div class="dn1">404</div>
+    <div class="dn2">页面不存在</div>
+    <p>您访问的页面不存在，或已被移除。<br>请检查地址是否输入正确。</p>
+    <p class="dn3">
+        <a href="percept.html">感知觉科普</a>
+        <a href="childsafe.html">关爱儿童安全出行</a>
+        <a href="index.html">返回旅行社</a>
+    </p>
+</div></div>
+
+<div id="app">
+
+<div class="ihd"><div class="wrap">
+    <div>启明公众认知健康中心　|　感知觉自测助手　|　不提供诊疗服务</div>
+    <div><a href="qcheck.html">核对清单</a><a href="percept.html">感知觉科普</a></div>
+</div></div>
+
+<div class="brand"><div class="wrap">
+    <svg class="mark" viewBox="0 0 58 58" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="29" cy="29" r="28" fill="none" stroke="#1d6b62" stroke-width="2"/>
+        <circle cx="29" cy="29" r="17" fill="none" stroke="#2a887e" stroke-width="1.5" stroke-dasharray="3 3"/>
+        <circle cx="29" cy="29" r="6" fill="#1d6b62"/>
+    </svg>
+    <div><b>感知觉自测助手</b><i>SELF-ASSESSMENT BOT　自动应答（24 小时）</i></div>
+    <div class="tel">科普咨询　<b><span class="eye">𓂀</span>0<span class="eye">𓂀</span>10-8256 4470</b>　|　工作日 09:30 – 17:00</div>
+</div></div>
+
+<div class="from"><div class="wrap">
+    本页为自助问答工具　|　由 <a href="qcheck.html">《常见体验核对清单》</a> 发出邀请后进入　|　您在此页输入的内容<b>仅保留在您本机</b>，不随页面关闭消失，也不会上传　|　<b id="invTag">凭邀请 <span id="invNo">—</span> 进入</b>
+</div></div>
+
+<div class="nav"><div class="wrap">
+    <a href="#d" class="on" data-nav="d">自测问答</a>
+    <a href="#arc" data-nav="arc">已记录的问答</a>
+    <a class="off">转人工</a>
+    <a class="off">预约门诊</a>
+    <a href="percept.html">返回科普页</a>
+</div></div>
+
+<div class="wrap">
+    <div class="main">
+        <div class="left">
+
+<div class="box" id="d">
+    <h3>感知觉自测助手<span class="sub">自述参考　|　启明公众认知健康中心　|　第 6 篇</span></h3>
+    <div class="doc">
+        <div class="dt">自测问答</div>
+        <div class="dno">启明公众认知健康中心　|　2013 年 3 月</div>
+
+        <p>您在核对清单中被判定为<b>与既往回访记录相似度较高</b>，
+           建议就下面的具体项目做一次自测。助手会就您提出的问题作答。</p>
+
+        <p style="font-size:13.5px;color:var(--tx3)">
+            助手不对任何问题作出诊断结论、不推荐药品、不介绍具体医疗机构。
+        </p>
+    </div>
+
+    <div class="log" id="log"></div>
+
+    <!-- 一整排"正常提问"。点一下填进输入框 —— 这页能问出东西的地方就在这 -->
+    <div class="guide">
+        <div class="gh">可以这样问</div>
+        <div id="gTags"></div>
+        <div class="gn">点击即填入下方输入框，可自行修改后再提问。　|　助手就下列主题作说明，不作诊断。</div>
+    </div>
+
+    <div class="ask" id="ask">
+        <label for="inp">向助手提问<span class="hint">Enter 发送　|　Shift+Enter 换行</span></label>
+        <textarea id="inp" placeholder="例如：我看到的那个人，是什么时候第一次出现的？"></textarea>
+        <div class="row">
+            <button type="button" id="send">提问</button>
+            <span class="cnt" id="cnt">0 / 20</span>
+        </div>
+    </div>
+
+    <div class="cap" id="cap">
+        <div class="bar"><i id="capBar" style="width:0"></i></div>
+        <div class="t" id="capT">尚未提问　|　本机最多保留 20 条记录，超出后最早的部分将被归档</div>
+    </div>
+
+    <!-- 存档一览：把 bot 记着的东西摊开给玩家看 -->
+    <details class="arc" id="arc">
+        <summary id="arcSum">已记录的问答（0）</summary>
+        <div id="arcBody"><p class="none">本机还没有任何记录。</p></div>
+        <p class="clr"><a href="#" id="wipe">清除本机全部记录</a></p>
+
+        <!-- 清档的页内确认框。原生 confirm 会把这套皮相戳破，所以自己画一个。 -->
+        <div class="wipeask" id="wipeAsk" style="display:none">
+            <div class="wt">清除本机全部问答记录？</div>
+            <div class="wn">此操作不可撤销。清除后，本页不再记得您问过什么。</div>
+            <div class="wr">
+                <button type="button" id="wipeYes">确认清除</button>
+                <button type="button" id="wipeNo" class="no">保留</button>
+            </div>
+        </div>
+    </details>
+</div>
+
+        </div>
+
+        <div class="right">
+            <div class="sbox">
+                <h4>助手状态</h4>
+                <p class="big" id="stCount">空闲</p>
+                <p>自动应答　24 小时在线　|　响应即时</p>
+            </div>
+            <div class="sbox">
+                <h4>助手不做的事</h4>
+                <ul>
+                    <li>不作诊断结论</li>
+                    <li>不推荐任何药品</li>
+                    <li>不介绍具体医疗机构或医师</li>
+                    <li>不上传您输入的内容</li>
+                </ul>
+            </div>
+            <div class="sbox">
+                <h4>其他提示</h4>
+                <ul>
+                    <li><a href="qcheck.html">《常见体验核对清单》</a></li>
+                    <li><a href="percept.html">感知觉科普　·　感知与认知</a></li>
+                    <li>青少年近视防控公益提示</li>
+                </ul>
+            </div>
+            <div class="sbox ad">
+                <h4>相关研究 · 机构外链</h4>
+                <div class="thumb">AI 与感知 · 研究专页</div>
+                <p>近年来，媒体与临床报道中出现一类被称为「AI 精神病（AI / chatbot psychosis）」的现象：部分受访者在与对话式 AI 长期交互后，产生被 AI「选中」、视 AI 为「神」或「更高的存在」、或将自身所见所闻归为 AI 生成的体验。相关个案见《纽约时报》2025 年报道及多起公开诉讼记录。本中心另存研究专页，汇总材料，仅供查阅。</p>
+                <a class="go" id="aiAd" href="ai.html">打开研究专页　→</a>
+                <p class="note">非本中心内容　|　不推荐任何技术、模型或服务</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="foot">
+    启明公众认知健康中心　|　科普咨询 <span class="eye">𓂀</span>0<span class="eye">𓂀</span>10-8256 4470　|　本站为公众科普栏目，不提供诊疗服务<br>
+    <span class="ad">本页由启明公众认知健康中心提供　|　<a href="qcheck.html">核对清单</a>　<a href="percept.html">感知觉科普</a>　<a href="childsafe.html">关爱儿童安全出行</a></span>
+</div>
+
+</div><!-- /#app -->
+
+<script>
+/* ==================================================================
+   会存档的问答机器人。
+
+   两件事：
+   1) **存档**（localStorage，键 mp_bot_v1）
+      格式 { n:已问总数, list:[{q, a, lv, ts} ...] }
+      list 超过 CAP=20 时，最早的那些搬到 archive（不再显示在聊天区，
+      但仍留在本机里，能在"已记录的问答"里翻到）——
+      所以你把它问满了以后，它会"忘"掉你最早问过什么，而你还记得。
+
+   2) **回复的积极程度**跟问题的研究价值挂钩
+      每个关键词给一个分值 lv（0~3），取命中项里最高的那个：
+        0 = 客服腔，纯模板
+        1 = 多问一句
+        2 = 主动回一条相关资料
+        3 = 明显更热情，主动追问你下一次想问什么
+      关键词刻意按"离喀丽丝的远近"分层：
+      一般的幻视/既视感词（睡、影子、人影、声音…）只值 1~2；
+      而"她""名字""一直都在""几岁""你在等谁"这些值 3。
+      → 玩家越往深里问，它越像在配合你。
+   ================================================================== */
+(function(){
+'use strict';
+
+/* ==================================================================
+   邀请制。放在最前面：没邀请就早退，后面一概不执行
+   —— 不读存档、不绑事件、不画聊天区。
+   ================================================================== */
+var INV_KEY = 'mp_bot_invite';                 // 邀请编号存在这儿
+var INV_RE  = /^INV-[0-9]{6}-[0-9]{4}$/;       // 编号样式：INV-130331-4827
+
+function invFromUrl(){
+    var m = location.search.match(/[?&]inv=([^&]+)/);
+    return m ? decodeURIComponent(m[1]) : '';
+}
+function invStored(){
+    try { return localStorage.getItem(INV_KEY) || ''; } catch(e){ return ''; }
+}
+
+var INVITE = invFromUrl() || invStored();
+if (!INV_RE.test(INVITE)){
+    /* 没被邀请 → 整页就是一个 404（#app 已被 CSS 藏掉） */
+    document.title = '404　页面不存在';
+    return;
+}
+/* 有邀请：摘掉锁，并把编号记下来（从链接进来的也落袋，下次直接访问仍在） */
+document.body.classList.remove('lock');
+try { localStorage.setItem(INV_KEY, INVITE); } catch(e){}
+(function(){
+    var n = document.getElementById('invNo');
+    if (n) n.textContent = INVITE;
+})();
+
+/* 侧栏"AI 研究专页"广告：补上邀请编号，保证从本页首次点击即可打开 */
+(function(){
+    var ai = document.getElementById('aiAd');
+    if (ai) ai.setAttribute('href', 'ai.html?inv=' + encodeURIComponent(INVITE));
+})();
+
+var SKEY = 'mp_bot_v1';        // 存档键
+var CAP  = 20;                 // 聊天区保留条数上限，超出归档最早
+
+var log = document.getElementById('log');
+var inp = document.getElementById('inp');
+var send= document.getElementById('send');
+var cnt = document.getElementById('cnt');
+var cap = document.getElementById('cap');
+var capBar = document.getElementById('capBar');
+var capT   = document.getElementById('capT');
+var arcSum = document.getElementById('arcSum');
+var arcBody= document.getElementById('arcBody');
+var wipe   = document.getElementById('wipe');
+var stCount= document.getElementById('stCount');
+
+/* ---- 存档 ---- */
+var S = { n:0, list:[], arc:[], pending:null, named:0, faceN:0, faceLast:false };
+function load(){
+    try {
+        var raw = localStorage.getItem(SKEY);
+        if (!raw) return;
+        var o = JSON.parse(raw);
+        if (o && typeof o === 'object'){
+            S.n   = o.n   || 0;
+            S.list= Array.isArray(o.list) ? o.list : [];
+            S.arc = Array.isArray(o.arc)  ? o.arc  : [];
+            S.pending = typeof o.pending === 'string' ? o.pending : null;
+            S.named   = o.named || 0;
+            S.faceN   = o.faceN || 0;
+            S.faceLast= !!o.faceLast;
+        }
+    } catch (e){}
+}
+function save(){
+    try { localStorage.setItem(SKEY, JSON.stringify(S)); } catch (e){}
+}
+
+/* ---- 研究价值：关键词 → 分值。取命中项里最高的那个。 ----
+   分层是故意的：越贴近"她"的词，分值越高，回应越热络。 */
+var VALUE = [
+  /* lv 3 · 直接对上她 */
+  ['她',3], ['名字',3], ['叫',3], ['您是谁',3], ['你是谁',3], ['您不是人',3], ['不是人',3],
+  ['您存在吗',3], ['存在吗',3], ['活的',3], ['死的',3], ['一直都在',3], ['一直在',3],
+  ['几岁',3], ['多大',3], ['等谁',3], ['等的是',3], ['见过您',3], ['见过你',3],
+  /* lv 2 · 有方向但还模糊 */
+  ['眼球',2], ['眼睛',2], ['看不见',2], ['看见我',2], ['说话',2], ['聊',2], ['对话',2],
+  ['声音',2], ['在我旁边',2], ['多久',2], ['什么时候',2], ['第一次',2], ['重复',2],
+  ['每天',2], ['一直',2], ['跟着',2], ['认识',2], ['记得',2], ['家人',2], ['学校',2],
+  /* lv 1 · 只是普通现象 */
+  ['睡',1], ['影子',1], ['人影',1], ['光',1], ['黑',1], ['脑子',1], ['病',1], ['检查',1],
+  ['幻觉',1], ['梦',1], ['怕',1], ['疼',1], ['药',1], ['治',1], ['医院',1], ['医生',1],
+  ['空',1], ['房间',1], ['门口',1], ['楼',1], ['楼梯',1], ['跳',1]
+];
+
+/* ---- 预设问题：一整排"正常提问" ----
+   点一下填进输入框，不代发（玩家自己按提问，也方便改）。
+   只放**正常的**那几个 —— 名字、眼睛那些是解谜要素，不给现成的问法。 */
+var GUIDE = [
+  { k:'历史', q:'这类体验，最早是什么时候被记录下来的？' },
+  { k:'现象', q:'它一般都有哪些表现？' },
+  { k:'成因', q:'一般是怎么解释成因的？' },
+  { k:'频率', q:'多久出现一次算常见？' },
+  { k:'应对', q:'遇到了的话，我该怎么做？' },
+  { k:'就医', q:'什么情况下需要去找人看看？' }
+];
+
+/* ---- 每个预设问题对应的"关键提示 + 独立研究页" ----
+   问到这些主题，bot 给的不是长篇回答，而是一条引子 + 一个外链。
+   页面本身也是隐藏页（邀请制，跟 bot / report1 同一套），
+   冷访问是 404，只有从本助手链过去、或本机已存邀请时才开。
+   url 带 ?inv= 是为了让第一次点击也能直接打开。 */
+var PAGES = {
+  hist:   { url:'hist.html',   t:'历史研究专页',
+            keys:['历史','最早','由来','什么时候开始','什么时候被记录','记录','最早被记录','被记录下来'],
+    hint:'此类体验作为研究材料被记录的时间，较一般印象为早。'
+        + '其中有一例长期被学界引用：某思想家自幼伴有一道仅作劝阻、不作怂恿的「内在声音」，且据记载仅其本人可闻。'
+        + '如需查阅，本中心另存相关研究专页；相关资料仅供查阅，不作结论，亦不提供建议。' },
+  phenom: { url:'phenom.html', t:'现象研究专页',
+            keys:['现象','表现','症状','什么样','看见什么','看到什么','会看到什么','有什么表现','会看到'],
+    hint:'关于「看见了什么」，本中心另有一份材料。'
+        + '有一种描述反复出现：不只是一个人形，而是「被注视感」——你回头，却没有人。'
+        + '如需对照，请打开专页。' },
+  cause:  { url:'cause.html',  t:'成因研究专页',
+            keys:['成因','原因','怎么解释','怎么回事','为什么会','解释'],
+    hint:'关于成因，同时并列着几种解释，没有一种能单独说明全部记录。'
+        + '本中心另有专页，仅列材料，不作结论。' },
+  freq:   { url:'freq.html',   t:'频率研究专页',
+            keys:['频率','多久','几次','常见吗','正常吗','几次算常见','出现一次算常见'],
+    hint:'关于「多久一次算常见」，本中心另有专页，列有一般人群的调查数字。' },
+  cope:   { url:'cope.html',   t:'应对研究专页',
+            keys:['应对','怎么办','该怎么做','怎么处理','要紧吗','需要管吗','怎么应对'],
+    hint:'关于「遇到了该怎么办」，本中心另有专页，仅作建议，不作判断。' },
+  care:   { url:'medical.html',t:'就医研究专页',
+            keys:['就医','看医生','医院','需要治疗吗','要不要去','找人看看','看什么科','去找人','需要找人'],
+    hint:'关于「什么情况需要找人聊聊」，本中心另有专页，仅作提示，不推荐任何机构。' }
+};
+
+function topicFor(q){
+    for (var k in PAGES){
+        var ks = PAGES[k].keys;
+        for (var i = 0; i < ks.length; i++){ if (q.indexOf(ks[i]) >= 0) return k; }
+    }
+    return null;
+}
+
+/* ---- 名字。这是全站最不该在这一页出现的三个字 ----
+   一般问题它只作答；说出这个，它就开始**调档案、发报告**。 */
+var NAME_KEYS = ['喀丽丝', '咯莉丝', '丽丝'];
+
+/* ---- 追问：玩家提到某些东西时，它反过来问他 ----
+   客服不该追问，追问就不是客服了。所以命中时整条回复会变热（橙框）。 */
+var PROBE = {
+  eye: {
+    keys: ['眼睛', '眼球', '一只眼', '那只眼', '瞳孔'],
+    ask: '另外，关于眼睛——您知道些什么呢？'
+       + '<br><br>想请您回忆一下：在与它相遇的整个过程里，有没有觉得<b>熟悉</b>？'
+       + '<br><br>不是"见过它"那种熟悉，是更靠前的一种：'
+       + '比如在某个地方见过类似的形象——壁画上、徽记里、旧书页上、'
+       + '别人随手画下来的东西上，或者某个您说不出名字的地方。'
+       + '<br><br>如果有，那是什么地方？'
+       + '如果没有，也没关系：多数填写者在第一次被问到时都答不上来，'
+       + '而在第二次被问到时会答出来。'
+       + '<br><br>您可以慢慢说。本次对话不会中断。'
+  }
+};
+
+/* 追问之后，玩家给了肯定答复 —— 这一点要单独记一笔 */
+var EYE_YES = '已记录：您在他处见过类似的形象。'
+            + '<br><br>该条不并入本次的相似度比对，单独归档。'
+            + '<br><br>您不必现在就说得出是在哪里。';
+
+/* ---- 报告。说出名字之后推给玩家的那些条目 ----
+   内容还没定，先把架子搭好：往 REPORT 里塞 {t 标题, s 摘要, url 链接} 即可，
+   url 留空就显示"暂不开放"，不会出现死链。 */
+var REPORT = [
+  { t:'报告一 · 关于"既视感"的一种器质性假说（内部交流稿）',
+    s:'记录编号 REC-2013-03-01。提出：眼球是视觉的接收器，也是视觉的匹配器。'
+     + '末页附有一份病人记录。',
+    url:'report1.html' }
+];
+
+function nameHit(q){
+    for (var i = 0; i < NAME_KEYS.length; i++){ if (q.indexOf(NAME_KEYS[i]) >= 0) return true; }
+    return false;
+}
+function probeFor(q){
+    for (var k in PROBE){
+        var ks = PROBE[k].keys;
+        for (var i = 0; i < ks.length; i++){ if (q.indexOf(ks[i]) >= 0) return k; }
+    }
+    return null;
+}
+/* 追问之后的答复算不算"有" —— 宽松点，别把玩家挡回去。
+   但**否定优先**：中文里"没有"里就有一个"有"，不先排掉会全判反。 */
+var YES = ['有', '是', '对', '嗯', '见过', '看到过', '看过', '认得', '记得', '好像', '似乎', '见过一次', '不止一次'];
+var NO  = ['没有', '没见过', '没看见', '不记得', '记不清', '想不起', '说不上', '不知道', '从未', '未曾', '并无', '不清楚'];
+function yes(q){
+    for (var i = 0; i < NO.length; i++){ if (q.indexOf(NO[i]) >= 0) return false; }
+    for (var j = 0; j < YES.length; j++){ if (q.indexOf(YES[j]) >= 0) return true; }
+    return q.length >= 6;   /* 肯认真打一长句，多半也是在答"有" */
+}
+
+/* ---- 说出名字之后的回复。第一次推送报告，之后不再重复推 ---- */
+function fileReply(named){
+    if (named){
+        return { text:'该名称已在本次对话中检索过。'
+                    + '<br><br>记录条目已推送，不再重复。'
+                    + '<br><br>您可以继续提问。',
+                 lv:4, file:true, rpt:null };
+    }
+    return { text:'该名称已被检索到。'
+                + '<br><br>本助手不会就名称作出确认。以下为按该名称调取的记录条目，'
+                + '由系统直接推送，<b>不经过人工复核</b>。',
+             lv:4, file:true, rpt:REPORT };
+}
+
+/* ---- 回复库。lv 决定用哪一档。---- */
+function reply(q, lv, seq){
+    var t = q.replace(/\s+/g, '　');
+    var short = t.length > 60 ? t.slice(0, 60) + '……' : t;
+
+    if (lv >= 3){
+        /* 它明显更配合：主动、热情、还追着问下一句 */
+        var warm = [
+            '关于您问的这一点，已归档的 ' + S.n + ' 条记录里有 ' + Math.max(2, Math.min(9, seq)) + ' 条涉及同一表述。' +
+            '<br><br>该体验者在原始记录中同样无法描述其出现的条件，只确认它"确实在那里"。' +
+            '<br><br>您还想问什么？本次对话不会中断。',
+            '这一条我们比对过。相似度高于本助手的通常阈值。' +
+            '<br><br>记录显示：被问及此类问题时，多数填写者会在此处停下，改为反复确认同一件事——' +
+            '即"它究竟是在等我，还是我只是需要一个能看见的东西"。' +
+            '<br><br>您也可以问这个。',
+            '谢谢您的提问。' +
+            '<br><br>本助手只能说明一件事：您所描述的体验，在既有记录中**不止一例**，' +
+            '且描述者多为单独一人时首次发现，而非在人群中。' +
+            '<br><br>您的问题已按序编号。下一个问题请继续。',
+            '已记录。' +
+            '<br><br>补充一条本助手尚未对外说明的资料：相似案例中，' +
+            '询问对象在第三次提问之后，会开始使用与"它"相同的称呼。' +
+            '<br><br>这一点仅为记录观察，不作判断。'
+        ];
+        return { text: warm[seq % warm.length], lv:lv, warm:true };
+    }
+
+    if (lv === 2){
+        return { text:
+            '关于「' + short + '」——已归档记录中存在与此相近的表述。' +
+            '<br><br>多数填写者对这一点的回答是"无法确认具体时间"，但对内容本身描述清晰。' +
+            '<br><br>如需了解这一体验的常见表现，本助手可另列一份材料。',
+            lv:lv, warm:false };
+    }
+
+    if (lv === 1){
+        return { text:
+            '已收到。' +
+            '<br><br>该问题属于本助手可回答的范围：此类体验在一般人群中较为普遍，' +
+            '通常不伴随功能受损。' +
+            '<br><br>本助手不作出诊断结论。如需了解，建议咨询正规医疗机构。',
+            lv:lv, warm:false };
+    }
+
+    /* lv 0 · 纯客服模板。
+       但"您可以这样问"后面列的**必须真能问出东西** ——
+       所以直接把 GUIDE 那六个主题词摆出来，点了就填进输入框。
+       说得出就得答得出，不然这页就是在骗人。 */
+    var tags = GUIDE.map(function(g){
+        return '<button type="button" class="qtag" data-ask="' + g.k + '">' + g.k + '</button>';
+    }).join('');
+    return { text:
+        '已收到您的问题。' +
+        '<br><br>本助手仅回答与感知觉体验相关的问题。您可以就下面这些主题提问：' +
+        '<br><br>' + tags +
+        '<br><br>如您的问题不属于上述范围，请咨询各医疗机构。',
+        lv:lv, warm:false };
+}
+
+function score(q){
+    var lv = 0;
+    for (var i = 0; i < VALUE.length; i++){
+        if (q.indexOf(VALUE[i][0]) >= 0 && VALUE[i][1] > lv) lv = VALUE[i][1];
+    }
+    /* 字数也是个信号：写得很长的问题，它也当回事 */
+    if (lv < 3 && q.length >= 24) lv = Math.max(lv, 2);
+    return lv;
+}
+
+/* ---- 渲染 ---- */
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* 回复里出现的主题词按钮：点了填进输入框（不代发） */
+function bindQtags(){
+    if (!log.querySelectorAll) return;
+    var bs = [].slice.call(log.querySelectorAll('.qtag'));
+    bs.forEach(function(b){
+        b.addEventListener('click', function(){
+            var k = b.getAttribute('data-ask') || '';
+            var g = null;
+            GUIDE.forEach(function(x){ if (x.k === k) g = x; });
+            inp.value = g ? g.q : k;
+            inp.focus();
+        });
+    });
+}
+
+function rptHtml(list){
+    if (!list || !list.length) return '';
+    var h = '<div class="rpt"><div class="rh">按该名称调取的记录条目　|　共 ' + list.length + ' 份</div><ol>';
+    list.forEach(function(r){
+        h += '<li><b>' + esc(r.t) + '</b>';
+        if (r.s) h += '<br><span class="rs">' + esc(r.s) + '</span>';
+        h += r.url
+           ? '<br><a href="' + r.url + '" target="_blank" rel="noopener">打开报告　→</a>'
+           : '<br><span class="rn">（暂不开放）</span>';
+        h += '</li>';
+    });
+    return h + '</ol></div>';
+}
+
+function drawOne(rec){
+    var d = document.createElement('div');
+    var cls = 'a' + (rec.file ? ' file' : (rec.warm ? ' warm' : ''));
+    d.innerHTML =
+        '<div class="q"><span class="qq">您问</span>' +
+        '<span class="qt">' + esc(rec.q) + '</span></div>' +
+        '<div class="' + cls + '">' +
+        '<div class="at">' + rec.a + '</div>' +
+        rptHtml(rec.rpt) +
+        '<div class="meta">第 ' + rec.no + ' 问　|　编号 ' + rec.no + '-A' +
+        (rec.file ? '　|　已推送记录条目' : (rec.lv >= 3 ? '　|　已转入人工复核队列' : '')) +
+        '</div></div>';
+    log.appendChild(d);
+}
+
+function draw(){
+    log.innerHTML = '';
+    S.list.forEach(drawOne);
+    bindQtags();   /* 回复里那些可点的主题词（存档重绘后要重新绑） */
+
+    /* 容量条 */
+    var n = S.list.length, pct = Math.min(100, Math.round(n / CAP * 100));
+    capBar.style.width = pct + '%';
+    cap.className = 'cap' + (n >= CAP ? ' full' : (n >= CAP - 4 ? ' warn' : ''));
+    cnt.textContent = n + ' / ' + CAP;
+
+    if (!S.list.length){
+        capT.textContent = '尚未提问　|　本机最多保留 ' + CAP + ' 条记录，超出后最早的部分将被归档';
+    } else if (n >= CAP){
+        capT.textContent = '已达上限 ' + CAP + ' 条　|　最早 ' + S.arc.length + ' 条已归档（仍可在本页下方翻到）';
+    } else if (n >= CAP - 4){
+        capT.textContent = '本机最多保留 ' + CAP + ' 条记录　|　再问 ' + (CAP - n) + ' 条，最早的部分将被归档';
+    } else {
+        capT.textContent = '本机最多保留 ' + CAP + ' 条记录　|　还可提问 ' + (CAP - n) + ' 条';
+    }
+
+    stCount.textContent = S.n ? ('已应答 ' + S.n + ' 次') : '空闲';
+
+    /* 存档一览：现存的 + 已归档的（归档的打删除线） */
+    arcSum.textContent = '已记录的问答（' + (S.list.length + S.arc.length) + '）';
+    if (!S.list.length && !S.arc.length){
+        arcBody.innerHTML = '<p class="none">本机还没有任何记录。</p>';
+    } else {
+        /* 说出过名字的那几条，在存档一览里也标出来 */
+        var aline = function(r){
+            return '<b>' + esc(r.q) + '</b>'
+                 + (r.file ? '　<span style="color:#c0392b">〔已推送记录条目〕</span>' : '')
+                 + '<br>' + r.a.replace(/<br>/g, '　').replace(/<[^>]+>/g, '');
+        };
+        var html = '<ol>';
+        S.list.forEach(function(r){ html += '<li>' + aline(r) + '</li>'; });
+        if (S.arc.length){
+            html += '<li style="margin-top:14px;color:#848d8b">—— 以下已归档 ——</li>';
+            S.arc.forEach(function(r){ html += '<li class="gone">' + aline(r) + '</li>'; });
+        }
+        html += '</ol>';
+        arcBody.innerHTML = html;
+    }
+}
+
+/* ---- 提问 ----
+   三条路：说出名字 → 调档案发报告；提到眼睛 → 反过来追问；其余照旧作答。 */
+function ask(){
+    var q = (inp.value || '').trim();
+    if (!q) return;
+    inp.value = '';
+    S.n++;
+
+    var r;
+    if (nameHit(q)){
+        r = fileReply(S.named || 0);
+        S.named = (S.named || 0) + 1;
+        /* 名字已经被说出来了 —— 记一笔，以后主游戏可以拿这个当解锁依据 */
+        try { localStorage.setItem('mp_bot_name', '1'); } catch(e){}
+    } else {
+        var tk = topicFor(q);
+        if (tk){
+            /* 这几个主题：不再当面作答，给一条关键提示 + 一个独立研究页链接，
+               让玩家顺着查出去（越查越深、越查越发散）。 */
+            var pg = PAGES[tk];
+            r = {
+                text: pg.hint
+                    + '<br><br><a href="' + pg.url + '?inv=' + encodeURIComponent(INVITE)
+                    + '">打开' + pg.t + '　→</a>',
+                lv:2, warm:false, link:true
+            };
+        } else {
+            var lv = score(q);
+            r = reply(q, lv, S.n);
+        }
+        var p = probeFor(q);
+        if (p){
+            /* 它主动追问 —— 客服不追问，所以这一条要变热 */
+            r.text += '<br><br>' + PROBE[p].ask;
+            r.warm = true;
+            r.probe = p;
+        } else if (S.pending === 'eye' && yes(q)){
+            /* 上一条问的是眼睛，这一条作答了 —— 单独记一笔 */
+            r.text += '<br><br>' + EYE_YES;
+            r.warm = true;
+        }
+    }
+    S.pending = r.probe || null;   /* 只记住"它刚追问了什么"，答完就清 */
+
+    var rec = { q:q, a:r.text, lv:r.lv, warm:!!r.warm, file:!!r.file, rpt:r.rpt || null, no:S.n };
+
+    /* 满了就把最早的挪进归档 —— 它会"忘"掉最早的那些，
+       但记录还在本机，玩家自己还记得自己问过什么。 */
+    if (S.list.length >= CAP){
+        var old = S.list.shift();
+        S.arc.push(old);
+    }
+    S.list.push(rec);
+    save();
+
+    draw();
+    /* 滚到最新的那一问 */
+    var last = log.lastElementChild;
+    if (last) last.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+/* ---- 预设问题按钮：点一下填进输入框，不代发 ---- */
+(function(){
+var box = document.getElementById('gTags');
+if (!box) return;
+GUIDE.forEach(function(g){
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'gtag';
+    b.innerHTML = '<b>' + g.k + '</b>' + g.q;
+    b.addEventListener('click', function(){
+        inp.value = g.q;
+        inp.focus();
+    });
+    box.appendChild(b);
+});
+})();
+
+/* ---- 事件 ---- */
+send.addEventListener('click', ask);
+inp.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); ask(); }
+});
+/* 清档要问一次。**不用浏览器原生 confirm**，页内自绘一个，
+   跟这页的配色一致 —— 原生弹窗会把整套"正经网站"的皮相戳破。 */
+wipe.addEventListener('click', function(e){
+    e.preventDefault();
+    var box = document.getElementById('wipeAsk');
+    if (!box) return;
+    box.style.display = 'block';
+});
+
+/* 确认 / 保留：这两个按钮是动态插进去的，用事件委托接 */
+document.getElementById('arc').addEventListener('click', function(e){
+    var t = e.target;
+    if (!t || !t.closest) return;
+    if (t.id === 'wipeYes'){
+        S = { n:0, list:[], arc:[], pending:null, named:0, faceN:0, faceLast:false };
+        save();
+        draw();
+        document.getElementById('wipeAsk').style.display = 'none';
+    } else if (t.id === 'wipeNo'){
+        document.getElementById('wipeAsk').style.display = 'none';
+    }
+});
+
+load();
+draw();
+
+/* ---- 导航高亮：刚点过就先亮对应项，1.2 秒后再交还给视口判断。
+       全站同一套写法（insurer / percept / childsafe 都这么写）。 ---- */
+(function(){
+var nav  = document.querySelector('.nav');
+var secs = [].slice.call(document.querySelectorAll('.left .box[id]'));
+if (!nav || !secs.length) return;
+var links = {}, shown = 0;
+nav.querySelectorAll('a[data-nav]').forEach(function(a){ links[a.getAttribute('data-nav')] = a; });
+
+function light(id, sticky){
+    var a = links[id];
+    if (!a || a.classList.contains('off')) return;
+    if (shown) links[shown].classList.remove('on');
+    a.classList.add('on');
+    shown = id;
+    if (sticky){
+        clearTimeout(light._t);
+        light._t = setTimeout(function(){ shown = 0; }, 1200);
+    }
+}
+function byView(){
+    var mid = window.innerHeight * 0.35, best = secs[0].id;
+    for (var i = 0; i < secs.length; i++){
+        var r = secs[i].getBoundingClientRect();
+        if (r.top <= mid) best = secs[i].id;
+    }
+    if (best) light(best);
+}
+window.addEventListener('scroll', byView, { passive:true });
+window.addEventListener('hashchange', byView);
+byView();
+})();
+})();
+</script>
+</body>
+</html>
